@@ -46,6 +46,7 @@ class RamDisk(object) :
         """
         Constructor
         """
+        self.version = "0.7.5"
         self.message_level = message_level
         #####
         # Calculating the size of ramdisk in 1Mb chunks     
@@ -394,8 +395,19 @@ class RamDisk(object) :
         else:
             raise Exception("Problem trying to set the device..")
             
+    ###########################################################################
+
+    def getVersion(self):
+        """
+        Getter for the version of the ramdisk
+
+        @author: Roy Nielsen
+        """
+        return self.version
+
 
 ###############################################################################
+
 
 def detach(device=" ", message_level="normal"):
     """
@@ -421,4 +433,6 @@ def detach(device=" ", message_level="normal"):
     else:
         raise Exception("Cannot eject a device with an empty name..")
     return success
+
+
 
