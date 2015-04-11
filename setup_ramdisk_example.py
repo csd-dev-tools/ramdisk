@@ -9,10 +9,10 @@ from optparse import OptionParser, SUPPRESS_HELP
 
 parser = OptionParser(usage="\n\n%prog [options]\n\n", version="0.7.2")
 
-size = 2 * 1024 * 500
+size = 500 # in Megabytes
 parser.add_option("-s", "--size", dest="size",
                   default=str(size),
-                  help="Size of ramdisk you want to create in 512byte blocks")
+                  help="Size of ramdisk you want to create in 1 Megabyte blocks")
 parser.add_option("-m", "--mount-point", dest="mntpnt",
                   default="", 
                   help="Name of the mountpoint you want to mount to")
@@ -32,7 +32,7 @@ else:
     message_level="normal"
 
 if opts.size:
-    size = int(opts.size) * 2 * 1024
+    size = int(opts.size) # in Megabytes
 mntpnt = opts.mntpnt
 
 ramdisk = RamDisk(str(size), mntpnt, message_level)
