@@ -35,7 +35,6 @@ class test_ramdisk(unittest.TestCase):
         """
         #Calculate size of ramdisk to make for this unit test.
         size_in_mb = 100
-        ramdisk_size = size = 2 * 1024 * 500 * size_in_mb
         self.mnt_pnt_requested = ""
 
         self.success = False
@@ -44,7 +43,7 @@ class test_ramdisk(unittest.TestCase):
         self.mnt_pnt_requested = False
 
         # get a ramdisk of appropriate size, with a secure random mountpoint
-        my_ramdisk = RamDisk(str(ramdisk_size), self.mnt_pnt_requested, self.message_level)
+        my_ramdisk = RamDisk(str(size_in_mb), self.mnt_pnt_requested, self.message_level)
         (self.success, self.mountPoint, self.ramdiskDev) = my_ramdisk.get_data()
 
         log_message("::::::::Ramdisk Mount Point: " + str(self.mountPoint), "debug", self.message_level)
