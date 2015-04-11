@@ -38,7 +38,7 @@ class RamDisk(object) :
     
     utilizes commands I've used to manage ramdisks
     
-    Size passed in must be at least the size of one Megabyte.
+    Size passed in must be passed in as 1Mb chunks
     
     @author: Roy Nielsen
     """
@@ -47,6 +47,8 @@ class RamDisk(object) :
         Constructor
         """
         self.message_level = message_level
+        #####
+        # Calculating the size of ramdisk in 1Mb chunks     
         self.diskSize = str(int(size) * 1024 * 1024 / 512)
         self.volumename = mountpoint
 
@@ -54,7 +56,6 @@ class RamDisk(object) :
         self.diskutil = "/usr/sbin/diskutil"
 
         if mountpoint:
-            #print "\n\n\n\tMOUNTPOINT: " + str(mountpoint) + "\n\n\n"
             self.mntPoint = mountpoint
         else:
             self.mntPoint = ""
@@ -170,7 +171,6 @@ class RamDisk(object) :
         @author: Roy Nielsen
         """
         success = False
-        #if int(self.diskSize) > (2 * 1024 * 250) - 512:
         if self.__partition():
             if self.mntPoint:
                 #####
@@ -287,7 +287,7 @@ class RamDisk(object) :
         if not reterr:
             success = True
         log_message("*******************************************", "debug", self.message_level)
-        #log_message("retval: \"\"\"" + str(retval).strip() + "\"\"\"")
+        log_message("retval: \"\"\"" + str(retval).strip() + "\"\"\"", "debug", self.message_level)
         log_message("reterr: \"" + str(reterr).strip() + "\"", "debug", self.message_level)
         log_message("*******************************************", "debug", self.message_level)
         log_message("Success: " + str(success) + " in __format", "debug", self.message_level)
@@ -318,7 +318,7 @@ class RamDisk(object) :
         if pipe:
             while True:
                 myout = pipe.stdout.readline()
-                #print myout + "\n"
+
                 if myout == '' and pipe.poll() != None:
                     break
                 
@@ -329,9 +329,6 @@ class RamDisk(object) :
                 almost_size = line[:-1]
                 size = almost_size[-1]
                 
-                #print "size: " + str(size)
-                #print "found: " + str(found)
-                
                 if re.search("unused", found) or re.search("free", found):
                     break
             if size:
@@ -341,8 +338,8 @@ class RamDisk(object) :
                 freeNumber = split_size.group(1)
                 freeMagnitude = split_size.group(2)
 
-                #print "freeNumber: " + str(freeNumber)
-                #print "freeMagnitude: " + str(freeMagnitude)
+                log_message("freeNumber: " + str(freeNumber), "debug", self.message_level)
+                log_message("freeMagnitude: " + str(freeMagnitude), "debug", self.message_level)
 
                 if re.match("^\d+$", freeNumber.strip()):
                     if re.match("^\w$", freeMagnitude.strip()):
