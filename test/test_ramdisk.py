@@ -52,7 +52,7 @@ class test_ramdisk(unittest.TestCase):
 
         
         if not self.success:
-            raise "Cannot get a ramdisk for some reason. . ."
+            raise IOError
         
 ###############################################################################
 ##### Helper Classes
