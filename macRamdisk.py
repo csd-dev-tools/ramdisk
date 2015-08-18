@@ -57,6 +57,7 @@ class RamDisk(object) :
         self.diskutil = "/usr/sbin/diskutil"
 
         if mountpoint:
+            log_message("\n\n\n\tMOUNTPOINT: " + str(mountpoint) + "\n\n\n", "debug", self.message_level)
             self.mntPoint = mountpoint
         else:
             self.mntPoint = ""
@@ -102,6 +103,7 @@ class RamDisk(object) :
         log_message("Device: " + str(self.myRamdiskDev), "verbose", self.message_level)
 
     ###########################################################################
+
     def get_data(self):
         """
         Getter for mount data, and if the mounting of a ramdisk was successful
@@ -173,6 +175,9 @@ class RamDisk(object) :
         """
         success = False
         if self.__partition():
+        
+        
+        # eraseVolume format name device
             if self.mntPoint:
                 #####
                 # "Mac" unmount (not eject)
@@ -329,6 +334,9 @@ class RamDisk(object) :
                 found = line[-1]
                 almost_size = line[:-1]
                 size = almost_size[-1]
+                
+                log_message("size: " + str(size), "debug", self.message_level)
+                log_message("found: " + str(found), "debug", self.message_level)
                 
                 if re.search("unused", found) or re.search("free", found):
                     break
