@@ -46,12 +46,14 @@ class RamDisk(object) :
         """
         Constructor
         """
-        self.version = "0.7.5"
+        self.version = "0.7.6"
         self.message_level = message_level
         #####
         # Calculating the size of ramdisk in 1Mb chunks     
         self.diskSize = str(int(size) * 1024 * 1024 / 512)
         self.volumename = mountpoint
+        log_message("disk size: " + str(self.diskSize), "debug", self.message_level)
+        log_message("volume name: " + str(self.volumename), "debug", self.message_level)
 
         self.hdiutil = "/usr/bin/hdiutil"
         self.diskutil = "/usr/sbin/diskutil"
@@ -140,9 +142,13 @@ class RamDisk(object) :
         
         @author: Roy Nielsen
         """
+        retval = None
+        reterr = None
         success = False
         cmd = [self.hdiutil, "attach", "-nomount", "ram://" + self.diskSize]
         retval, reterr = Popen(cmd, stdout=PIPE, stderr=PIPE).communicate()
+        log_message("retval: " + str(retval), "debug", self.message_level)
+        log_message("reterr: " + str(reterr), "debug", self.message_level)
         if reterr:
             success = False
             raise Exception("Error trying to create ramdisk(" + str(reterr).strip() + ")")
@@ -175,6 +181,7 @@ class RamDisk(object) :
         """
         success = False
         if self.__partition():
+            success = True
         
         
         # eraseVolume format name device

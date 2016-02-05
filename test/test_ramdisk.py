@@ -1,4 +1,4 @@
-#!/usr/bin/python -w
+#!/usr/bin/python -u
 """
 
 @author: Roy Nielsen
@@ -6,7 +6,11 @@
 import re
 import os
 import sys
+import time
 import unittest
+import tempfile
+import ctypes as C
+from datetime import datetime
 try:
     from log_message import log_message
 except:
@@ -20,12 +24,16 @@ except:
     from macRamdisk import RamDisk, detach
 
 class test_ramdisk(unittest.TestCase):
-
-    def setUp(self):
+    @classmethod
+    def setUpClass(self):
         """
         Initializer
         """
-        self.setMessageLevel("normal")
+        self.message_level = "debug"
+
+        #####
+        # setting up to call ctypes to do a filesystem sync 
+        self.libc = C.CDLL("/usr/lib/libc.dylib")
 
         self.subdirs = ["two", "three" "one/four"]
 
@@ -34,7 +42,8 @@ class test_ramdisk(unittest.TestCase):
         filesystem functionality of what is being tested.
         """
         #Calculate size of ramdisk to make for this unit test.
-        size_in_mb = 100
+        size_in_mb = 1800
+        ramdisk_size = size = size_in_mb
         self.mnt_pnt_requested = ""
 
         self.success = False
@@ -43,7 +52,7 @@ class test_ramdisk(unittest.TestCase):
         self.mnt_pnt_requested = False
 
         # get a ramdisk of appropriate size, with a secure random mountpoint
-        my_ramdisk = RamDisk(str(size_in_mb), self.mnt_pnt_requested, self.message_level)
+        my_ramdisk = RamDisk(str(ramdisk_size), self.mnt_pnt_requested, self.message_level)
         (self.success, self.mountPoint, self.ramdiskDev) = my_ramdisk.get_data()
 
         log_message("::::::::Ramdisk Mount Point: " + str(self.mountPoint), "debug", self.message_level)
@@ -53,6 +62,11 @@ class test_ramdisk(unittest.TestCase):
         if not self.success:
             raise IOError
         
+        #####
+        # Create a temp location on disk to run benchmark tests against
+        self.fs_dir = tempfile.mkdtemp()
+        
+
 ###############################################################################
 ##### Helper Classes
 
@@ -101,6 +115,57 @@ class test_ramdisk(unittest.TestCase):
                     log_message("Unexpected Exception trying to makedirs: " + str(err2))
                     pass
 
+
+    def mkfile(self, file_path="", file_size=0, pattern="rand", block_size=512, mode=0o777):
+        """
+        Create a file with "file_path" and "file_size".  To be used in 
+        file creation benchmarking - filesystem vs ramdisk.
+
+        @parameter: file_path - Full path to the file to create
+        @parameter: file_size - Size of the file to create, in Mba
+        @parameter: pattern - "rand": write a random pattern
+                              "0xXX": where XX is a hex value for a byte
+        @parameter: block_size - size of blocks to write in bytes
+        @parameter: mode - file mode, default 0o777
+
+        @returns: time in miliseconds the write took
+
+        @author: Roy Nielsen
+        """
+        total_time = 0
+        if file_path and file_size:
+            self.libc.sync()
+            tmpfile_path = os.path.join(file_path, "testfile")
+            log_message("Writing to: " + tmpfile_path, "debug", self.message_level)
+            try:
+                # Get the number of blocks to create
+                blocks = file_size/block_size
+
+                # Start timer in miliseconds
+                start_time = datetime.now()
+
+                # do low level file access...
+                tmpfile = os.open(tmpfile_path, os.O_WRONLY | os.O_CREAT, mode)
+
+                # do file writes...
+                for i in range(blocks):
+                    tmp_buffer = os.urandom(block_size)
+                    os.write(tmpfile, str(tmp_buffer))
+                    os.fsync(tmpfile)
+                os.close(tmpfile)
+
+                # capture end time
+                end_time = datetime.now()
+            except Exception, err:
+                log_message("Exception trying to write temp file for benchmarking...", "normal", self.message_level)
+                log_message("Exception thrown: " + str(err), "normal", self.message_level)
+                total_time = 0
+            else:
+                total_time = end_time - start_time
+                os.unlink(tmpfile_path)
+                self.libc.sync()
+        return total_time
+ 
 ###############################################################################
 ##### Tests
         
@@ -126,18 +191,48 @@ class test_ramdisk(unittest.TestCase):
 
     ##################################
 
-    def test_no_files_exists(self):
+    def test_fs_compare(self):
         """
-        Test that no test files exist on ramdisk.
+        Test filesystem access vs ramdisk access, of various sizes
         """
-        # Do the tests
-        for subdir in self.subdirs:
-            self.assertFalse(os.path.exists(self.mountPoint + "/" + subdir + "/" +  "test"))
+        #####
+        # 100Mb file size
+        oneHundred = 100
+        #####
+        # 100Mb file size
+        twoHundred = 200
+        #####
+        # 500Mb file size
+        fiveHundred = 500
+        #####
+        # 100Mb file size
+        oneGig = 1000
+
+        my_fs_array = [oneHundred, twoHundred, fiveHundred, oneGig]
+        time.sleep(1)
+        for file_size in my_fs_array:
+            #####
+            # Create filesystem file and capture the time it takes...
+            fs_time = self.mkfile(self.fs_dir, file_size)
+            log_message("fs_time: " + str(fs_time), "debug", self.message_level)
+            time.sleep(1)
+
+            #####
+            # get the time it takes to create the file in ramdisk...
+            ram_time = self.mkfile(self.mountPoint, file_size)
+            log_message("ram_time: " + str(ram_time), "debug", self.message_level)
+            time.sleep(1)
+
+            speed = fs_time - ram_time
+            log_message("ramdisk: " + str(speed) + " faster...", "debug", self.message_level)
+
+            self.assertTrue(((fs_time - ram_time).days>-1))
+
 
 ###############################################################################
 ##### unittest Tear down
-
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(self):
         """
         disconnect ramdisk
         """
