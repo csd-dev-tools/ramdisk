@@ -1,6 +1,8 @@
 LICENCE.txt
 
-Los Alamos National Security, LLC owns the copyright to "ramdisk". The license for the software is BSD with standard clauses regarding modifications and redistribution.
+Los Alamos National Security, LLC owns the copyright to "ramdisk". The 
+license for the software is BSD with standard clauses regarding 
+modifications and redistribution.
 
 ramdisk has been assigned the Los Alamos Computer Code Number LA-CC-15-007.
 Copyright (c) 2015, Los Alamos National Security, LLC All rights reserved.
