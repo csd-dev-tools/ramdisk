@@ -136,7 +136,10 @@ class test_ramdisk(unittest.TestCase):
         total_time = 0
         if file_path and file_size:
             self.libc.sync()
-            tmpfile_path = os.path.join(file_path, "testfile")
+            if os.path.isdir(file_path):
+                tmpfile_path = os.path.join(file_path, "testfile")
+            else:
+                tmpfile_path = file_path
             log_message("Writing to: " + tmpfile_path, "debug", self.message_level)
             try:
                 # Get the number of blocks to create
@@ -224,13 +227,13 @@ class test_ramdisk(unittest.TestCase):
         for file_size in my_fs_array:
             #####
             # Create filesystem file and capture the time it takes...
-            fs_time = self.mkfile(self.fs_dir, file_size)
+            fs_time = self.mkfile(os.path.join(self.fs_dir, "testfile"), file_size)
             log_message("fs_time: " + str(fs_time), "debug", self.message_level)
             time.sleep(1)
 
             #####
             # get the time it takes to create the file in ramdisk...
-            ram_time = self.mkfile(self.mountPoint, file_size)
+            ram_time = self.mkfile(os.path.join(self.mountPoint, "testfile"), file_size)
             log_message("ram_time: " + str(ram_time), "debug", self.message_level)
             time.sleep(1)
 
@@ -250,14 +253,14 @@ class test_ramdisk(unittest.TestCase):
         # 
         ramdisk_starttime = datetime.now()
         for i in range(1000):
-            self.mkfile(self.mountPoint, 1)
+            self.mkfile(os.path.join(self.mountPoint, "testfile" + str(i)), 1)
         ramdisk_endtime = datetime.now()
 
         rtime = ramdisk_endtime - ramdisk_starttime
 
         fs_starttime = datetime.now()
         for i in range(1000):
-            self.mkfile(self.fs_dir, 1)
+            self.mkfile(os.path.join(self.fs_dir, "testfile" + str(i)), 1)
         fsdisk_endtime = datetime.now()
 
         fstime = fsdisk_endtime - fs_starttime

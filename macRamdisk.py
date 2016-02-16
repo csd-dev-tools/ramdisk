@@ -268,7 +268,7 @@ class RamDisk(object) :
         
     ###########################################################################
 
-    def __format(self) :
+    def _format(self) :
         """
         Format the ramdisk
         
