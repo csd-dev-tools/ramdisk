@@ -11,19 +11,17 @@ import unittest
 import tempfile
 import ctypes as C
 from datetime import datetime
-try:
-    from log_message import log_message
-except:
-    sys.path.append("..")
-    from log_message import log_message
 
-try:
-    from macRamdisk import RamDisk, detach
-except:    
-    sys.path.append("..")
-    from macRamdisk import RamDisk, detach
+
+sys.path.append("../")
+
+from log_message import logMessage
+from macRamdisk import RamDisk, detach
 
 class test_ramdisk(unittest.TestCase):
+    """
+    """
+
     @classmethod
     def setUpClass(self):
         """
@@ -33,7 +31,7 @@ class test_ramdisk(unittest.TestCase):
         self.message_level = "normal"
 
         #####
-        # setting up to call ctypes to do a filesystem sync 
+        # setting up to call ctypes to do a filesystem sync
         self.libc = C.CDLL("/usr/lib/libc.dylib")
 
         self.subdirs = ["two", "three" "one/four"]
@@ -53,20 +51,23 @@ class test_ramdisk(unittest.TestCase):
         self.mnt_pnt_requested = False
 
         # get a ramdisk of appropriate size, with a secure random mountpoint
-        self.my_ramdisk = RamDisk(str(ramdisk_size), self.mnt_pnt_requested, self.message_level)
-        (self.success, self.mountPoint, self.ramdiskDev) = self.my_ramdisk.get_data()
+        self.my_ramdisk = RamDisk(str(ramdisk_size), \
+                                  self.mnt_pnt_requested, \
+                                  self.message_level)
+        (self.success, self.mountPoint, self.ramdiskDev) = \
+                                        self.my_ramdisk.getData()
 
-        log_message("::::::::Ramdisk Mount Point: " + str(self.mountPoint), "debug", self.message_level)
-        log_message("::::::::Ramdisk Device     : " + str(self.ramdiskDev), "debug", self.message_level)
+        logMessage("::::::::Ramdisk Mount Point: " + str(self.mountPoint), \
+                   "debug", self.message_level)
+        logMessage("::::::::Ramdisk Device     : " + str(self.ramdiskDev), \
+                   "debug", self.message_level)
 
-        
         if not self.success:
             raise IOError
-        
+
         #####
         # Create a temp location on disk to run benchmark tests against
         self.fs_dir = tempfile.mkdtemp()
-        
 
 ###############################################################################
 ##### Helper Classes
@@ -76,18 +77,18 @@ class test_ramdisk(unittest.TestCase):
         Set the logging level to what is passed in.
         """
         self.message_level = msg_lvl
-        
 
     def touch(self, fname="", message_level="normal") :
         """
         Python implementation of the touch command..
-        
+
         inspiration: http://stackoverflow.com/questions/1158076/implement-touch-using-python
-        
+
         @author: Roy Nielsen
         """
         if re.match("^\s*$", str(fname)) :
-            log_message("Cannot touch a file without a filename....", "normal", self.message_level)
+            logMessage("Cannot touch a file without a filename....", \
+                       "normal", self.message_level)
         else :
             try:
                 os.utime(fname, None)
@@ -95,7 +96,7 @@ class test_ramdisk(unittest.TestCase):
                 try :
                     open(fname, 'a').close()
                 except Exception, err :
-                    log_message("Cannot open to touch: " + str(fname), "normal", self.message_level)
+                    logMessage("Cannot open to touch: " + str(fname), "normal", self.message_level)
 
 
     def mkdirs(self, path="") :
@@ -103,19 +104,16 @@ class test_ramdisk(unittest.TestCase):
         A function to do an equivalent of "mkdir -p"
         """
         if not path :
-            log_message("Bad path...")
+            logMessage("Bad path...")
         else :
             if not os.path.exists(str(path)):
                 try:
                     os.makedirs(str(path))
                 except OSError as err1:
-                    log_message("OSError exception attempting to create directory: " + str(path))
-                    log_message("Exception: " + str(err1))
-                    pass
+                    logMessage("OSError exception attempting to create directory: " + str(path))
+                    logMessage("Exception: " + str(err1))
                 except Exception, err2 :
-                    log_message("Unexpected Exception trying to makedirs: " + str(err2))
-                    pass
-
+                    logMessage("Unexpected Exception trying to makedirs: " + str(err2))
 
     def mkfile(self, file_path="", file_size=0, pattern="rand", block_size=512, mode=0o777):
         """
@@ -140,7 +138,7 @@ class test_ramdisk(unittest.TestCase):
                 tmpfile_path = os.path.join(file_path, "testfile")
             else:
                 tmpfile_path = file_path
-            log_message("Writing to: " + tmpfile_path, "debug", self.message_level)
+            logMessage("Writing to: " + tmpfile_path, "debug", self.message_level)
             try:
                 # Get the number of blocks to create
                 blocks = file_size/block_size
@@ -161,15 +159,16 @@ class test_ramdisk(unittest.TestCase):
                 # capture end time
                 end_time = datetime.now()
             except Exception, err:
-                log_message("Exception trying to write temp file for benchmarking...", "normal", self.message_level)
-                log_message("Exception thrown: " + str(err), "normal", self.message_level)
+                logMessage("Exception trying to write temp file for "    + \
+                           "benchmarking...", "normal", self.message_level)
+                logMessage("Exception thrown: " + str(err), \
+                           "normal", self.message_level)
                 total_time = 0
             else:
                 total_time = end_time - start_time
                 os.unlink(tmpfile_path)
                 self.libc.sync()
         return total_time
- 
 
     def format_ramdisk(self):
         """
@@ -178,8 +177,130 @@ class test_ramdisk(unittest.TestCase):
         self.my_ramdisk._format()
 
 ###############################################################################
-##### Tests
-        
+##### Method Tests
+
+    ##################################
+
+    def test_init(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_get_data(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_getRandomizedMountpoint(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_create(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_mount(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_attach(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_remove_journal(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_unmount(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_eject(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_format(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_partition(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_isMemoryAvailable(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_runcmd(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_getDevice(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_setDevice(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_getVersion(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_detach(self):
+        """
+        """
+        pass
+
+###############################################################################
+##### Functional Tests
+
     ##################################
 
     def test_files_n_dirs(self):
@@ -189,7 +310,7 @@ class test_ramdisk(unittest.TestCase):
         # Do file setup for this test
         for subdir in self.subdirs:
             dirpath = self.mountPoint + "/" + subdir
-            log_message("DIRPATH: : " + str(dirpath), "debug", self.message_level)
+            logMessage("DIRPATH: : " + str(dirpath), "debug", self.message_level)
             self.mkdirs(dirpath)
             self.touch(dirpath + "/" + "test")
 
@@ -228,17 +349,17 @@ class test_ramdisk(unittest.TestCase):
             #####
             # Create filesystem file and capture the time it takes...
             fs_time = self.mkfile(os.path.join(self.fs_dir, "testfile"), file_size)
-            log_message("fs_time: " + str(fs_time), "debug", self.message_level)
+            logMessage("fs_time: " + str(fs_time), "debug", self.message_level)
             time.sleep(1)
 
             #####
             # get the time it takes to create the file in ramdisk...
             ram_time = self.mkfile(os.path.join(self.mountPoint, "testfile"), file_size)
-            log_message("ram_time: " + str(ram_time), "debug", self.message_level)
+            logMessage("ram_time: " + str(ram_time), "debug", self.message_level)
             time.sleep(1)
 
             speed = fs_time - ram_time
-            log_message("ramdisk: " + str(speed) + " faster...", "debug", self.message_level)
+            logMessage("ramdisk: " + str(speed) + " faster...", "debug", self.message_level)
 
             self.assertTrue(((fs_time - ram_time).days>-1))
 
@@ -250,7 +371,7 @@ class test_ramdisk(unittest.TestCase):
         # Clean up the ramdisk
         self.my_ramdisk._format()
         #####
-        # 
+        #
         ramdisk_starttime = datetime.now()
         for i in range(1000):
             self.mkfile(os.path.join(self.mountPoint, "testfile" + str(i)), 1)
@@ -277,9 +398,15 @@ class test_ramdisk(unittest.TestCase):
         disconnect ramdisk
         """
         if detach(self.ramdiskDev, self.message_level):
-            log_message(r"Successfully detached disk: " + str(self.ramdiskDev).strip(), "verbose", self.message_level)
+            logMessage(r"Successfully detached disk: " + \
+                       str(self.ramdiskDev).strip(), \
+                       "verbose", self.message_level)
         else:
-            log_message(r"Couldn't detach disk: " + str(self.ramdiskDev).strip() + " : mntpnt: " + str(self.mntPoint))
-            raise Exception(r"Cannot eject disk: " + str(self.ramdiskDev).strip() + " : mntpnt: " + str(self.mntPoint))
-        
+            logMessage(r"Couldn't detach disk: " + \
+                       str(self.ramdiskDev).strip() + " : mntpnt: " + \
+                       str(self.my_ramdisk.mntPoint))
+            raise Exception(r"Cannot eject disk: " + \
+                            str(self.ramdiskDev).strip() + \
+                            " : mntpnt: " + str(self.my_ramdisk.mntPoint))
+
 ###############################################################################
