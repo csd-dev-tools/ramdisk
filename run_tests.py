@@ -21,7 +21,8 @@ class BuildAndRunSuite(object):
     def __init__(self):
         """
         """
-        
+        self.module_version = '20160224.032043.009191'
+
     def get_all_tests(self):
         """
         """

@@ -14,8 +14,7 @@ class RamDiskTemplate(object):
     def __init__(self, size=0, mountpoint="", message_level="normal"):
         """
         """
-        self.version = "0.9.4"
-
+        self.module_version = '20160224.032043.009191'
         self.message_level = message_level
         self.volumename = mountpoint
         self.diskSize = size
@@ -33,6 +32,27 @@ class RamDiskTemplate(object):
     def getData(self):
         """
         Getter for mount data, and if the mounting of a ramdisk was successful
+        """
+        return (self.success, str(self.mntPoint), str(self.myRamdiskDev))
+
+    ###########################################################################
+
+    def printData(self):
+        """
+        Getter for mount data, and if the mounting of a ramdisk was successful.
+        Also prints to the data to the console
+        """
+        print "Success: " + str(self.success)
+        print "Mount point: " + str(self.mntPoint)
+        print "Device: " + str(self.myRamdiskDev)
+        return (self.success, str(self.mntPoint), str(self.myRamdiskDev))
+
+    ###########################################################################
+
+    def logData(self):
+        """
+        Getter for mount data, and if the mounting of a ramdisk was successful
+        Also logs the data.
         """
         logMessage("Success: " + str(self.success), \
                    "debug", self.message_level)
@@ -104,6 +124,18 @@ class RamDiskTemplate(object):
 
     ###########################################################################
 
+    def getMountPoint(self):
+        """
+        Getter for the mount point name the ramdisk is using
+
+        Must be over-ridden to provide OS/Method specific functionality
+
+        @author: Roy Nielsen
+        """
+        return self.mntpoint
+
+    ###########################################################################
+
     def setDevice(self, device=None):
         """
         Setter for the device so it can be ejected.
@@ -124,8 +156,7 @@ class RamDiskTemplate(object):
 
         @author: Roy Nielsen
         """
-        success = False
-        return success
+        return self.module_version
 
 ###############################################################################
 
