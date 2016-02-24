@@ -16,6 +16,14 @@ import threading
 from subprocess import Popen, PIPE
 
 from log_message import logMessage
+from libHelperFunctions import getOsFamily
+
+def OSNotValidForRunWith(Exception):
+    """
+    Custom Exception
+    """
+    def __init__(self, *args, **kwargs):
+        Exception.__init__(self, *args, **kwargs)
 
 class RunWith(object):
     """
@@ -31,6 +39,8 @@ class RunWith(object):
     @method getStderr(self)
     @method getReturnCode(self)
 
+    @WARNING - Known to work on Mac, may or may not work on other platforms
+
     @author: Roy Nielsen
     """
     def __init__(self, message_level="normal"):
@@ -38,10 +48,15 @@ class RunWith(object):
         self.command = None
         self.stdout = None
         self.stderr = None
-        self.module_version = '20160224.172830.506697'
+        self.module_version = '20160224.184019.673753'
         self.returncode = None
         self.printcmd = None
         self.myshell = None
+
+        validOSs = ["darwin"]
+        runningOS = getOsFamily()
+        if runningOS not in validOSs:
+            raise OSNotValidForRunWith(str(runningOS) + " is not valid for this class...")
 
     def set_command(self, command, myshell=False):
         """
@@ -101,7 +116,8 @@ class RunWith(object):
         """
         if self.command:
             try :
-                proc = Popen(self.command, stdout=PIPE, stderr=PIPE, shell=self.myshell)
+                proc = Popen(self.command,
+                             stdout=PIPE, stderr=PIPE, shell=self.myshell)
 
                 proc.communicate()
 
@@ -125,7 +141,8 @@ class RunWith(object):
                 self.stderr = proc.stderr
                 self.returncode = proc.returncode
         else :
-            logMessage("Cannot run a command that is empty...", "normal", self.message_level)
+            logMessage("Cannot run a command that is empty...", 
+                       "normal", self.message_level)
             self.stdout = None
             self.stderr = None
             self.returncode = None
@@ -141,7 +158,8 @@ class RunWith(object):
         """
         if self.command :
             try:
-                proc = Popen(self.command, stdout=PIPE, stderr=PIPE, shell=self.myshell)
+                proc = Popen(self.command,
+                             stdout=PIPE, stderr=PIPE, shell=self.myshell)
                 proc.wait()
             except Exception, err:
                 logMessage("system_call_retval - Unexpected Exception: "  + \
@@ -163,7 +181,8 @@ class RunWith(object):
                 self.stderr = proc.stderr
                 self.returncode = proc.returncode
         else :
-            logMessage("Cannot run a command that is empty...", "normal", self.message_level)
+            logMessage("Cannot run a command that is empty...",
+                       "normal", self.message_level)
             self.stdout = None
             self.stderr = None
             self.returncode = None
@@ -179,7 +198,7 @@ class RunWith(object):
         timeout["value"] = True
         proc.kill()
 
-    ##############################################################################
+    ############################################################################
 
     def timeout(self, timout_sec) :
         """
@@ -194,10 +213,12 @@ class RunWith(object):
         """
         if self.command:
             try:
-                proc = Popen(self.command, stdout=PIPE, stderr=PIPE, shell=self.myshell)
+                proc = Popen(self.command,
+                             stdout=PIPE, stderr=PIPE, shell=self.myshell)
 
                 timeout = {"value" : False}
-                timer = threading.Timer(timout_sec, self.kill_proc, [proc, timeout])
+                timer = threading.Timer(timout_sec, self.kill_proc,
+                                        [proc, timeout])
                 timer.start()
                 self.stdout, self.stderr = proc.communicate()
                 timer.cancel()
@@ -219,14 +240,15 @@ class RunWith(object):
                             "verbose", \
                             self.message_level)
         else :
-            logMessage("Cannot run a command that is empty...", "normal", self.message_level)
+            logMessage("Cannot run a command that is empty...",
+                       "normal", self.message_level)
             self.stdout = None
             self.stderr = None
             self.returncode = None
 
         return timeout["value"]
 
-    ##############################################################################
+    ############################################################################
 
     def runAs(self, user="", password="") :
         """
@@ -234,17 +256,18 @@ class RunWith(object):
 
         Required parameters: user, password, command
 
-        inspiration from: http://stackoverflow.com/questions/12419198/python-subprocess-readlines-hangs
-
         @author: Roy Nielsen
         """
         if re.match("^\s*$", user) or \
            re.match("^\s*$", password) or \
            not self.command :
-            logMessage("Cannot pass in empty parameters...", "normal", self.message_level)
-            logMessage("user = \"" + str(user) + "\"", "normal", self.message_level)
+            logMessage("Cannot pass in empty parameters...",
+                       "normal", self.message_level)
+            logMessage("user = \"" + str(user) + "\"",
+                       "normal", self.message_level)
             logMessage("check password...", "normal", self.message_level)
-            logMessage("command = \"" + str(self.command) + "\"", "normal", self.message_level)
+            logMessage("command = \"" + str(self.command) + "\"",
+                       "normal", self.message_level)
             return(255)
         else :
             output = ""
@@ -252,16 +275,20 @@ class RunWith(object):
 
             if isinstance(self.command, list) :
                 internal_command.append(" ".join(self.command))
-                #log_message("Trying to execute: \"" + " ".join(internal_command) + "\"", \
+                #log_message("Trying to execute: \"" + \
+                #            " ".join(internal_command) + "\"", \
                 #            "verbose", message_level)
             elif isinstance(self.command, basestring) :
                 internal_command.append(self.command)
-                #log_message("Trying to execute: \"" + str(internal_command) + "\"", \
+                #log_message("Trying to execute: \"" + \
+                #            str(internal_command) + "\"", \
                 #            "verbose", message_level)
 
             (master, slave) = pty.openpty()
 
-            proc = Popen(internal_command, stdin=slave, stdout=slave, stderr=slave, close_fds=True)
+            proc = Popen(internal_command,
+                         stdin=slave, stdout=slave, stderr=slave,
+                         close_fds=True)
 
             prompt = os.read(master, 10)
 
@@ -270,7 +297,9 @@ class RunWith(object):
                 line = os.read(master, 512)
                 output = output + line
                 while True :
-                    r,w,e = select.select([master], [], [], 0) # timeout of 0 means "poll"
+                    #####
+                    # timeout of 0 means "poll"
+                    r,w,e = select.select([master], [], [], 0) 
                     if r :
                         line = os.read(master, 512)
                         #####
@@ -295,10 +324,11 @@ class RunWith(object):
                 self.returncode = None
             #print output.strip()
             output = output.strip()
-            #log_message("Leaving runAs with: \"" + str(output) + "\"", "debug", message_level)
+            #log_message("Leaving runAs with: \"" + str(output) + "\"",
+            #            "debug", message_level)
             return output
 
-    ##############################################################################
+    ############################################################################
 
     def getecho (self, fileDescriptor):
         """This returns the terminal echo mode. This returns True if echo is
@@ -312,7 +342,7 @@ class RunWith(object):
             return True
         return False
 
-    ##############################################################################
+    ############################################################################
 
     def waitnoecho (self, fileDescriptor, timeout=3):
         """This waits until the terminal ECHO flag is set False. This returns
@@ -325,13 +355,13 @@ class RunWith(object):
 
             see below in runAsWithSudo
 
-        If timeout is None or negative, then this method to block forever until ECHO
-        flag is False.
+        If timeout is None or negative, then this method to block forever until
+        ECHO flag is False.
 
         Borrowed from pexpect - acceptable to license
         """
         if timeout is not None and timeout > 0:
-            end_time = time.time() + timeout 
+            end_time = time.time() + timeout
         while True:
             if not self.getecho(fileDescriptor):
                 return True
@@ -340,7 +370,7 @@ class RunWith(object):
             if timeout is not None:
                 timeout = end_time - time.time()
             time.sleep(0.1)
-    
+
     ##############################################################################
 
     def runAsWithSudo(self, user="", password="") :
@@ -353,20 +383,26 @@ class RunWith(object):
         """
         logMessage("Starting runAsWithSudo: ", "debug", self.message_level)
         logMessage("\tuser: \"" + str(user) + "\"", "debug", self.message_level)
-        logMessage("\tcmd : \"" + str(self.command) + "\"", "debug", self.message_level)
-        logMessage("\tmessage_level: \"" + str(self.message_level) + "\"", "normal", self.message_level)
+        logMessage("\tcmd : \"" + str(self.command) + "\"",
+                   "debug", self.message_level)
+        logMessage("\tmessage_level: \"" + str(self.message_level) + "\"",
+                   "normal", self.message_level)
         if re.match("^\s+$", user) or re.match("^\s+$", password) or \
            not user or not password or \
            not self.command :
-            logMessage("Cannot pass in empty parameters...", "normal", self.message_level)
-            logMessage("user = \"" + str(user) + "\"", "normal", self.message_level)
+            logMessage("Cannot pass in empty parameters...",
+                       "normal", self.message_level)
+            logMessage("user = \"" + str(user) + "\"",
+                       "normal", self.message_level)
             logMessage("check password...", "normal", self.message_level)
-            logMessage("command = \"" + str(self.command) + "\"", "normal", self.message_level)
+            logMessage("command = \"" + str(self.command) + "\"",
+                       "normal", self.message_level)
             return(255)
         else :
             output = ""
 
-            internal_command = ["/usr/bin/su", str("-"), str(user).strip(), str("-c")]
+            internal_command = ["/usr/bin/su", str("-"),
+                                str(user).strip(), str("-c")]
 
             if isinstance(self.command, list) :
                 cmd = []
@@ -376,14 +412,20 @@ class RunWith(object):
                     except UnicodeDecodeError :
                         cmd.append(str(self.command[i]))
 
-                internal_command.append(str("/usr/bin/sudo -E -S -s '" + " ".join(cmd) + "'"))
-                #log_message("Trying to execute: \"" + " ".join(internal_command) + "\"", \
+                internal_command.append(str("/usr/bin/sudo -E -S -s '" + \
+                                            " ".join(cmd) + "'"))
+                #log_message("Trying to execute: \"" + \
+                #            " ".join(internal_command) + "\"", \
                 #            "verbose", message_level)
-                #print "Trying to execute: \"" + " ".join(internal_command) + "\""
+                #print "Trying to execute: \"" + " ".join(internal_command) + \
+                #       "\""
             elif isinstance(self.command, basestring) :
-                internal_command.append(str("/usr/bin/sudo -E -S -s '" + str(self.command.decode('utf-8')) + "'"))
-                #log_message("Trying to execute: \"" + str(internal_command) + "\"", \
-                #            "verbose", message_level)
+                internal_command.append(str("/usr/bin/sudo -E -S -s " + \
+                                            "'" + \
+                                            str(self.command.decode('utf-8'))+ \
+                                            "'"))
+                #log_message("Trying to execute: \"" + str(internal_command) + \
+                #            "\"", "verbose", message_level)
                 #print "Trying to execute: \"" + str(internal_command) + "\""
             try:
                 (master, slave) = pty.openpty()
@@ -392,7 +434,9 @@ class RunWith(object):
                 raise err
             else:
                 try:
-                    proc = Popen(internal_command, stdin=slave, stdout=slave, stderr=slave, close_fds=True)
+                    proc = Popen(internal_command,
+                                 stdin=slave, stdout=slave, stderr=slave,
+                                 close_fds=True)
                 except Exception, err:
                     logMessage("Error opening process to pty: " + str(err))
                     raise err
@@ -429,13 +473,15 @@ class RunWith(object):
 
                     #output = tmp + output
                     while True :
-                        r,w,e = select.select([master], [], [], 0) # timeout of 0 means "poll"
+                        #####
+                        # timeout of 0 means "poll"
+                        r,w,e = select.select([master], [], [], 0)
                         if r :
                             line = os.read(master, 512)
                             #####
-                            # Warning, uncomment at your own risk - several programs
-                            # print empty lines that will cause this to break and
-                            # the output will be all goofed up.
+                            # Warning, uncomment at your own risk - several
+                            # programs print empty lines that will cause this
+                            # to break and the output will be all goofed up.
                             #if not line :
                             #    break
                             #print output.rstrip()
@@ -454,7 +500,8 @@ class RunWith(object):
             #####
             # UNCOMMENT ONLY WHEN IN DEVELOPMENT AND DEBUGGING OR YOU MAY REVEAL
             # MORE THAN YOU WANT TO IN THE LOGS!!!
-            #log_message("\n\nLeaving runAs with Sudo: \"" + str(output) + "\"\n\n", "debug", message_level)
+            #log_message("\n\nLeaving runAs with Sudo: \"" + str(output) + \
+            #            "\"\n\n", "debug", message_level)
             #print "\n\nLeaving runAs with Sudo: \"" + str(output) + "\"\n\n"
             return output
 
