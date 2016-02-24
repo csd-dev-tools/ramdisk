@@ -1,4 +1,8 @@
 """
+Simple logging mechanism.
+
+Need to convert to using the python "logging" library.
+
 @author Roy Nielsen
 """
 import re
@@ -7,7 +11,7 @@ import inspect
 
 from subprocess import call
 
-def log_message(message="", level="normal", priority="debug", syslog_level=None) :
+def logMessage(message="", level="normal", priority="debug", syslog_level=None) :
     """
     Logs a message to both stdout and to syslog via logger
 
