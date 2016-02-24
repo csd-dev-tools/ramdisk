@@ -48,7 +48,7 @@ class RamDisk(RamDiskTemplate) :
         Constructor
         """
         super(RamDisk, self).__init__(size, mountpoint, message_level)
-        self.version = "0.7.6"
+        self.module_version = '20160224.032043.009191'
 
         #####
         # Calculating the size of ramdisk in 1Mb chunks

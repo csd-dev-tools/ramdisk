@@ -3,7 +3,7 @@ import re
 import sys
 from tempfile import mkdtemp
 
-from run_commands import systemCallRetVal
+from run_commands import RunWith
 from log_message import logMessage
 from commonRamdiskTemplate import RamDiskTemplate
 
@@ -16,7 +16,8 @@ class RamDisk(RamDiskTemplate):
         """
         """
         RamDiskTemplate.__init__(self, size, mountpoint, message_level)
-        self.version = "0.9.4"
+        self.module_version = '20160224.032043.009191'
+
         
     ###########################################################################
 
@@ -140,7 +141,7 @@ class RamDisk(RamDiskTemplate):
 ###############################################################################
 
 
-def detach(device=" ", message_level="normal"):
+def unmount(device=" ", message_level="normal"):
     """
     Eject the ramdisk
 
