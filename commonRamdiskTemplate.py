@@ -132,7 +132,7 @@ class RamDiskTemplate(object):
 
         @author: Roy Nielsen
         """
-        return self.mntpoint
+        return self.mntPoint
 
     ###########################################################################
 

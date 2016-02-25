@@ -46,8 +46,8 @@ class RunWith(object):
     def __init__(self, message_level="normal"):
         self.message_level = message_level
         self.command = None
-        self.stdout = None
-        self.stderr = None
+        self.output = None
+        self.error = None
         self.module_version = '20160224.184019.673753'
         self.returncode = None
         self.printcmd = None
@@ -56,7 +56,8 @@ class RunWith(object):
         validOSs = ["darwin"]
         runningOS = getOsFamily()
         if runningOS not in validOSs:
-            raise OSNotValidForRunWith(str(runningOS) + " is not valid for this class...")
+            raise OSNotValidForRunWith(str(runningOS) + 
+                                       " is not valid for this class...")
 
     def set_command(self, command, myshell=False):
         """
@@ -75,7 +76,7 @@ class RunWith(object):
 
         self.myshell = myshell
 
-    ##############################################################################
+    ############################################################################
 
     def getStdout(self):
         """
@@ -83,9 +84,9 @@ class RunWith(object):
 
         @author: Roy Nielsen
         """
-        return self.stdout
+        return self.output
 
-    ##############################################################################
+    ############################################################################
 
     def getStderr(self):
         """
@@ -93,9 +94,9 @@ class RunWith(object):
 
         @author: Roy Nielsen
         """
-        return self.stderr
+        return self.error
 
-    ##############################################################################
+    ############################################################################
 
     def getReturnCode(self):
         """
@@ -105,7 +106,38 @@ class RunWith(object):
         """
         return self.returncode
 
-    ##############################################################################
+    ############################################################################
+
+    def getNlogReturns(self):
+        """
+        Getter for the retval, reterr & retcode of the last command.
+
+        Will also log the values
+
+        @author: Roy Nielsen
+        """
+        logMessage("Output: " + str(self.output), "verbose", self.message_level)
+        logMessage("Error: " + str(self.error), "verbose", self.message_level)
+        logMessage("Return code: " + str(self.returncode),
+                   "verbose", self.message_level)
+        return self.output, self.error, self.returncode
+
+    ############################################################################
+
+    def getNprintReturns(self):
+        """
+        Getter for the retval, reterr & retcode of the last command.
+
+        Will also print the values
+
+        @author: Roy Nielsen
+        """
+        print "Output: " + str(self.output)
+        print "Error: " + str(self.error)
+        print "Return code: " + str(self.returncode)
+        return self.output, self.error, self.returncode
+
+    ############################################################################
 
     def communicate(self) :
         """
@@ -119,7 +151,7 @@ class RunWith(object):
                 proc = Popen(self.command,
                              stdout=PIPE, stderr=PIPE, shell=self.myshell)
 
-                proc.communicate()
+                self.output, self.error = proc.communicate()
 
             except Exception, err :
                 logMessage("system_call_retval - Unexpected Exception: "  + \
@@ -137,17 +169,15 @@ class RunWith(object):
                 logMessage("Done with command: " + self.printcmd, \
                             "verbose", \
                             self.message_level)
-                self.stdout = proc.stdout
-                self.stderr = proc.stderr
                 self.returncode = proc.returncode
         else :
-            logMessage("Cannot run a command that is empty...", 
+            logMessage("Cannot run a command that is empty...",
                        "normal", self.message_level)
-            self.stdout = None
-            self.stderr = None
+            self.output = None
+            self.error = None
             self.returncode = None
 
-    ##############################################################################
+    ############################################################################
 
     def wait(self) :
         """
@@ -161,6 +191,10 @@ class RunWith(object):
                 proc = Popen(self.command,
                              stdout=PIPE, stderr=PIPE, shell=self.myshell)
                 proc.wait()
+                for line in proc.stdout.readline():
+                    self.output = self.output + line
+                for line in proc.stderr.readline():
+                    self.error = self.error + line
             except Exception, err:
                 logMessage("system_call_retval - Unexpected Exception: "  + \
                            str(err)  + " command: " + self.printcmd, "normal", \
@@ -187,7 +221,7 @@ class RunWith(object):
             self.stderr = None
             self.returncode = None
 
-    ##############################################################################
+    ############################################################################
 
     def killProc(self, proc, timeout) :
         """
@@ -220,7 +254,7 @@ class RunWith(object):
                 timer = threading.Timer(timout_sec, self.kill_proc,
                                         [proc, timeout])
                 timer.start()
-                self.stdout, self.stderr = proc.communicate()
+                self.output, self.error = proc.communicate()
                 timer.cancel()
                 self.returncode = proc.returncode
             except Exception, err:
@@ -371,7 +405,7 @@ class RunWith(object):
                 timeout = end_time - time.time()
             time.sleep(0.1)
 
-    ##############################################################################
+    ############################################################################
 
     def runAsWithSudo(self, user="", password="") :
         """
@@ -565,8 +599,10 @@ class RunThread(threading.Thread) :
                     raise err
                 else :
                     #logMessage("Return values: ", "debug", self.message_level)
-                    #logMessage("retout: " + str(self.retout), "debug", self.message_level)
-                    #logMessage("reterr: " + str(self.reterr), "debug", self.message_level)
+                    #logMessage("retout: " + str(self.retout),
+                    #           "debug", self.message_level)
+                    #logMessage("reterr: " + str(self.reterr),
+                    #           "debug", self.message_level)
                     logMessage("Finished \"run\" of: " + str(self.printcmd), \
                                "normal", self.message_level)
 
@@ -592,7 +628,7 @@ class RunThread(threading.Thread) :
         logMessage("Getting stderr...", "verbose", self.message_level)
         return self.reterr
 
-    ##########################################################################
+##############################################################################
 
 def runMyThreadCommand(cmd=[], message_level="normal") :
     """
