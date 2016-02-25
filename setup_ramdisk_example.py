@@ -4,7 +4,7 @@
 
 """
 from macRamdisk import RamDisk
-from log_message import log_message
+from log_message import logMessage
 from optparse import OptionParser, SUPPRESS_HELP
 
 parser = OptionParser(usage="\n\n%prog [options]\n\n", version="0.7.2")

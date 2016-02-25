@@ -51,11 +51,10 @@ class test_ramdisk(unittest.TestCase):
         self.mnt_pnt_requested = False
 
         # get a ramdisk of appropriate size, with a secure random mountpoint
-        self.my_ramdisk = RamDisk(str(ramdisk_size), \
-                                  self.mnt_pnt_requested, \
+        self.my_ramdisk = RamDisk(str(ramdisk_size),
+                                  self.mnt_pnt_requested,
                                   self.message_level)
-        (self.success, self.mountPoint, self.ramdiskDev) = \
-                                        self.my_ramdisk.getData()
+        (self.success, self.mountPoint, self.ramdiskDev) = self.my_ramdisk.getData()
 
         logMessage("::::::::Ramdisk Mount Point: " + str(self.mountPoint), \
                    "debug", self.message_level)

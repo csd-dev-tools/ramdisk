@@ -26,9 +26,9 @@ import os
 import re
 import sys
 from tempfile import mkdtemp
-from subprocess import Popen, PIPE, STDOUT
+from subprocess import Popen, PIPE
 
-from run_commands import systemCallRetVal
+from run_commands import RunWith
 from log_message import logMessage
 from commonRamdiskTemplate import RamDiskTemplate
 
@@ -49,7 +49,8 @@ class RamDisk(RamDiskTemplate) :
         """
         super(RamDisk, self).__init__(size, mountpoint, message_level)
         self.module_version = '20160224.032043.009191'
-
+        self.message_level = message_level
+        self.runWith = RunWith(self.message_level)
         #####
         # Calculating the size of ramdisk in 1Mb chunks
         self.diskSize = str(int(size) * 1024 * 1024 / 512)
@@ -59,7 +60,7 @@ class RamDisk(RamDiskTemplate) :
         self.diskutil = "/usr/sbin/diskutil"
 
         if mountpoint:
-            logMessage("\n\n\n\tMOUNTPOINT: " + str(mountpoint) + "\n\n\n", \
+            logMessage("\n\n\n\tMOUNTPOINT: " + str(mountpoint) + "\n\n\n",
                        "debug", self.message_level)
             self.mntPoint = mountpoint
         else:
@@ -67,19 +68,22 @@ class RamDisk(RamDiskTemplate) :
 
         self.myRamdiskDev = ""
 
-        success = True
+        success = False
 
         if self.diskSize == 0 :
             success  = False
         if not self.__isMemoryAvailable() :
             success = False
             logMessage("Physical memory not available to create ramdisk.")
+        else:
+            success = True
 
         if success :
 
             if self.volumename :
                 #####
-                # eventually have checking to make sure that directory doesn't already exist.
+                # eventually have checking to make sure that directory
+                # doesn't already exist.
                 logMessage("Attempting to use mount point of: " + \
                            str(mountpoint), "verbose", self.message_level)
                 self.mntPoint = mountpoint
@@ -126,28 +130,62 @@ class RamDisk(RamDiskTemplate) :
         reterr = None
         success = False
         cmd = [self.hdiutil, "attach", "-nomount", "ram://" + self.diskSize]
-        retval, reterr = systemCallRetVal(cmd, self.message_level)
-        logMessage("retval: " + str(retval), "debug", self.message_level)
-        logMessage("reterr: " + str(reterr), "debug", self.message_level)
+        self.runWith.set_command(cmd)
+        self.runWith.communicate()
+        retval, reterr, retcode = self.runWith.getNlogReturns()
+        
         if reterr:
             success = False
-            raise Exception("Error trying to create ramdisk(" + str(reterr).strip() + ")")
+            raise Exception("Error trying to create ramdisk(" + \
+                            str(reterr).strip() + ")")
         else:
             self.myRamdiskDev = retval.strip()
-            logMessage("Device: \"" + str(self.myRamdiskDev) + "\"", "debug", self.message_level)
+            logMessage("Device: \"" + str(self.myRamdiskDev) + "\"",
+                       "debug", self.message_level)
             success = True
-        logMessage("Success: " + str(success) + " in __create", "debug", self.message_level)            
+        logMessage("Success: " + str(success) + " in __create",
+                   "debug", self.message_level)
         return success
-    
+
     ###########################################################################
 
     def getData(self):
         """
         Getter for mount data, and if the mounting of a ramdisk was successful
+
+        Does not print or log the data.
+
+        @author: Roy Nielsen
         """
-        logMessage("Success: " + str(self.success), "debug", self.message_level)
-        logMessage("Mount point: " + str(self.mntPoint), "debug", self.message_level)
-        logMessage("Device: " + str(self.myRamdiskDev), "debug", self.message_level)
+        return (self.success, str(self.mntPoint), str(self.myRamdiskDev))
+
+    ###########################################################################
+
+    def getNlogData(self):
+        """
+        Getter for mount data, and if the mounting of a ramdisk was successful
+
+        Also logs the data.
+
+        @author: Roy Nielsen
+        """
+        logMessage("Success: " + str(self.success), \
+                   "debug", self.message_level)
+        logMessage("Mount point: " + str(self.mntPoint), \
+                   "debug", self.message_level)
+        logMessage("Device: " + str(self.myRamdiskDev), \
+                   "debug", self.message_level)
+        return (self.success, str(self.mntPoint), str(self.myRamdiskDev))
+
+    ###########################################################################
+
+    def getNprintData(self):
+        """
+        Getter for mount data, and if the mounting of a ramdisk was successful
+        """
+        print "Success: " + str(self.success)
+        print "Mount point: " + str(self.mntPoint)
+        print "Device: " + str(self.myRamdiskDev)
         return (self.success, str(self.mntPoint), str(self.myRamdiskDev))
 
     ###########################################################################
@@ -179,7 +217,10 @@ class RamDisk(RamDiskTemplate) :
                 #####
                 # "Mac" unmount (not eject)
                 cmd = [self.diskutil, "unmount", self.myRamdiskDev + "s1"]
-                retval, reterr = systemCallRetVal(cmd, self.message_level)
+                self.runWith.set_command(cmd)
+                self.runWith.communicate()
+                retval, reterr, retcode = self.runWith.getNlogReturns()
+
                 if not reterr:
                     success = True
 
@@ -188,16 +229,20 @@ class RamDisk(RamDiskTemplate) :
                     # remount to self.mntPoint
                     cmd = [self.diskutil, "mount", "-mountPoint",
                            self.mntPoint, self.myRamdiskDev + "s1"]
-                    retval, reterr = systemCallRetVal(cmd, self.message_level)
+                    self.runWith.set_command(cmd)
+                    self.runWith.communicate()
+                    retval, reterr, retcode = self.runWith.getNlogReturns()
+
                     if not reterr:
                         success = True
-            logMessage("*******************************************", "debug", self.message_level)
-            logMessage(r"retval:   " + str(retval).strip(), "debug", self.message_level)
-            logMessage(r"reterr:   " + str(reterr).strip(), "debug", self.message_level)
-            logMessage(r"mntPoint: " + str(self.mntPoint).strip(), "debug", self.message_level)
-            logMessage(r"device:   " + str(self.myRamdiskDev).strip(), "debug", self.message_level)
-            logMessage("*******************************************", "debug", self.message_level)
-            logMessage("Success: " + str(success) + " in __mount", "debug", self.message_level)
+            logMessage("*******************************************",
+                       "debug", self.message_level)
+            self.runWith.getNlogReturns()
+            self.getData()
+            logMessage("*******************************************",
+                       "debug", self.message_level)
+            logMessage("Success: " + str(success) + " in __mount",
+                       "debug", self.message_level)
         return success
 
     ###########################################################################
@@ -209,17 +254,20 @@ class RamDisk(RamDiskTemplate) :
 
         cmd = ["/usr/sbin/diskutil", "disableJournal", "force", myRamdiskDev]
 
-        using "force" doesn't work on a mounted filesystem, without it, the command
-        will work on a mounted file system
+        using "force" doesn't work on a mounted filesystem, without it, the
+        command will work on a mounted file system
 
         @author: Roy Nielsen
         """
         success = False
         cmd = [self.diskutil, "disableJournal", self.myRamdiskDev + "s1"]
-        retval, reterr = systemCallRetVal(cmd, self.message_level)
+        self.runWith.set_command(cmd)
+        self.runWith.communicate()
+        retval, reterr, retcode = self.runWith.getNlogReturns()
         if not reterr:
             success = True
-        logMessage("Success: " + str(success) + " in __remove_journal", "debug", self.message_level)
+        logMessage("Success: " + str(success) + " in __remove_journal",
+                   "debug", self.message_level)
         return success
 
     ###########################################################################
@@ -233,7 +281,8 @@ class RamDisk(RamDiskTemplate) :
         success = False
         if self.eject() :
             success = True
-        logMessage("Success: " + str(success) + " in unmount", "debug", self.message_level)
+        logMessage("Success: " + str(success) + " in unmount",
+                   "debug", self.message_level)
         return success
 
     ###########################################################################
@@ -247,14 +296,17 @@ class RamDisk(RamDiskTemplate) :
         """
         success = False
         cmd = [self.hdiutil, "detach", self.myRamdiskDev]
-        retval, reterr = systemCallRetVal(cmd, self.message_level)
+        self.runWith.set_command(cmd)
+        self.runWith.communicate()
+        retval, reterr, retcode = self.runWith.getNlogReturns()
         if not reterr:
             success = True
-        logMessage("*******************************************", "debug", self.message_level)
-        logMessage("retval: \"" + str(retval).strip() + "\"", "debug", self.message_level)
-        logMessage("reterr: \"" + str(reterr).strip() + "\"", "debug", self.message_level)
-        logMessage("*******************************************", "debug", self.message_level)
-        logMessage("Success: " + str(success) + " in eject", "debug", self.message_level)
+        logMessage("*******************************************",
+                   "debug", self.message_level)
+        self.runWith.getNlogReturns()
+        logMessage("*******************************************",
+                   "debug", self.message_level)
+
         return success
 
     ###########################################################################
@@ -267,14 +319,16 @@ class RamDisk(RamDiskTemplate) :
         """
         success = False
         cmd = ["/sbin/newfs_hfs", "-v", "ramdisk", self.myRamdiskDev]
-        retval, reterr = systemCallRetVal(cmd, self.message_level)
+        self.runWith.set_command(cmd)
+        self.runWith.communicate()
+        retval, reterr, retcode = self.runWith.getNlogReturns()
         if not reterr:
             success = True
-        logMessage("*******************************************", "debug", self.message_level)
-        logMessage("retval: \"" + str(retval).strip() + "\"", "debug", self.message_level)
-        logMessage("reterr: \"" + str(reterr).strip() + "\"", "debug", self.message_level)
-        logMessage("*******************************************", "debug", self.message_level)
-        logMessage("Success: " + str(success) + " in __format", "debug", self.message_level)
+        logMessage("*******************************************",
+                   "debug", self.message_level)
+        self.runWith.getNlogReturns()
+        logMessage("*******************************************",
+                   "debug", self.message_level)
         return success
 
     ###########################################################################
@@ -288,14 +342,16 @@ class RamDisk(RamDiskTemplate) :
         size = int(self.diskSize)/(2*1024)
         cmd = [self.diskutil, "partitionDisk", self.myRamdiskDev, str(1),
                "MBR", "HFS+", "ramdisk", str(size) + "M"]
-        retval, reterr = systemCallRetVal(cmd, self.message_level)
+        self.runWith.set_command(cmd)
+        self.runWith.communicate()
+        retval, reterr, retcode = self.runWith.getNlogReturns()
         if not reterr:
             success = True
-        logMessage("*******************************************", "debug", self.message_level)
-        logMessage("retval: \"\"\"" + str(retval).strip() + "\"\"\"", "debug", self.message_level)
-        logMessage("reterr: \"" + str(reterr).strip() + "\"", "debug", self.message_level)
-        logMessage("*******************************************", "debug", self.message_level)
-        logMessage("Success: " + str(success) + " in __format", "debug", self.message_level)
+        logMessage("*******************************************",
+                   "debug", self.message_level)
+        self.runWith.getNlogReturns()
+        logMessage("*******************************************",
+                   "debug", self.message_level)
         return success
 
     ###########################################################################
@@ -314,53 +370,60 @@ class RamDisk(RamDiskTemplate) :
 
         #print "Memory free = " + str(mem_free)
         success = False
+        found = False
+        almost_size = 0
+        size = 0
         self.free = 0
+        line = ""
+        #####
+        # Set up and run the command
         cmd = ["/usr/bin/top", "-l", "1"]
-        pipe = Popen(cmd, stdout=PIPE, stderr=STDOUT)
-        size = None
-        freeMagnitude = None
 
-        if pipe:
-            while True:
-                myout = pipe.stdout.readline()
+        proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
 
-                if myout == '' and pipe.poll() != None:
-                    break
+        while True:
+            line = proc.stdout.readline().strip()
+            print line
+            #####
+            # Split on spaces
+            line = line.split()
+            #####
+            # Get the last item in the list
+            found = line[-1]
+            almost_size = line[:-1]
+            size = almost_size[-1]
+            
+            found = found.strip()
+            #almost_size = almost_size.strip()
+            size = size.strip()
 
-                line = myout.split()
+            logMessage("size: " + str(size), "normal", self.message_level)
+            logMessage("found: " + str(found), "normal", self.message_level)
 
-                # Get the last item in the list
-                found = line[-1]
-                almost_size = line[:-1]
-                size = almost_size[-1]
+            if re.search("unused", found) or re.search("free", found):
+                break
+        proc.kill()
+        if size:
+            sizeCompile = re.compile("(\d+)(\w+)")
 
-                logMessage("size: " + str(size), "debug", self.message_level)
-                logMessage("found: " + str(found), "debug", self.message_level)
-
-                if re.search("unused", found) or re.search("free", found):
-                    break
-            if size:
-                sizeCompile = re.compile("(\d+)(\w+)")
-
-                split_size = sizeCompile.search(size)
-                freeNumber = split_size.group(1)
-                freeMagnitude = split_size.group(2)
-
-                logMessage("freeNumber: " + str(freeNumber), "debug", self.message_level)
-                logMessage("freeMagnitude: " + str(freeMagnitude), "debug", self.message_level)
-
-                if re.match("^\d+$", freeNumber.strip()):
-                    if re.match("^\w$", freeMagnitude.strip()):
-                        success = True
-                        if freeMagnitude:
-                            if re.search("G", freeMagnitude.strip()):
-                                self.free = 1024 * int(freeNumber)
-                                self.free = str(self.free)
-                            elif re.search("M", freeMagnitude.strip()):
-                                self.free = freeNumber
-                
+            split_size = sizeCompile.search(size)
+            freeNumber = split_size.group(1)
+            freeMagnitude = split_size.group(2)
+            
+            if re.match("^\d+$", freeNumber.strip()):
+                print str(freeMagnitude.strip())
+                if re.match("^\w$", freeMagnitude.strip()):
+                    success = True
+                    if freeMagnitude:
+                        if re.search("G", freeMagnitude.strip()):
+                            self.free = 1024 * int(freeNumber)
+                            self.free = str(self.free)
+                        elif re.search("M", freeMagnitude.strip()):
+                            self.free = freeNumber
+        print str(self.free)
+        print str(success)
         return success
-        
+
     ###########################################################################
 
     def getDevice(self):
@@ -376,14 +439,14 @@ class RamDisk(RamDiskTemplate) :
     def setDevice(self, device=None):
         """
         Setter for the device so it can be ejected.
-        
+
         @author: Roy Nielsen
         """
         if device:
             self.myRamdiskDev = device
         else:
             raise Exception("Problem trying to set the device..")
-            
+
     ###########################################################################
 
     def getVersion(self):
@@ -392,7 +455,7 @@ class RamDisk(RamDiskTemplate) :
 
         @author: Roy Nielsen
         """
-        return self.version
+        return self.module_version
 
 
 ###############################################################################
@@ -401,27 +464,27 @@ class RamDisk(RamDiskTemplate) :
 def detach(device=" ", message_level="normal"):
     """
     Eject the ramdisk
-    Detach (on the mac) is a better solution than unmount and eject 
-    separately.. Besides unmounting the disk, it also stops any processes 
+    Detach (on the mac) is a better solution than unmount and eject
+    separately.. Besides unmounting the disk, it also stops any processes
     related to the mntPoint
 
     @author: Roy Nielsen
     """
     success = False
+    myRunWith = RunWith(message_level)
     if not re.match("^\s*$", device):
         cmd = ["/usr/bin/hdiutil", "detach", device]
-        retval, reterr = systemCallRetVal(cmd, message_level)
+        myRunWith.set_command(cmd)
+        myRunWith.communicate()
+        retval, reterr, retcode = myRunWith.getNlogReturns()
         if not reterr:
             success = True
 
-        logMessage("*******************************************", "debug", message_level)
-        logMessage("retval: " + re.escape(str(retval).strip("\"")), "debug", message_level)
-        logMessage("reterr: " + re.escape(str(reterr).strip("\"")), "debug", message_level)
-        logMessage("*******************************************", "debug", message_level)
-        logMessage("Success: " + str(success) + " in eject", "debug", message_level)
+        logMessage("*******************************************",
+                   "debug", message_level)
+        myRunWith.getNlogReturns()
+        logMessage("*******************************************",
+                   "debug", message_level)
     else:
         raise Exception("Cannot eject a device with an empty name..")
     return success
-
-
-
