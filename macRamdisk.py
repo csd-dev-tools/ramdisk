@@ -69,11 +69,14 @@ class RamDisk(RamDiskTemplate) :
         self.myRamdiskDev = ""
 
         success = False
-
+        
+        #####
+        # Passed in disk size must have a non-default value
         if self.diskSize == 0 :
             success  = False
+        #####
+        # Checking to see if memory is availalbe...
         if not self.__isMemoryAvailable() :
-            success = False
             logMessage("Physical memory not available to create ramdisk.")
         else:
             success = True
@@ -88,22 +91,36 @@ class RamDisk(RamDiskTemplate) :
                            str(mountpoint), "verbose", self.message_level)
                 self.mntPoint = mountpoint
             else :
+                #####
+                # If a mountpoint is not passed in, create a randomized
+                # mount point.
                 logMessage("Attempting to acquire a radomized mount " + \
                            "point. . .", "verbose", self.message_level)
                 if not self.getRandomizedMountpoint() :
                     success = False
 
+            #####
+            # The Mac has a more complicated method of managing ramdisks...
             if success:
+                #####
+                # Attempt to create the ramdisk
                 if not self.__create():
                     success = False
                     logMessage("Create appears to have failed..", \
                                "verbose", self.message_level)
                 else:
+                    #####
+                    # Ramdisk created, try mounting it.
                     if not self.__mount():
                         success = False
                         logMessage("Mount appears to have failed..", \
                                    "verbose", self.message_level)
                     else:
+                        #####
+                        # Filessystem journal will only slow the ramdisk down...
+                        # No need to keep it as when the journal is unmounted
+                        # all memory is de-allocated making it impossible to do
+                        # forensics on the volume.
                         if not self.__remove_journal():
                             success = False
                             logMessage("Remove journal appears to have " + \
@@ -129,11 +146,13 @@ class RamDisk(RamDiskTemplate) :
         retval = None
         reterr = None
         success = False
+        #####
+        # Create the ramdisk and attach it to a device.
         cmd = [self.hdiutil, "attach", "-nomount", "ram://" + self.diskSize]
         self.runWith.set_command(cmd)
         self.runWith.communicate()
         retval, reterr, retcode = self.runWith.getNlogReturns()
-        
+
         if reterr:
             success = False
             raise Exception("Error trying to create ramdisk(" + \
@@ -192,7 +211,7 @@ class RamDisk(RamDiskTemplate) :
 
     def __mount(self) :
         """
-        Mount the disk
+        Mount the disk - for the Mac, just run self.__attach
 
         @author: Roy Nielsen
         """
@@ -209,10 +228,12 @@ class RamDisk(RamDiskTemplate) :
         @author: Roy Nielsen
         """
         success = False
+        #####
+        # Attempt to partition the disk.
         if self.__partition():
             success = True
-
-        # eraseVolume format name device
+            #####
+            # eraseVolume format name device
             if self.mntPoint:
                 #####
                 # "Mac" unmount (not eject)
@@ -290,9 +311,12 @@ class RamDisk(RamDiskTemplate) :
     def eject(self) :
         """
         Eject the ramdisk
+        
         Detach (on the mac) is a better solution than unmount and eject
         separately.. Besides unmounting the disk, it also stops any processes
         related to the mntPoint
+        
+        @author: Roy Nielsen
         """
         success = False
         cmd = [self.hdiutil, "detach", self.myRamdiskDev]
@@ -335,8 +359,9 @@ class RamDisk(RamDiskTemplate) :
 
     def __partition(self) :
         """
-        Not implemented on the Mac
+        Partition the ramdisk (mac specific)
 
+        @author: Roy Nielsen
         """
         success=False
         size = int(self.diskSize)/(2*1024)
@@ -392,7 +417,7 @@ class RamDisk(RamDiskTemplate) :
             found = line[-1]
             almost_size = line[:-1]
             size = almost_size[-1]
-            
+
             found = found.strip()
             #almost_size = almost_size.strip()
             size = size.strip()
@@ -401,20 +426,27 @@ class RamDisk(RamDiskTemplate) :
             logMessage("found: " + str(found), "normal", self.message_level)
 
             if re.search("unused", found) or re.search("free", found):
+                #####
+                # Found the data we wanted, stop the search.
                 break
         proc.kill()
+
+        #####
+        # Find the numerical value and magnitute of the ramdisk
         if size:
             sizeCompile = re.compile("(\d+)(\w+)")
 
             split_size = sizeCompile.search(size)
             freeNumber = split_size.group(1)
             freeMagnitude = split_size.group(2)
-            
+
             if re.match("^\d+$", freeNumber.strip()):
                 print str(freeMagnitude.strip())
                 if re.match("^\w$", freeMagnitude.strip()):
                     success = True
                     if freeMagnitude:
+                        #####
+                        # Calculate the size of the free memory in Megabytes
                         if re.search("G", freeMagnitude.strip()):
                             self.free = 1024 * int(freeNumber)
                             self.free = str(self.free)
@@ -460,6 +492,15 @@ class RamDisk(RamDiskTemplate) :
 
 ###############################################################################
 
+def unmount(device=" ", message_level="normal"):
+    """
+    On the Mac, call detach.
+
+    @author: Roy Nielsen
+    """
+    detach(device, message_level)
+
+###############################################################################
 
 def detach(device=" ", message_level="normal"):
     """
