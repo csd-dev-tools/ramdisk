@@ -25,7 +25,6 @@ Maybe function, method  or other module
 import os
 import re
 import sys
-from tempfile import mkdtemp
 from subprocess import Popen, PIPE
 
 from run_commands import RunWith
@@ -41,6 +40,12 @@ class RamDisk(RamDiskTemplate) :
 
     Size passed in must be passed in as 1Mb chunks
 
+    @param: size - size of the ramdisk to create - must have a value on the Mac
+                   or the creation will fail.
+    @param: mountpoint - where to mount the disk, if left empty, will mount
+                         on locaiton created by tempfile.mkdtemp.
+    @param: message_level - level at which to log.
+
     @author: Roy Nielsen
     """
     def __init__(self, size=0, mountpoint="", message_level="normal") :
@@ -48,7 +53,7 @@ class RamDisk(RamDiskTemplate) :
         Constructor
         """
         super(RamDisk, self).__init__(size, mountpoint, message_level)
-        self.module_version = '20160224.032043.009191'
+        self.module_version = '20160225.125554.540679'
         self.message_level = message_level
         self.runWith = RunWith(self.message_level)
         #####
@@ -69,7 +74,7 @@ class RamDisk(RamDiskTemplate) :
         self.myRamdiskDev = ""
 
         success = False
-        
+
         #####
         # Passed in disk size must have a non-default value
         if self.diskSize == 0 :
@@ -443,7 +448,6 @@ class RamDisk(RamDiskTemplate) :
             if re.match("^\d+$", freeNumber.strip()):
                 print str(freeMagnitude.strip())
                 if re.match("^\w$", freeMagnitude.strip()):
-                    success = True
                     if freeMagnitude:
                         #####
                         # Calculate the size of the free memory in Megabytes
@@ -452,6 +456,8 @@ class RamDisk(RamDiskTemplate) :
                             self.free = str(self.free)
                         elif re.search("M", freeMagnitude.strip()):
                             self.free = freeNumber
+        if self.free > self.diskSize:
+            success = True    
         print str(self.free)
         print str(success)
         return success
