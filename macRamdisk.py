@@ -59,6 +59,7 @@ class RamDisk(RamDiskTemplate) :
         #####
         # Calculating the size of ramdisk in 1Mb chunks
         self.diskSize = str(int(size) * 1024 * 1024 / 512)
+
         self.volumename = mountpoint
 
         self.hdiutil = "/usr/bin/hdiutil"
@@ -369,7 +370,7 @@ class RamDisk(RamDiskTemplate) :
         @author: Roy Nielsen
         """
         success=False
-        size = int(self.diskSize)/(2*1024)
+        size = str(int(self.diskSize)/(2*1024))
         cmd = [self.diskutil, "partitionDisk", self.myRamdiskDev, str(1),
                "MBR", "HFS+", "ramdisk", str(size) + "M"]
         self.runWith.set_command(cmd)
@@ -377,11 +378,11 @@ class RamDisk(RamDiskTemplate) :
         retval, reterr, retcode = self.runWith.getNlogReturns()
         if not reterr:
             success = True
-        logMessage("*******************************************",
-                   "debug", self.message_level)
+        logMessage("*******************************************") # ,
+                   # "debug", self.message_level)
         self.runWith.getNlogReturns()
-        logMessage("*******************************************",
-                   "debug", self.message_level)
+        logMessage("*******************************************") # ,
+                   # "debug", self.message_level)
         return success
 
     ###########################################################################
@@ -413,7 +414,6 @@ class RamDisk(RamDiskTemplate) :
 
         while True:
             line = proc.stdout.readline().strip()
-            print line
             #####
             # Split on spaces
             line = line.split()
@@ -427,8 +427,8 @@ class RamDisk(RamDiskTemplate) :
             #almost_size = almost_size.strip()
             size = size.strip()
 
-            logMessage("size: " + str(size), "normal", self.message_level)
-            logMessage("found: " + str(found), "normal", self.message_level)
+            logMessage("size: " + str(size), "debug", self.message_level)
+            logMessage("found: " + str(found), "debug", self.message_level)
 
             if re.search("unused", found) or re.search("free", found):
                 #####
@@ -446,7 +446,6 @@ class RamDisk(RamDiskTemplate) :
             freeMagnitude = split_size.group(2)
 
             if re.match("^\d+$", freeNumber.strip()):
-                print str(freeMagnitude.strip())
                 if re.match("^\w$", freeMagnitude.strip()):
                     if freeMagnitude:
                         #####
@@ -456,7 +455,9 @@ class RamDisk(RamDiskTemplate) :
                             self.free = str(self.free)
                         elif re.search("M", freeMagnitude.strip()):
                             self.free = freeNumber
-        if self.free > self.diskSize:
+        logMessage("free: " + str(self.free), "verbose", self.message_level)
+        logMessage("Size requested: " + str(self.diskSize), "verbose", self.message_level)
+        if int(self.free) > int(self.diskSize)/(2*1024):
             success = True    
         print str(self.free)
         print str(success)
