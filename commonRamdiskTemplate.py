@@ -14,6 +14,10 @@ class RamDiskTemplate(object):
     def __init__(self, size=0, mountpoint="", message_level="normal"):
         """
         """
+        #####
+        # Version/timestamp is 
+        # <YYYY><MM><DD>.<HH><MM><SS>.<microseconds>
+        # in UTC time
         self.module_version = '20160224.032043.009191'
         self.message_level = message_level
         self.volumename = mountpoint
