@@ -11,8 +11,63 @@ from commonRamdiskTemplate import RamDiskTemplate
 
 class RamDisk(RamDiskTemplate):
     """
+    http://www.cyberciti.biz/tips/what-is-devshm-and-its-practical-usage.html
+    
+    In this example, remount /dev/shm with 8G size as follows:
+
+    # mount -o remount,size=8G /dev/shm
+    
+    To be frank, if you have more than 2GB RAM + multiple Virtual machines,
+    this hack always improves performance. In this example, you will give you
+    tmpfs instance on /disk2/tmpfs which can allocate 5GB RAM/SWAP in 5K inodes
+    and it is only accessible by root:
+    
+    # mount -t tmpfs -o size=5G,nr_inodes=5k,mode=700 tmpfs /disk2/tmpfs
+    
+    Where,
+    
+    -o opt1,opt2 : Pass various options with a -o flag followed by a comma
+                   separated string of options. In this examples, I used the
+                   following options:
+       remount : Attempt to remount an already-mounted filesystem. In this
+                 example, remount the system and increase its size.
+       size=8G or size=5G : Override default maximum size of the
+                           /dev/shm filesystem. he size is given in bytes,
+                           and rounded up to entire pages. The default is half
+                           of the memory. The size parameter also accepts a
+                           suffix % to limit this tmpfs instance to that
+                           percentage of your pysical RAM: the default, when
+                           neither size nor nr_blocks is specified, is
+                           size=50%. In this example it is set to 8GiB or 5GiB.
+                           The tmpfs mount options for sizing ( size,
+                           nr_blocks, and nr_inodes) accept a suffix k, m or
+                           g for Ki, Mi, Gi (binary kilo, mega and giga) and
+                           can be changed on remount.
+       nr_inodes=5k : The maximum number of inodes for this instance. The
+                      default is half of the number of your physical RAM pages,
+                      or (on a machine with highmem) the number of lowmem RAM
+                      pages, whichever is the lower.
+       mode=700 : Set initial permissions of the root directory.
+       tmpfs : Tmpfs is a file system which keeps all files in virtual memory.
+    
+    ---------------------------------------------------------------------------
+    
+    Another link:
+    http://www.jamescoyle.net/how-to/943-create-a-ram-disk-in-linux
+    
+    Exerpt:
+    mount -t [TYPE] -o size=[SIZE],opt2=[opt2],opt3=[opt3] [FSTYPE] [MOUNTPOINT]
+    Substitute the following attirbutes for your own values:
+    
+    [TYPE] is the type of RAM disk to use; either tmpfs or ramfs.
+    [SIZE] is the size to use for the file system. Remember that ramfs does not have a physical limit and is specified as a starting size.
+    [FSTYPE] is the type of RAM disk to use; either tmpfs, ramfs, ext4, etc.
+    Example:
+    
+    mount -t tmpfs -o size=512m tmpfs /mnt/ramdisk
+
     """
-    def __init__(self, size=0, mountpoint="", message_level="normal"):
+    def __init__(self, size=0, mountpoint="", nr_inodes=0, mode=700, message_level="normal"):
         """
         """
         RamDiskTemplate.__init__(self, size, mountpoint, message_level)
