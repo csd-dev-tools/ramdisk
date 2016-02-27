@@ -78,11 +78,12 @@ class RamDisk(RamDiskTemplate) :
 
         #####
         # Passed in disk size must have a non-default value
-        if self.diskSize == 0 :
-            success  = False
+        if size != 0 :
+            success  = True
         #####
         # Checking to see if memory is availalbe...
         if not self.__isMemoryAvailable() :
+            success = False
             logMessage("Physical memory not available to create ramdisk.")
         else:
             success = True
@@ -317,7 +318,7 @@ class RamDisk(RamDiskTemplate) :
     def eject(self) :
         """
         Eject the ramdisk
-        
+
         Detach (on the mac) is a better solution than unmount and eject
         separately.. Besides unmounting the disk, it also stops any processes
         related to the mntPoint
@@ -406,6 +407,8 @@ class RamDisk(RamDiskTemplate) :
         size = 0
         self.free = 0
         line = ""
+        freeMagnitude = None
+
         #####
         # Set up and run the command
         cmd = ["/usr/bin/top", "-l", "1"]
