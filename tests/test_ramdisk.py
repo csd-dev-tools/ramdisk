@@ -27,8 +27,8 @@ class test_ramdisk(unittest.TestCase):
         """
         Initializer
         """
-        #self.message_level = "debug"
-        self.message_level = "normal"
+        self.message_level = "debug"
+        #self.message_level = "normal"
 
         #####
         # setting up to call ctypes to do a filesystem sync
@@ -62,7 +62,7 @@ class test_ramdisk(unittest.TestCase):
                    "debug", self.message_level)
 
         if not self.success:
-            raise IOError
+            raise IOError("Cannot get a ramdisk for some reason. . .")
 
         #####
         # Create a temp location on disk to run benchmark tests against
@@ -133,6 +133,7 @@ class test_ramdisk(unittest.TestCase):
         total_time = 0
         if file_path and file_size:
             self.libc.sync()
+            file_size = file_size * 1024 * 1024
             if os.path.isdir(file_path):
                 tmpfile_path = os.path.join(file_path, "testfile")
             else:
@@ -153,7 +154,11 @@ class test_ramdisk(unittest.TestCase):
                     tmp_buffer = os.urandom(block_size)
                     os.write(tmpfile, str(tmp_buffer))
                     os.fsync(tmpfile)
+                self.libc.sync()
                 os.close(tmpfile)
+                self.libc.sync()
+                os.unlink(tmpfile_path)
+                self.libc.sync()
 
                 # capture end time
                 end_time = datetime.now()
@@ -165,8 +170,6 @@ class test_ramdisk(unittest.TestCase):
                 total_time = 0
             else:
                 total_time = end_time - start_time
-                os.unlink(tmpfile_path)
-                self.libc.sync()
         return total_time
 
     def format_ramdisk(self):
@@ -345,6 +348,7 @@ class test_ramdisk(unittest.TestCase):
         my_fs_array = [oneHundred, twoHundred, fiveHundred, oneGig]
         time.sleep(1)
         for file_size in my_fs_array:
+            logMessage("testfile size: " + str(file_size), "debug", self.message_level)
             #####
             # Create filesystem file and capture the time it takes...
             fs_time = self.mkfile(os.path.join(self.fs_dir, "testfile"), file_size)
@@ -360,7 +364,7 @@ class test_ramdisk(unittest.TestCase):
             speed = fs_time - ram_time
             logMessage("ramdisk: " + str(speed) + " faster...", "debug", self.message_level)
 
-            self.assertTrue(((fs_time - ram_time).days>-1))
+            self.assertTrue((fs_time - ram_time).days>-1)
 
 
     def test_many_small_files_creation(self):
