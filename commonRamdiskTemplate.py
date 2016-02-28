@@ -162,6 +162,30 @@ class RamDiskTemplate(object):
         """
         return self.module_version
 
+    ###########################################################################
+
+    class NotValidForThisOS(Exception):
+        """
+        Meant for being thrown when an action/class being run/instanciated is not
+        applicable for the running operating system.
+    
+        @author: Roy Nielsen
+        """
+        def __init__(self, *args, **kwargs):
+            Exception.__init__(self, *args, **kwargs)
+    
+    ###########################################################################
+
+    class BadRamdiskArguments(Exception):
+        """
+        Meant for being thrown when an invalid values are passed in as arguments
+        to class instanciation or class methods.
+    
+        @author: Roy Nielsen
+        """
+        def __init__(self, *args, **kwargs):
+            Exception.__init__(self, *args, **kwargs)
+
 ###############################################################################
 
 

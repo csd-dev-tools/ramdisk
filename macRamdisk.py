@@ -22,16 +22,17 @@ Maybe function, method  or other module
 @author: Roy Nielsen
 """
 
-import os
 import re
-import sys
 from subprocess import Popen, PIPE
 
 from run_commands import RunWith
 from log_message import logMessage
+from libHelperFunctions import getOsFamily
 from commonRamdiskTemplate import RamDiskTemplate
+from libHelperExceptions import NotValidForThisOS
 
 ###############################################################################
+
 class RamDisk(RamDiskTemplate) :
     """
     Class to manage a ramdisk
@@ -53,9 +54,17 @@ class RamDisk(RamDiskTemplate) :
         Constructor
         """
         super(RamDisk, self).__init__(size, mountpoint, message_level)
+
+        if not getOsFamily() == "darwin":
+            raise NotValidForThisOS("This ramdisk is only viable for a MacOS.")
+
         self.module_version = '20160225.125554.540679'
         self.message_level = message_level
+
+        #####
+        # Initialize the RunWith helper for executing shelled out commands.
         self.runWith = RunWith(self.message_level)
+
         #####
         # Calculating the size of ramdisk in 1Mb chunks
         self.diskSize = str(int(size) * 1024 * 1024 / 512)
@@ -70,7 +79,7 @@ class RamDisk(RamDiskTemplate) :
         #####
         # should take the form of /dev/disk2s1, where disk 2 is the assigned
         # disk and s1 is the slice, or partition number.  While just /dev/disk2
-        # is good for some things, others will need the full path to the 
+        # is good for some things, others will need the full path to the
         # device, such as formatting the disk.
         self.devPartition = ""
 
@@ -90,7 +99,7 @@ class RamDisk(RamDiskTemplate) :
         if success :
 
             #####
-            # If a mountpoint is passed in, use that, otherwise, set up for a 
+            # If a mountpoint is passed in, use that, otherwise, set up for a
             # random mountpoint.
             if mountpoint:
                 logMessage("\n\n\n\tMOUNTPOINT: " + str(mountpoint) + "\n\n\n",

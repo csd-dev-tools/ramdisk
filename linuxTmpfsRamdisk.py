@@ -1,5 +1,6 @@
 import os
 import re
+import pwd
 import sys
 from tempfile import mkdtemp
 
@@ -51,102 +52,179 @@ class RamDisk(RamDiskTemplate):
        tmpfs : Tmpfs is a file system which keeps all files in virtual memory.
     
     ---------------------------------------------------------------------------
-    
+
     Another link:
     http://www.jamescoyle.net/how-to/943-create-a-ram-disk-in-linux
-    
+
     Exerpt:
     mount -t [TYPE] -o size=[SIZE],opt2=[opt2],opt3=[opt3] [FSTYPE] [MOUNTPOINT]
     Substitute the following attirbutes for your own values:
-    
+
     [TYPE] is the type of RAM disk to use; either tmpfs or ramfs.
     [SIZE] is the size to use for the file system. Remember that ramfs does not have a physical limit and is specified as a starting size.
     [FSTYPE] is the type of RAM disk to use; either tmpfs, ramfs, ext4, etc.
     Example:
-    
+
     mount -t tmpfs -o size=512m tmpfs /mnt/ramdisk
 
     """
-    def __init__(self, size=0, mountpoint="", nr_inodes=0, mode=700, message_level="normal"):
+    def __init__(self, size=0, mountpoint="", mode=700, uid=None, gid=None, 
+                 fstype="tmpfs", nr_inodes=None, nr_blocks=None,
+                 message_level="normal"):
         """
         """
+        #####
+        # The passed in size of ramdisk should be in 1Mb chunks
         RamDiskTemplate.__init__(self, size, mountpoint, message_level)
         self.module_version = '20160224.032043.009191'
 
-        
+        if not sys.platform.startswith("linux"):
+            raise self.NotValidForThisOS("This ramdisk is only viable for a Linux.")
+
+        if fstype in ["tmpfs", "ramfs"]:
+            self.fstype = fstype
+        else:
+            raise self.BadRamdiskArguments("Not a valid argument for " + \
+                                           "'fstype'...")
+
+        if isinstance(mode, int):
+            self.mode = mode
+        else:
+            self.mode = 700
+
+        if not isinstance(uid, int):
+            self.uid = os.getuid()
+        else:
+            self.uid = uid
+
+        if not isinstance(gid, int):
+            self.gid = os.getgid()
+        else:
+            self.gid = gid
+
+        if isinstance(nr_inodes, (int, long)):
+            self.nr_inodes = nr_inodes
+
+        if isinstance(nr_blocks, (int, long)):
+            self.nr_blocks = nr_blocks
+
+        #####
+        # Initialize the RunWith helper for executing shelled out commands.
+        self.runWith = RunWith(self.message_level)
+
+
     ###########################################################################
 
-    def __create(self) :
+    def buildCommand(self):
         """
-        Create a ramdisk device
-        
-        Must be over-ridden to provide OS/method specific ramdisk creation
-        
+        Build a command based on the "fstype" passed in.
+
+        For more options on the tmpfs filesystem, check the mount manpage.
+
         @author: Roy Nielsen
         """
-        success = False
-        return success
+        command=None
+        if self.fstype == "ramfs":
+            command = ["/bin/mount", "-t", "ramfs"]
+        elif self.fstype == "tmpfs":
+            options = ["size=" + str(self.diskSize) + "m"]
+            options.append("uid=" + str(self.uid))
+            options.append("gid=" + str(self.gid))
+            options.append("mode=" + str(self.mode))
+            if self.nr_inodes:
+                options.append(self.nr_inodes)
+            if self.nr_blocks:
+                options.append("nr_blocks=" + str(self.nr_blocks))
+
+            command = ["/bin/mount", "-t", "tmpfs", " -o",
+                       ",".join(options), "tmpfs", self.mntPoint]
+
+        return command
 
     ###########################################################################
 
     def __mount(self) :
         """
         Mount the disk
-        
+
         @author: Roy Nielsen
         """
         success = False
+        command = self.buildCommand()
+        self.runWith.set_command(command)
+        self.runWith.communicate()
+        retval, reterr, retcode = self.runWith.getNlogReturns()
         return success
 
-    ###########################################################################
-
-    def __remove_journal(self) :
+    def remount(self, size=0, mountpoint="", mode=700, uid=None, gid=None,
+                nr_inodes=None, nr_blocks=None):
         """
-        Having a journal in ramdisk makes very little sense.  Remove the journal
-        after creating the ramdisk device
-        
-        Must be over-ridden to provide OS/Method specific functionality
-        
+        Use the tmpfs ability to be remounted with different options
+
+        If bad input is given, the previous values will be used.
+
         @author: Roy Nielsen
         """
-        success = False
-        return success
+        #####
+        # Input Validation:
+        #####
+        # tmpfs is the only viable ramdisk that handles remounting ok.
+        # this includes mouting tmpfs with msdos, ext2,3,4, etc.
+        if not self.fstype == "tmpfs":
+            raise self.BadRamdiskArguments("Can only use 'remount' with " + \
+                                           "tmpfs...")
+        if size and isinstance(size, int):
+            self.diskSize = size
+
+        if mountpoint and isinstance(mountpoint, type.string):
+            self.mntPoint = mountpoint
+
+        if mode and isinstance(mode, int):
+            self.mode = mode
+
+        if uid and isinstance(uid, int):
+            self.uid = uid
+
+        if gid and isinstance(gid, int):
+            self.gid = gid
+
+        if nr_inodes and isinstance(nr_inodes, (int, long)):
+            self.nr_inodes = nr_inodes
+
+        if nr_blocks and isinstance(nr_blocks, (int, long)):
+            self.nr_blocks = nr_blocks
+
+        self.buildCommand()
+        self.__mount()
 
     ###########################################################################
 
     def unmount(self) :
         """
-        Unmount the disk - same functionality as __eject on the mac
-        
-        Must be over-ridden to provide OS/Method specific functionality
-        
+        Unmount the disk
+
         @author: Roy Nielsen
         """
         success = False
+
+        command = ["/bin/umount", "/dev/tmpfs"]
+        self.runWith.set_command(command)
+        self.runWith.communicate()
+        retval, reterr, retcode = self.runWith.getNlogReturns()
+        if not reterr:
+            success = True
+
         return success
 
     ###########################################################################
 
-    def _format(self) :
+    def __isMemoryAvailable(self):
         """
-        Format the ramdisk
-        
-        Must be over-ridden to provide OS/Method specific functionality
-        
-        @author: Roy Nielsen
-        """
-        success = False
-        return success
-
-    ###########################################################################
-
-    def __isMemoryAvailable(self) :
-        """
-        Check to make sure there is plenty of memory of the size passed in 
+        Check to make sure there is plenty of memory of the size passed in
         before creating the ramdisk
 
         Must be over-ridden to provide OS/Method specific functionality
-        
+
         @author: Roy Nielsen
         """
         #mem_free = psutil.phymem_usage()[2]
@@ -157,53 +235,42 @@ class RamDisk(RamDiskTemplate):
 
     ###########################################################################
 
-    def getDevice(self):
-        """
-        Getter for the device name the ramdisk is using
-
-        Must be over-ridden to provide OS/Method specific functionality
-        
-        @author: Roy Nielsen
-        """
-        return self.myRamdiskDev
-
-    ###########################################################################
-
-    def setDevice(self, device=None):
-        """
-        Setter for the device so it can be ejected.
-        
-        Must be over-ridden to provide OS/Method specific functionality
-        
-        @author: Roy Nielsen
-        """
-        success = False
-        return success
-            
-    ###########################################################################
-
     def getVersion(self):
         """
         Getter for the version of the ramdisk
 
-        Must be over-ridden to provide OS/Method specific functionality
-        
         @author: Roy Nielsen
         """
-        success = False
-        return success
+        return self.module_version
 
 ###############################################################################
 
-
-def unmount(device=" ", message_level="normal"):
+def detach(message_level="normal"):
     """
-    Eject the ramdisk
+    Mirror for the unmount function...
 
-    Must be over-ridden to provide OS/Method specific functionality
-    
+    @author: Roy Nielsen
+    """
+    success = unmount(message_level)
+    return success
+
+###############################################################################
+
+def unmount(message_level="normal"):
+    """
+    Unmount the ramdisk
+
     @author: Roy Nielsen
     """
     success = False
+
+    runWith = RunWith(message_level)
+    command = ["/bin/umount", "/dev/tmpfs"]
+    runWith.set_command(command)
+    runWith.communicate()
+    retval, reterr, retcode = runWith.getNlogReturns()
+    if not reterr:
+        success = True
+
     return success
 
