@@ -16,7 +16,18 @@ from datetime import datetime
 sys.path.append("../")
 
 from log_message import logMessage
-from macRamdisk import RamDisk, detach
+from libHelperExceptions import NotValidForThisOS
+
+#####
+# Load OS specific Ramdisks
+if sys.platform.startswith("darwin"):
+    #####
+    # For Mac
+    from macRamdisk import RamDisk, detach
+elif sys.platform.startswith("linux"):
+    #####
+    # For Linux
+    from linuxTmpfsRamdisk import RamDisk, detach
 
 class test_ramdisk(unittest.TestCase):
     """
@@ -33,9 +44,13 @@ class test_ramdisk(unittest.TestCase):
         #self.message_level = "debug"
         self.message_level = "normal"
 
+        self.libcPath = None # initial initialization
+
         #####
-        # setting up to call ctypes to do a filesystem sync
-        self.libc = C.CDLL("/usr/lib/libc.dylib")
+        # If we don't have a supported platform, skip this test.
+        if not sys.platform.startswith("darwin") and \
+           not sys.platform.startswith("linux"):
+            unittest.SkipTest("This is not valid on this OS")
 
         self.subdirs = ["two", "three" "one/four"]
 
@@ -71,6 +86,29 @@ class test_ramdisk(unittest.TestCase):
         # Create a temp location on disk to run benchmark tests against
         self.fs_dir = tempfile.mkdtemp()
 
+    def setUp(self):
+        """
+        This method runs before each test run.
+
+        @author: Roy Nielsen
+        """
+        self.libcPath = None # initial initialization
+        #####
+        # setting up to call ctypes to do a filesystem sync
+        if sys.platform.startswith("darwin"):
+            #####
+            # For Mac
+            self.libc = C.CDLL("/usr/lib/libc.dylib")
+        elif sys.platform.startswith("linux"):
+            #####
+            # For Linux
+            self.findLinuxLibC()
+            self.libc = C.CDLL(self.libcPath)
+        else:
+            self.libc = self._pass()
+
+        
+
 ###############################################################################
 ##### Helper Classes
 
@@ -79,6 +117,26 @@ class test_ramdisk(unittest.TestCase):
         Set the logging level to what is passed in.
         """
         self.message_level = msg_lvl
+
+    def findLinuxLibC(self):
+        """
+        Find Linux Libc library...
+
+        @author: Roy Nielsen
+        """
+        possible_paths = ["/lib/x86_64-linux-gnu/libc.so.6",
+                          "/lib/i386-linux-gnu/libc.so.6"]
+        for path in possible_paths:
+
+            if os.path.exists(path):
+                self.libcPath = path
+                break
+
+    def _pass(self):
+        """
+        Filler if a library didn't load properly
+        """
+        pass
 
     def touch(self, fname="", message_level="normal") :
         """
@@ -393,8 +451,6 @@ class test_ramdisk(unittest.TestCase):
         fstime = fsdisk_endtime - fs_starttime
 
         self.assertTrue((fstime - rtime).days > -11)
-        
-      
 
 ###############################################################################
 ##### unittest Tear down
@@ -423,7 +479,7 @@ class test_ramdisk(unittest.TestCase):
         test_time = (test_end_time - self.test_start_time)
 
         logMessage(self.__module__ + " took " + str(test_time) + \
-                  " time to complete...", 
+                  " time to complete...",
                   "normal", self.message_level)
 
 ###############################################################################
