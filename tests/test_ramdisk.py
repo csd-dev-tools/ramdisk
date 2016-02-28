@@ -42,7 +42,7 @@ class test_ramdisk(unittest.TestCase):
         self.test_start_time = datetime.now()
 
         #self.message_level = "debug"
-        self.message_level = "normal"
+        self.message_level = "debug"
 
         self.libcPath = None # initial initialization
 

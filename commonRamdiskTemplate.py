@@ -20,15 +20,17 @@ class RamDiskTemplate(object):
         # in UTC time
         self.module_version = '20160224.032043.009191'
         self.message_level = message_level
-        self.volumename = mountpoint
         self.diskSize = size
         self.success = False
         self.myRamdiskDev = None
-        self.mntPoint = None
+        if not mountpoint:
+            self.getRandomizedMountpoint() 
+        else:
+            self.mntPoint = mountpoint 
 
         logMessage("disk size: " + str(self.diskSize), \
                    "debug", self.message_level)
-        logMessage("volume name: " + str(self.volumename), \
+        logMessage("volume name: " + str(self.mntPoint), \
                    "debug", self.message_level)
 
     ###########################################################################
