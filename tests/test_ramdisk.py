@@ -27,8 +27,11 @@ class test_ramdisk(unittest.TestCase):
         """
         Initializer
         """
-        self.message_level = "debug"
-        #self.message_level = "normal"
+        # Start timer in miliseconds
+        self.test_start_time = datetime.now()
+
+        #self.message_level = "debug"
+        self.message_level = "normal"
 
         #####
         # setting up to call ctypes to do a filesystem sync
@@ -411,5 +414,16 @@ class test_ramdisk(unittest.TestCase):
             raise Exception(r"Cannot eject disk: " + \
                             str(self.ramdiskDev).strip() + \
                             " : mntpnt: " + str(self.my_ramdisk.mntPoint))
+        #####
+        # capture end time
+        test_end_time = datetime.now()
+
+        #####
+        # Calculate and log how long it took...
+        test_time = (test_end_time - self.test_start_time)
+
+        logMessage(self.__module__ + " took " + str(test_time) + \
+                  " time to complete...", 
+                  "normal", self.message_level)
 
 ###############################################################################
