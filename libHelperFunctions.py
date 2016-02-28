@@ -3,7 +3,7 @@ Helper functions, OS agnostic
 
 @author: Roy Nielsen
 """
-
+import sys
 from subprocess import Popen, STDOUT, PIPE
 
 def getOsFamily():
@@ -12,11 +12,8 @@ def getOsFamily():
 
     @author: Roy Nielsen
     """
-    cmd = ["/usr/bin/uname", "-s"]
 
-    output = Popen(cmd, stdout=PIPE, stderr=STDOUT).communicate()[0]
+    operatingsystemfamily = sys.platform
 
-    operatingsystem = output.strip().lower()
-
-    return operatingsystem
+    return operatingsystemfamily
 

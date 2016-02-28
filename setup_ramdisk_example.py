@@ -3,13 +3,27 @@
 @author: Roy Nielsen
 
 """
-from macRamdisk import RamDisk
+import sys
+
 from log_message import logMessage
 from optparse import OptionParser, SUPPRESS_HELP
 
+#####
+# Load OS specific Ramdisks
+if sys.platform.startswith("darwin"):
+    #####
+    # For Mac
+    from macRamdisk import RamDisk, detach
+elif sys.platform.startswith("linux"):
+    #####
+    # For Linux
+    from linuxTmpfsRamdisk import RamDisk, detach
+else:
+    print "'" + str(sys.platform) + "' platform not supported..."
+
 parser = OptionParser(usage="\n\n%prog [options]\n\n", version="0.7.2")
 
-size = 500 # in Megabytes
+size = str(500) # in Megabytes
 parser.add_option("-s", "--size", dest="size",
                   default=str(size),
                   help="Size of ramdisk you want to create in 1 Megabyte blocks")
@@ -35,7 +49,9 @@ if opts.size:
     size = int(opts.size) # in Megabytes
 mntpnt = opts.mntpnt
 
-ramdisk = RamDisk(str(size), mntpnt, message_level)
+ramdisk = RamDisk(str(size), mntpnt, "debug")
+ramdisk.logData()
+ramdisk.printData()
 
 if not ramdisk.success:
     raise Exception("Ramdisk setup failed..")

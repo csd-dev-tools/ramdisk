@@ -11,7 +11,7 @@ from log_message import logMessage
 class RamDiskTemplate(object):
     """
     """
-    def __init__(self, size=0, mountpoint="", message_level="normal"):
+    def __init__(self, size=0, mountpoint=None, message_level="normal"):
         """
         """
         #####
