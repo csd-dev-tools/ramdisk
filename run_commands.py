@@ -53,12 +53,6 @@ class RunWith(object):
         self.printcmd = None
         self.myshell = None
 
-        validOSs = ["darwin"]
-        runningOS = getOsFamily()
-        if runningOS not in validOSs:
-            raise OSNotValidForRunWith(str(runningOS) + 
-                                       " is not valid for this class...")
-
     def set_command(self, command, myshell=False):
         """
         initialize a command to run

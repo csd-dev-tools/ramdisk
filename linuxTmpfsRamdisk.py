@@ -75,7 +75,7 @@ class RamDisk(RamDiskTemplate):
         """
         #####
         # The passed in size of ramdisk should be in 1Mb chunks
-        RamDiskTemplate.__init__(self, size, mountpoint, message_level)
+        RamDiskTemplate.__init__(self, size=0, mountpoint="", message_level="normal")
         self.module_version = '20160224.032043.009191'
 
         if not sys.platform.startswith("linux"):
@@ -83,6 +83,8 @@ class RamDisk(RamDiskTemplate):
 
         if fstype in ["tmpfs", "ramfs"]:
             self.fstype = fstype
+            if fstype == "tmpfs":
+                self.myRamdiskDev = "/dev/tmpfs"
         else:
             raise self.BadRamdiskArguments("Not a valid argument for " + \
                                            "'fstype'...")
@@ -102,15 +104,21 @@ class RamDisk(RamDiskTemplate):
         else:
             self.gid = gid
 
-        if isinstance(nr_inodes, (int, long)):
+        if isinstance(nr_inodes, basestring):
             self.nr_inodes = nr_inodes
+        else:
+            self.nr_inodes = None
 
-        if isinstance(nr_blocks, (int, long)):
+        if isinstance(nr_blocks, basestring):
             self.nr_blocks = nr_blocks
+        else:
+            self.nr_blocks = None
 
         #####
         # Initialize the RunWith helper for executing shelled out commands.
         self.runWith = RunWith(self.message_level)
+
+        self.success = self.__mount()
 
 
     ###########################################################################
@@ -131,10 +139,16 @@ class RamDisk(RamDiskTemplate):
             options.append("uid=" + str(self.uid))
             options.append("gid=" + str(self.gid))
             options.append("mode=" + str(self.mode))
-            if self.nr_inodes:
+            """
+            try:
                 options.append(self.nr_inodes)
-            if self.nr_blocks:
+            except AttributeError:
+                pass
+            try:
                 options.append("nr_blocks=" + str(self.nr_blocks))
+            except AttributeError:
+                pass
+            """
 
             command = ["/bin/mount", "-t", "tmpfs", " -o",
                        ",".join(options), "tmpfs", self.mntPoint]
@@ -154,6 +168,9 @@ class RamDisk(RamDiskTemplate):
         self.runWith.set_command(command)
         self.runWith.communicate()
         retval, reterr, retcode = self.runWith.getNlogReturns()
+        if not reterr:
+            success = True
+        self.runWith.getNlogReturns()
         return success
 
     def remount(self, size=0, mountpoint="", mode=700, uid=None, gid=None,
@@ -193,6 +210,10 @@ class RamDisk(RamDiskTemplate):
 
         if nr_blocks and isinstance(nr_blocks, (int, long)):
             self.nr_blocks = nr_blocks
+
+        #####
+        # Initialize the RunWith helper for executing shelled out commands.
+        self.runWith = RunWith(self.message_level)
 
         self.buildCommand()
         self.__mount()
