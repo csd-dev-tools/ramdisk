@@ -459,9 +459,9 @@ class test_ramdisk(unittest.TestCase):
         """
         disconnect ramdisk
         """
-        if detach(self.ramdiskDev, self.message_level):
+        if self.ramdiskdev.detach():
             logMessage(r"Successfully detached disk: " + \
-                       str(self.ramdiskDev).strip(), \
+                       str(self.mntPoint).strip(), \
                        "verbose", self.message_level)
         else:
             logMessage(r"Couldn't detach disk: " + \
