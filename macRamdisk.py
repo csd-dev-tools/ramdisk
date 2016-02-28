@@ -48,7 +48,7 @@ class RamDisk(RamDiskTemplate) :
 
     @author: Roy Nielsen
     """
-    def __init__(self, size=0, mountpoint="", message_level="normal") :
+    def __init__(self, size=0, mountpoint="", message_level="debug") :
         """
         Constructor
         """
@@ -60,43 +60,45 @@ class RamDisk(RamDiskTemplate) :
         # Calculating the size of ramdisk in 1Mb chunks
         self.diskSize = str(int(size) * 1024 * 1024 / 512)
 
-        self.volumename = mountpoint
-
         self.hdiutil = "/usr/bin/hdiutil"
         self.diskutil = "/usr/sbin/diskutil"
 
-        if mountpoint:
-            logMessage("\n\n\n\tMOUNTPOINT: " + str(mountpoint) + "\n\n\n",
-                       "debug", self.message_level)
-            self.mntPoint = mountpoint
-        else:
-            self.mntPoint = ""
-
+        #####
+        # Just /dev/disk<#>
         self.myRamdiskDev = ""
+
+        #####
+        # should take the form of /dev/disk2s1, where disk 2 is the assigned
+        # disk and s1 is the slice, or partition number.  While just /dev/disk2
+        # is good for some things, others will need the full path to the 
+        # device, such as formatting the disk.
+        self.devPartition = ""
 
         success = False
 
         #####
         # Passed in disk size must have a non-default value
-        if size != 0 :
-            success  = True
+        if self.diskSize == 0 :
+            success  = False
         #####
         # Checking to see if memory is availalbe...
         if not self.__isMemoryAvailable() :
-            success = False
             logMessage("Physical memory not available to create ramdisk.")
         else:
             success = True
 
         if success :
 
-            if self.volumename :
+            #####
+            # If a mountpoint is passed in, use that, otherwise, set up for a 
+            # random mountpoint.
+            if mountpoint:
+                logMessage("\n\n\n\tMOUNTPOINT: " + str(mountpoint) + "\n\n\n",
+                           "debug", self.message_level)
+                self.mntPoint = mountpoint
                 #####
                 # eventually have checking to make sure that directory
-                # doesn't already exist.
-                logMessage("Attempting to use mount point of: " + \
-                           str(mountpoint), "verbose", self.message_level)
-                self.mntPoint = mountpoint
+                # doesn't already exist, and have data in it.
             else :
                 #####
                 # If a mountpoint is not passed in, create a randomized
@@ -315,6 +317,41 @@ class RamDisk(RamDiskTemplate) :
 
     ###########################################################################
 
+    def _unmount(self) :
+        """
+        Unmount in the Mac sense - ie, the device is still accessible.
+
+        @author: Roy Nielsen
+        """
+        success = False
+        cmd = [self.diskutil, "unmount", self.devPartition]
+        self.runWith.set_command(cmd)
+        self.runWith.communicate()
+        retval, reterr, retcode = self.runWith.getNlogReturns()
+        if not reterr:
+            success = True
+        return success
+
+    ###########################################################################
+
+    def _mount(self) :
+        """
+        Mount in the Mac sense - ie, mount an already accessible device to 
+        a mount point.
+
+        @author: Roy Nielsen
+        """
+        success = False
+        cmd = [self.diskutil, "mount", "-mountPoint", self.mntPoint, self.devPartition]
+        self.runWith.set_command(cmd)
+        self.runWith.communicate()
+        retval, reterr, retcode = self.runWith.getNlogReturns()
+        if not reterr:
+            success = True
+        return success
+
+    ###########################################################################
+
     def eject(self) :
         """
         Eject the ramdisk
@@ -349,17 +386,21 @@ class RamDisk(RamDiskTemplate) :
         @author: Roy Nielsen
         """
         success = False
-        cmd = ["/sbin/newfs_hfs", "-v", "ramdisk", self.myRamdiskDev]
+        #####
+        # Unmount (in the mac sense - the device should still be accessible)
+        # Cannot format the drive unless only the device is accessible.
+        success = self._unmount()
+        #####
+        # Format the disk (partition)
+        cmd = ["/sbin/newfs_hfs", "-v", "ramdisk", self.devPartition]
         self.runWith.set_command(cmd)
         self.runWith.communicate()
         retval, reterr, retcode = self.runWith.getNlogReturns()
         if not reterr:
             success = True
-        logMessage("*******************************************",
-                   "debug", self.message_level)
-        self.runWith.getNlogReturns()
-        logMessage("*******************************************",
-                   "debug", self.message_level)
+        #####
+        # Re-mount the disk
+        self._mount()
         return success
 
     ###########################################################################
@@ -379,11 +420,18 @@ class RamDisk(RamDiskTemplate) :
         retval, reterr, retcode = self.runWith.getNlogReturns()
         if not reterr:
             success = True
-        logMessage("*******************************************") # ,
-                   # "debug", self.message_level)
+        if success:
+            #####
+            # Need to get the partition device out of the output to assign to
+            # self.devPartition
+            for line in retval.split("\n"):
+                if re.match("^Initialized (\S+)\s+", line):
+                    linematch = re.match("Initialized\s+(\S+)\s+", line)
+                    self.devPartition = linematch.group(1)
+                    break
+    
         self.runWith.getNlogReturns()
-        logMessage("*******************************************") # ,
-                   # "debug", self.message_level)
+
         return success
 
     ###########################################################################
