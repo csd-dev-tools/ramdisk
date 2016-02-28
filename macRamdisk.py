@@ -48,7 +48,7 @@ class RamDisk(RamDiskTemplate) :
 
     @author: Roy Nielsen
     """
-    def __init__(self, size=0, mountpoint="", message_level="debug") :
+    def __init__(self, size=0, mountpoint="", message_level="normal") :
         """
         Constructor
         """
