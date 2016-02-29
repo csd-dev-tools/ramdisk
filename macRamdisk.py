@@ -326,6 +326,21 @@ class RamDisk(RamDiskTemplate) :
 
     ###########################################################################
 
+    def detach(self) :
+        """
+        Unmount the disk - same functionality as __eject on the mac
+
+        @author: Roy Nielsen
+        """
+        success = False
+        if self.eject() :
+            success = True
+        logMessage("Success: " + str(success) + " in unmount",
+                   "debug", self.message_level)
+        return success
+
+    ###########################################################################
+
     def _unmount(self) :
         """
         Unmount in the Mac sense - ie, the device is still accessible.
