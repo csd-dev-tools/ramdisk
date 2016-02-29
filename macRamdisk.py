@@ -267,7 +267,7 @@ class RamDisk(RamDiskTemplate) :
                     #####
                     # remount to self.mntPoint
                     cmd = [self.diskutil, "mount", "-mountPoint",
-                           self.mntPoint, self.myRamdiskDev + "s1"]
+                           self.mntPoint, self.devPartition]
                     self.runWith.set_command(cmd)
                     self.runWith.communicate()
                     retval, reterr, retcode = self.runWith.getNlogReturns()
