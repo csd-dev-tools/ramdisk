@@ -459,16 +459,16 @@ class test_ramdisk(unittest.TestCase):
         """
         disconnect ramdisk
         """
-        if self.ramdiskdev.detach():
+        if self.my_ramdisk.detach():
             logMessage(r"Successfully detached disk: " + \
-                       str(self.mntPoint).strip(), \
+                       str(self.my_ramdisk.mntPoint).strip(), \
                        "verbose", self.message_level)
         else:
             logMessage(r"Couldn't detach disk: " + \
-                       str(self.ramdiskDev).strip() + " : mntpnt: " + \
-                       str(self.my_ramdisk.mntPoint))
+                       str(self.my_ramdisk.myRamdiskDev).strip() + \
+                       " : mntpnt: " + str(self.my_ramdisk.mntPoint))
             raise Exception(r"Cannot eject disk: " + \
-                            str(self.ramdiskDev).strip() + \
+                            str(self.my_ramdisk.myRamdiskDev).strip() + \
                             " : mntpnt: " + str(self.my_ramdisk.mntPoint))
         #####
         # capture end time
