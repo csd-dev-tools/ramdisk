@@ -21,8 +21,9 @@ Maybe function, method  or other module
 
 @author: Roy Nielsen
 """
-
+import os
 import re
+import shutil
 from subprocess import Popen, PIPE
 
 from run_commands import RunWith
@@ -82,6 +83,11 @@ class RamDisk(RamDiskTemplate) :
         # is good for some things, others will need the full path to the
         # device, such as formatting the disk.
         self.devPartition = ""
+
+        #####
+        # Indicate if the ramdisk is "mounted" in the Mac sense - attached,
+        # but not mounted.
+        self.mounted = False
 
         success = False
 
@@ -235,6 +241,8 @@ class RamDisk(RamDiskTemplate) :
         """
         success = False
         success = self.__attach()
+        if success:
+            self.mounted = True
         return success
 
     ###########################################################################
@@ -307,6 +315,84 @@ class RamDisk(RamDiskTemplate) :
             success = True
         logMessage("Success: " + str(success) + " in __remove_journal",
                    "debug", self.message_level)
+        return success
+
+    ###########################################################################
+
+    def unionOver(self, target="", fstype=None, nosuid=None, noowners=None,
+                        noatime=None, nobrowse=None):
+        """
+        Use unionfs to mount a ramdisk on top of a location already on the
+        filesystem.
+
+        @parameter: target - where to lay the ramdisk on top of, ie the lower
+                             filesystem layer.
+
+        @parameter: nosuid - from the mount manpage: "Do not allow
+                             set-user-identifier bits to take effect.
+
+        @parameter: noowners - From the mount manpage: "Ignore the ownership
+                               field for the entire volume.  This causes all
+                               objects to appear as owned by user ID 99 and
+                               group ID 99.  User ID 99 is interpreted as
+                               the current effective user ID, while group
+                               99 is used directly and translates to "unknown".
+
+        @parameter: noatime - from the mount manpage: "Do not update the file
+                              access time when reading from a file.  This
+                              option is useful on file systems where there are
+                              large numbers of files and performance is more
+                              critical than updating the file access time
+                              (which is rarely ever important).
+
+        @parameter: nobrowse - from the mount manpage: "This option indicates
+                               that the mount point should not be visible via
+                               the GUI (i.e., appear on the Desktop as a
+                               separate volume).
+
+        @author: Roy Nielsen
+        """
+        success = False
+
+        #####
+        # If the ramdisk is mounted, unmount it (not eject...)
+        if self.mounted:
+            self._unmount()
+
+        #####
+        # Create the target directory if it doesn't exist yet...
+        if not os.path.isdir(target):
+            if os.path.isfile(target):
+                shutil.move(target, target + ".bak")
+            os.makedirs(target)
+
+        #####
+        # Put together the command if the base options are given
+        if fstype and self.devPartition:
+            #####
+            # Compile the options
+            options = "union"
+            if nosuid:
+                options = options + ",nosuid"
+            if noowners:
+                options = options + ",noowners"
+            if noatime:
+                options = options + ",noatime"
+            if nobrowse:
+                options = options + ",nobrowse"
+            #####
+            # Put the command together.
+            cmd = ["/sbin/mount", "-t", str(fstype), options,
+                   self.devPartition, target]
+
+            #####
+            # Run the command
+            self.runWith.set_command(cmd)
+            self.runWith.communicate()
+            retval, reterr, retcode = self.runWith.getNlogReturns()
+            if not reterr:
+                success = True
+
         return success
 
     ###########################################################################
