@@ -319,7 +319,7 @@ class RamDisk(RamDiskTemplate) :
 
     ###########################################################################
 
-    def unionOver(self, target="", fstype=None, nosuid=None, noowners=None,
+    def unionOver(self, target="", fstype="hfs", nosuid=None, noowners=True,
                         noatime=None, nobrowse=None):
         """
         Use unionfs to mount a ramdisk on top of a location already on the
@@ -382,7 +382,7 @@ class RamDisk(RamDiskTemplate) :
                 options = options + ",nobrowse"
             #####
             # Put the command together.
-            cmd = ["/sbin/mount", "-t", str(fstype), options,
+            cmd = ["/sbin/mount", "-t", str(fstype), "-o", options,
                    self.devPartition, target]
 
             #####
@@ -536,8 +536,9 @@ class RamDisk(RamDiskTemplate) :
             # self.devPartition
             for line in retval.split("\n"):
                 if re.match("^Initialized (\S+)\s+", line):
-                    linematch = re.match("Initialized\s+(\S+)\s+", line)
-                    self.devPartition = linematch.group(1)
+                    linematch = re.match("Initialized\s+(\S+)", line)
+                    rdevPartition = linematch.group(1)
+                    self.devPartition = re.sub("rdisk", "disk", rdevPartition)
                     break
     
         self.runWith.getNlogReturns()
