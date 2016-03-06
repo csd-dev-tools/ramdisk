@@ -29,7 +29,7 @@ elif sys.platform.startswith("linux"):
     # For Linux
     from linuxTmpfsRamdisk import RamDisk, detach
 
-class test_unionOver(unittest.TestCase):
+class test_ramdisk(unittest.TestCase):
     """
     """
 
@@ -38,7 +38,6 @@ class test_unionOver(unittest.TestCase):
         """
         Initializer
         """
-        unittest.SkipTest("Needs appropriate tests written")
         # Start timer in miliseconds
         self.test_start_time = datetime.now()
 
@@ -60,7 +59,7 @@ class test_unionOver(unittest.TestCase):
         filesystem functionality of what is being tested.
         """
         #Calculate size of ramdisk to make for this unit test.
-        size_in_mb = 512
+        size_in_mb = 1800
         ramdisk_size = size = size_in_mb
         self.mnt_pnt_requested = ""
 
@@ -111,7 +110,7 @@ class test_unionOver(unittest.TestCase):
 
 
 ###############################################################################
-##### Helper Classes
+##### Helper Methods
 
     def setMessageLevel(self, msg_lvl="normal"):
         """
@@ -245,17 +244,213 @@ class test_unionOver(unittest.TestCase):
 
     ##################################
 
-    def test_unionOverFirstTest(self):
+    def test_init(self):
         """
         """
         pass
 
     ##################################
 
-    def test_unionOverSecondTest(self):
+    def test_get_data(self):
         """
         """
         pass
+
+    ##################################
+
+    def test_getRandomizedMountpoint(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_create(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_mount(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_attach(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_remove_journal(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_unmount(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_eject(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_format(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_partition(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_isMemoryAvailable(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_runcmd(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_getDevice(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_setDevice(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_getVersion(self):
+        """
+        """
+        pass
+
+    ##################################
+
+    def test_detach(self):
+        """
+        """
+        pass
+
+###############################################################################
+##### Functional Tests
+
+    ##################################
+
+    def test_files_n_dirs(self):
+        """
+        Should work when files exist in ramdisk.
+        """
+        # Do file setup for this test
+        for subdir in self.subdirs:
+            dirpath = self.mountPoint + "/" + subdir
+            logMessage("DIRPATH: : " + str(dirpath), "debug", self.message_level)
+            self.mkdirs(dirpath)
+            self.touch(dirpath + "/" + "test")
+
+        # Do the tests
+        for subdir in self.subdirs:
+            # CANNOT use os.path.join this way.  os.path.join cannot deal with
+            # absolute directories.  May work with mounting ramdisk in local
+            # relative directories.
+            self.assertTrue(os.path.exists(self.mountPoint + "/" + subdir + "/" +  "test"))
+
+    ##################################
+
+    def test_four_file_sizes(self):
+        """
+        Test file creation of various sizes, ramdisk vs. filesystem
+        """
+        #####
+        # Clean up the ramdisk
+        self.my_ramdisk._format()
+        #####
+        # 100Mb file size
+        oneHundred = 100
+        #####
+        # 100Mb file size
+        twoHundred = 200
+        #####
+        # 500Mb file size
+        fiveHundred = 500
+        #####
+        # 1Gb file size
+        oneGig = 1000
+
+        my_fs_array = [oneHundred, twoHundred, fiveHundred, oneGig]
+        time.sleep(1)
+        for file_size in my_fs_array:
+            logMessage("testfile size: " + str(file_size), "debug", self.message_level)
+            #####
+            # Create filesystem file and capture the time it takes...
+            fs_time = self.mkfile(os.path.join(self.fs_dir, "testfile"), file_size)
+            logMessage("fs_time: " + str(fs_time), "debug", self.message_level)
+            time.sleep(1)
+
+            #####
+            # get the time it takes to create the file in ramdisk...
+            ram_time = self.mkfile(os.path.join(self.mountPoint, "testfile"), file_size)
+            logMessage("ram_time: " + str(ram_time), "debug", self.message_level)
+            time.sleep(1)
+
+            speed = fs_time - ram_time
+            logMessage("ramdisk: " + str(speed) + " faster...", "debug", self.message_level)
+
+            self.assertTrue((fs_time - ram_time).days>-1)
+
+
+    def test_many_small_files_creation(self):
+        """
+        """
+        #####
+        # Clean up the ramdisk
+        self.my_ramdisk._format()
+        #####
+        #
+        ramdisk_starttime = datetime.now()
+        for i in range(1000):
+            self.mkfile(os.path.join(self.mountPoint, "testfile" + str(i)), 1)
+        ramdisk_endtime = datetime.now()
+
+        rtime = ramdisk_endtime - ramdisk_starttime
+
+        fs_starttime = datetime.now()
+        for i in range(1000):
+            self.mkfile(os.path.join(self.fs_dir, "testfile" + str(i)), 1)
+        fsdisk_endtime = datetime.now()
+
+        fstime = fsdisk_endtime - fs_starttime
+
+        self.assertTrue((fstime - rtime).days > -11)
 
 ###############################################################################
 ##### unittest Tear down

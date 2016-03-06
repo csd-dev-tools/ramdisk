@@ -15,6 +15,7 @@ from datetime import datetime
 
 sys.path.append("../")
 
+from libTestHelpers import LibTestHelpers
 from log_message import logMessage
 from libHelperExceptions import NotValidForThisOS
 
@@ -29,7 +30,7 @@ elif sys.platform.startswith("linux"):
     # For Linux
     from linuxTmpfsRamdisk import RamDisk, detach
 
-class test_ramdisk(unittest.TestCase):
+class test_linuxTmpfsRamdisk(unittest.TestCase, LibTestHelpers):
     """
     """
 
@@ -48,9 +49,12 @@ class test_ramdisk(unittest.TestCase):
         self.libcPath = None # initial initialization
 
         #####
+        # Initialize the helper class
+        self.initializeHelper = False
+
+        #####
         # If we don't have a supported platform, skip this test.
-        if not sys.platform.startswith("darwin") and \
-           not sys.platform.startswith("linux"):
+        if not sys.platform.startswith("linux"):
             unittest.SkipTest("This is not valid on this OS")
 
         self.subdirs = ["two", "three" "one/four"]
@@ -93,51 +97,11 @@ class test_ramdisk(unittest.TestCase):
 
         @author: Roy Nielsen
         """
-        self.libcPath = None # initial initialization
-        #####
-        # setting up to call ctypes to do a filesystem sync
-        if sys.platform.startswith("darwin"):
-            #####
-            # For Mac
-            self.libc = C.CDLL("/usr/lib/libc.dylib")
-        elif sys.platform.startswith("linux"):
-            #####
-            # For Linux
-            self.findLinuxLibC()
-            self.libc = C.CDLL(self.libcPath)
-        else:
-            self.libc = self._pass()
+        self._initializeClass(self.initializeHelper)
 
-        
 
 ###############################################################################
 ##### Helper Classes
-
-    def setMessageLevel(self, msg_lvl="normal"):
-        """
-        Set the logging level to what is passed in.
-        """
-        self.message_level = msg_lvl
-
-    def findLinuxLibC(self):
-        """
-        Find Linux Libc library...
-
-        @author: Roy Nielsen
-        """
-        possible_paths = ["/lib/x86_64-linux-gnu/libc.so.6",
-                          "/lib/i386-linux-gnu/libc.so.6"]
-        for path in possible_paths:
-
-            if os.path.exists(path):
-                self.libcPath = path
-                break
-
-    def _pass(self):
-        """
-        Filler if a library didn't load properly
-        """
-        pass
 
     def format_ramdisk(self):
         """
@@ -155,7 +119,7 @@ class test_ramdisk(unittest.TestCase):
 
     ##################################
 
-    def test_linuxTmpfsRamdiskFirstTest(self):
+    def test_linuxTmpfsRamdiskSecondTest(self):
         """
         """
         pass
@@ -206,20 +170,18 @@ class test_ramdisk(unittest.TestCase):
         oneGig = 1000
 
         my_fs_array = [oneHundred, twoHundred, fiveHundred, oneGig]
-        time.sleep(1)
+
         for file_size in my_fs_array:
             logMessage("testfile size: " + str(file_size), "debug", self.message_level)
             #####
             # Create filesystem file and capture the time it takes...
             fs_time = self.mkfile(os.path.join(self.fs_dir, "testfile"), file_size)
             logMessage("fs_time: " + str(fs_time), "debug", self.message_level)
-            time.sleep(1)
 
             #####
             # get the time it takes to create the file in ramdisk...
             ram_time = self.mkfile(os.path.join(self.mountPoint, "testfile"), file_size)
             logMessage("ram_time: " + str(ram_time), "debug", self.message_level)
-            time.sleep(1)
 
             speed = fs_time - ram_time
             logMessage("ramdisk: " + str(speed) + " faster...", "debug", self.message_level)
