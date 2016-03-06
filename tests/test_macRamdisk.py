@@ -29,7 +29,7 @@ elif sys.platform.startswith("linux"):
     # For Linux
     from linuxTmpfsRamdisk import RamDisk, detach
 
-class test_ramdisk(unittest.TestCase):
+class test_macRamdisk(unittest.TestCase):
     """
     """
 

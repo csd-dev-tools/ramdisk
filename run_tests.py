@@ -27,17 +27,17 @@ class BuildAndRunSuite(object):
         """
         """
         if not self.modules:
-            test_list = []    
+            test_list = []
             allfiles = os.listdir(testdir)
             for check_file in allfiles:
                 test_name = str(check_file).split(".")[0]
-                pycfile = os.path.join("./test/", test_name + ".pyc")
+                pycfile = os.path.join("./tests/", test_name + ".pyc")
                 if os.path.exists(pycfile):
                     os.unlink(pycfile)
-                elif re.search(".+\.py$", check_file):
-                    test_list.append(os.path.join("./test/", check_file))
+                elif re.search("test_.+.py$", check_file):
+                    test_list.append(os.path.join("./tests/", check_file))
             print str(test_list)
-            
+
         return test_list
 
     def run_suite(self, modules):
@@ -65,7 +65,7 @@ class BuildAndRunSuite(object):
             test_name_import_path = "." + ".".join([self.test_dir_name, test_name])
             print "test_name_import_path: " + str(test_name_import_path)
             ################################################
-            # Test class needs to be named the same as the 
+            # Test class needs to be named the same as the
             #   filename for this to work.
             # import the file named in "test_name" variable
             test_to_run = __import__(test_name)
@@ -83,7 +83,7 @@ class BuildAndRunSuite(object):
         """
         runner = unittest.TextTestRunner()
         runner.run(self.test_suite)
- 
+
 ###############################################################################
 
 class MyOption(Option):
@@ -109,7 +109,26 @@ class MyOption(Option):
         else:
             Option.take_action(
                 self, action, dest, opt, value, values, parser)
- 
+
+###############################################################################
+
+# Get all of the possible options passed in to OptionParser that are passed
+# in with the -m or --modules flag
+class ModulesOption(Option):
+
+    ACTIONS = Option.ACTIONS + ("extend",)
+    STORE_ACTIONS = Option.STORE_ACTIONS + ("extend",)
+    TYPED_ACTIONS = Option.TYPED_ACTIONS + ("extend",)
+    ALWAYS_TYPED_ACTIONS = Option.ALWAYS_TYPED_ACTIONS + ("extend",)
+
+    def take_action(self, action, dest, opt, value, values, parser):
+        if action == "extend":
+            lvalue = value.split(",")
+            values.ensure_value(dest, []).extend(lvalue)
+        else:
+            Option.take_action(
+                self, action, dest, opt, value, values, parser)
+
 ###############################################################################
 
 def vararg_callback(option, opt_str, value, parser):
@@ -133,7 +152,7 @@ def vararg_callback(option, opt_str, value, parser):
 
     del parser.rargs[:len(value)]
     setattr(parser.values, option.dest, value)
-     
+
 ###############################################################################
 
 if __name__ == "__main__":
@@ -143,14 +162,14 @@ if __name__ == "__main__":
 
 VERSION="0.4.0"
 description = "Generic test runner."
-parser = OptionParser(option_class=MyOption,
+parser = OptionParser(option_class=ModulesOption,
                       usage='usage: %prog [OPTIONS]',
                       version='%s' % (VERSION),
                       description=description)
 
 parser.add_option("-a", "--all-automatable", action="store_true", dest="all",
-                  default=False, help="Run all tests except interactive tests.")    
-                  
+                  default=False, help="Run all tests except interactive tests.")
+
 parser.add_option("-v", "--verbose", action="store_true",
                   dest="verbose", default=False, \
                   help="Print status messages")
@@ -158,7 +177,11 @@ parser.add_option("-v", "--verbose", action="store_true",
 parser.add_option("-d", "--debug", action="store_true", dest="debug",
                   default=False, help="Print debug messages")
 
-parser.add_option('-m', '--modules', action="extend", type="string", 
+#parser.add_option('-m', '--modules', action="extend", type="string",
+  #                dest='modules', help="Use to run a single or " + \
+  #                "multiple unit tests at once.  Use the test name.")
+
+parser.add_option('-m', '--modules', action="extend", type="string",
                   dest='modules', default=[], help="Use to run a single or " + \
                   "multiple unit tests at once.  Use the test name.")
 
@@ -167,12 +190,13 @@ if len(sys.argv) == 1:
 
 options, __ = parser.parse_args()
 
-if all:
+if options.all:
     modules = None
-elif modules:
+elif options.modules:
     modules = options.modules
 
-    
+print "Modules: " + str(modules)
+
 bars = BuildAndRunSuite()
 bars.run_suite(modules)
-    
+

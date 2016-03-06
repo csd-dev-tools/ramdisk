@@ -15,7 +15,7 @@ class RamDiskTemplate(object):
         """
         """
         #####
-        # Version/timestamp is 
+        # Version/timestamp is
         # <YYYY><MM><DD>.<HH><MM><SS>.<microseconds>
         # in UTC time
         self.module_version = '20160224.032043.009191'
@@ -24,9 +24,9 @@ class RamDiskTemplate(object):
         self.success = False
         self.myRamdiskDev = None
         if not mountpoint:
-            self.getRandomizedMountpoint() 
+            self.getRandomizedMountpoint()
         else:
-            self.mntPoint = mountpoint 
+            self.mntPoint = mountpoint
 
         logMessage("disk size: " + str(self.diskSize), \
                    "debug", self.message_level)
@@ -87,7 +87,7 @@ class RamDiskTemplate(object):
             success = True
         logMessage("Success: " + str(success) + " in " + \
                    "__get_randomizedMountpoint: " + str(self.mntPoint), \
-                   "debug", self.message_level)            
+                   "debug", self.message_level)
         return success
 
     ###########################################################################
@@ -170,19 +170,19 @@ class RamDiskTemplate(object):
         """
         Meant for being thrown when an action/class being run/instanciated is not
         applicable for the running operating system.
-    
+
         @author: Roy Nielsen
         """
         def __init__(self, *args, **kwargs):
             Exception.__init__(self, *args, **kwargs)
-    
+
     ###########################################################################
 
     class BadRamdiskArguments(Exception):
         """
         Meant for being thrown when an invalid values are passed in as arguments
         to class instanciation or class methods.
-    
+
         @author: Roy Nielsen
         """
         def __init__(self, *args, **kwargs):
