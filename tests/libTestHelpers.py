@@ -1,12 +1,25 @@
 import os
 import re
 import sys
+import tempfile
+import unittest
 import ctypes as C
 from datetime import datetime
 
 sys.path.append("../")
 
 from log_message import logMessage
+
+#####
+# Load OS specific Ramdisks
+if sys.platform.startswith("darwin"):
+    #####
+    # For Mac
+    from macRamdisk import RamDisk, detach
+elif sys.platform.startswith("linux"):
+    #####
+    # For Linux
+    from linuxTmpfsRamdisk import RamDisk, detach
 
 class LibTestHelpers(object):
     """
@@ -15,13 +28,48 @@ class LibTestHelpers(object):
     @author: Roy Nielsen
     """
 
-    def _initializeClass(self, initialized=None):
+    def _initializeClass(self, initializeHelper=False, testCaseInstance=None):
+    #def _initializeClass(self, initializeHelper=False):
         """
 
         """
-        if not initialized:
+        if not initializeHelper:
+            self.testCaseInstance = testCaseInstance
             self.getLibc()
-            self.initialized = True
+            self.initializeHelper = True
+            self.subdirs = ["two", "three" "one/four"]
+            """
+            Set up a ramdisk and use that random location as a root to test the
+            filesystem functionality of what is being tested.
+            """
+            #Calculate size of ramdisk to make for this unit test.
+            size_in_mb = 1800
+            ramdisk_size = size = size_in_mb
+            self.mnt_pnt_requested = ""
+    
+            self.success = False
+            self.mountPoint = False
+            self.ramdiskDev = False
+            self.mnt_pnt_requested = False
+
+            # get a ramdisk of appropriate size, with a secure random mountpoint
+            self.my_ramdisk = RamDisk(str(ramdisk_size),
+                                      self.mnt_pnt_requested,
+                                      self.message_level)
+            (self.success, self.mountPoint, self.ramdiskDev) = self.my_ramdisk.getData()
+
+            logMessage("::::::::Ramdisk Mount Point: " + str(self.mountPoint), \
+                       "debug", self.message_level)
+            logMessage("::::::::Ramdisk Device     : " + str(self.ramdiskDev), \
+                       "debug", self.message_level)
+
+            if not self.success:
+                raise IOError("Cannot get a ramdisk for some reason. . .")
+
+            #####
+            # Create a temp location on disk to run benchmark tests against
+            self.fs_dir = tempfile.mkdtemp()
+        return self.initializeHelper
 
     ################################################
     ##### Helper Methods
@@ -32,10 +80,12 @@ class LibTestHelpers(object):
         """
         self.message_level = msg_lvl
 
+    ################################################
+
     def getLibc(self):
         """
         """
-        self.libcPath = None # initial initialization
+        self.libcPath = None  # initial initialization
 
         self.osFamily = sys.platform.lower()
 
@@ -49,6 +99,8 @@ class LibTestHelpers(object):
             self.findLinuxLibC()
         else:
             self.libc = self._pass()
+
+        print "OS Family: " + str(self.osFamily)
 
     ################################################
 
@@ -177,4 +229,111 @@ class LibTestHelpers(object):
                 total_time = end_time - start_time
         return total_time
 
-##################################################
+    ################################################
+
+    def _unloadRamdisk(self):
+        """
+        """
+        if self.my_ramdisk.unmount():
+            logMessage(r"Successfully detached disk: " + \
+                       str(self.my_ramdisk.mntPoint).strip(), \
+                       "verbose", self.message_level)
+        else:
+            logMessage(r"Couldn't detach disk: " + \
+                       str(self.my_ramdisk.myRamdiskDev).strip() + \
+                       " : mntpnt: " + str(self.my_ramdisk.mntPoint))
+            raise Exception(r"Cannot eject disk: " + \
+                            str(self.my_ramdisk.myRamdiskDev).strip() + \
+                            " : mntpnt: " + str(self.my_ramdisk.mntPoint))
+
+###############################################################################
+##### Functional Tests
+
+    ##################################
+
+    def test_files_n_dirs(self):
+        """
+        Should work when files exist in ramdisk.
+        """
+        # Do file setup for this test
+        for subdir in self.subdirs:
+            dirpath = self.mountPoint + "/" + subdir
+            logMessage("DIRPATH: : " + str(dirpath), "debug", self.message_level)
+            self.mkdirs(dirpath)
+            self.touch(dirpath + "/" + "test")
+
+        # Do the tests
+        for subdir in self.subdirs:
+            # CANNOT use os.path.join this way.  os.path.join cannot deal with
+            # absolute directories.  May work with mounting ramdisk in local
+            # relative directories.
+            unittest.TestCase.assertTrue(self.testCaseInstance, os.path.exists(self.mountPoint + "/" + subdir + "/" +  "test"), "Problem with ramdisk...")
+
+    ##################################
+
+    def test_four_file_sizes(self):
+        """
+        Test file creation of various sizes, ramdisk vs. filesystem
+        """
+        #####
+        # Clean up the ramdisk
+        self.my_ramdisk._format()
+        #####
+        # 100Mb file size
+        oneHundred = 100
+        #####
+        # 100Mb file size
+        twoHundred = 200
+        #####
+        # 500Mb file size
+        fiveHundred = 500
+        #####
+        # 1Gb file size
+        oneGig = 1000
+
+        my_fs_array = [oneHundred, twoHundred, fiveHundred, oneGig]
+
+        for file_size in my_fs_array:
+            logMessage("testfile size: " + str(file_size), "debug", self.message_level)
+            #####
+            # Create filesystem file and capture the time it takes...
+            fs_time = self.mkfile(os.path.join(self.fs_dir, "testfile"), file_size)
+            logMessage("fs_time: " + str(fs_time), "debug", self.message_level)
+
+            #####
+            # get the time it takes to create the file in ramdisk...
+            ram_time = self.mkfile(os.path.join(self.mountPoint, "testfile"), file_size)
+            logMessage("ram_time: " + str(ram_time), "debug", self.message_level)
+
+            speed = fs_time - ram_time
+            logMessage("ramdisk: " + str(speed) + " faster...", "debug", self.message_level)
+
+            unittest.TestCase.assertTrue(self.testCaseInstance, (fs_time - ram_time).days>-1, "Problem with ramdisk...")
+
+    ##################################
+
+    def test_many_small_files_creation(self):
+        """
+        """
+        #####
+        # Clean up the ramdisk
+        self.my_ramdisk._format()
+        #####
+        #
+        ramdisk_starttime = datetime.now()
+        for i in range(1000):
+            self.mkfile(os.path.join(self.mountPoint, "testfile" + str(i)), 1)
+        ramdisk_endtime = datetime.now()
+
+        rtime = ramdisk_endtime - ramdisk_starttime
+
+        fs_starttime = datetime.now()
+        for i in range(1000):
+            self.mkfile(os.path.join(self.fs_dir, "testfile" + str(i)), 1)
+        fsdisk_endtime = datetime.now()
+
+        fstime = fsdisk_endtime - fs_starttime
+
+        unittest.TestCase.assertTrue(self.testCaseInstance, (fstime - rtime).days > -11, "Problem with ramdisk...")
+
+###############################################################################
