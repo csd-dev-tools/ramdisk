@@ -15,7 +15,7 @@ from datetime import datetime
 
 sys.path.append("../")
 
-from libTestHelpers import LibTestHelpers
+from genericRamdiskTest import GenericRamdiskTest
 from log_message import logMessage
 from libHelperExceptions import NotValidForThisOS
 
@@ -24,13 +24,13 @@ from libHelperExceptions import NotValidForThisOS
 if sys.platform.startswith("darwin"):
     #####
     # For Mac
-    from macRamdisk import RamDisk, detach
+    from macRamdisk import RamDisk, detach, unmount
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
-    from linuxTmpfsRamdisk import RamDisk, detach
+    from linuxTmpfsRamdisk import RamDisk, unmount
 
-class test_macRamdisk(LibTestHelpers, unittest.TestCase):
+class test_macRamdisk(GenericRamdiskTest):
     """
     """
 
@@ -45,17 +45,22 @@ class test_macRamdisk(LibTestHelpers, unittest.TestCase):
         #self.message_level = "debug"
         self.message_level = "debug"
 
-        self.libcPath = None # initial initialization
-
         #####
         # Initialize the helper class
-        self.initializeHelper = False
+        #self.initializeHelper = False
 
         #####
         # If we don't have a supported platform, skip this test.
         if not sys.platform.startswith("darwin") and \
            not sys.platform.startswith("linux"):
             unittest.SkipTest("This is not valid on this OS")
+        GenericRamdiskTest._initializeClass(message_level=self.message_level)
+        #self._initializeClass(self.initializeHelper)
+        #self.mount = self.mountPoint
+        self.libcPath = None # initial initialization
+        #GenericRamdiskTest.getLibc()
+
+    ##################################
 
     def setUp(self):
         """
@@ -63,8 +68,7 @@ class test_macRamdisk(LibTestHelpers, unittest.TestCase):
 
         @author: Roy Nielsen
         """
-        #self._initializeClass(self.initializeHelper, self)
-        self._initializeClass(self.initializeHelper)
+        #self.getLibc()
 
 ###############################################################################
 ##### Method Tests
@@ -90,7 +94,7 @@ class test_macRamdisk(LibTestHelpers, unittest.TestCase):
         """
         disconnect ramdisk
         """
-        self._unloadRamdisk()
+        unmount(self.mount)
         #####
         # capture end time
         test_end_time = datetime.now()

@@ -3,7 +3,7 @@ import re
 import sys
 import tempfile
 import unittest
-import ctypes as C
+import ctypes
 from datetime import datetime
 
 sys.path.append("../")
@@ -19,56 +19,58 @@ if sys.platform.startswith("darwin"):
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
-    from linuxTmpfsRamdisk import RamDisk, detach
+    from linuxTmpfsRamdisk import RamDisk, unmount
 
-class LibTestHelpers(object):
+class GenericRamdiskTest(unittest.TestCase):
     """
     Holds helper methods.  DO NOT create an init
+    
+    Inspiration for using classmethod:
+    http://simeonfranklin.com/testing2.pdf
 
     @author: Roy Nielsen
     """
-
-    def _initializeClass(self, initializeHelper=False, testCaseInstance=None):
-    #def _initializeClass(self, initializeHelper=False):
+    @classmethod
+    def _initializeClass(self, message_level="normal"):
         """
-
         """
-        if not initializeHelper:
-            self.testCaseInstance = testCaseInstance
-            self.getLibc()
-            self.initializeHelper = True
-            self.subdirs = ["two", "three" "one/four"]
-            """
-            Set up a ramdisk and use that random location as a root to test the
-            filesystem functionality of what is being tested.
-            """
-            #Calculate size of ramdisk to make for this unit test.
-            size_in_mb = 1800
-            ramdisk_size = size = size_in_mb
-            self.mnt_pnt_requested = ""
-    
-            self.success = False
-            self.mountPoint = False
-            self.ramdiskDev = False
-            self.mnt_pnt_requested = False
+        self.getLibc(sys.platform.lower())
+        self.initializeHelper = True
+        self.subdirs = ["two", "three" "one/four"]
+        self.message_level = message_level
+        """
+        Set up a ramdisk and use that random location as a root to test the
+        filesystem functionality of what is being tested.
+        """
+        #Calculate size of ramdisk to make for this unit test.
+        size_in_mb = 1800
+        ramdisk_size = size = size_in_mb
+        self.mnt_pnt_requested = ""
 
-            # get a ramdisk of appropriate size, with a secure random mountpoint
-            self.my_ramdisk = RamDisk(str(ramdisk_size),
-                                      self.mnt_pnt_requested,
-                                      self.message_level)
-            (self.success, self.mountPoint, self.ramdiskDev) = self.my_ramdisk.getData()
+        self.success = False
+        self.mountPoint = False
+        self.ramdiskDev = False
+        self.mnt_pnt_requested = False
 
-            logMessage("::::::::Ramdisk Mount Point: " + str(self.mountPoint), \
-                       "debug", self.message_level)
-            logMessage("::::::::Ramdisk Device     : " + str(self.ramdiskDev), \
-                       "debug", self.message_level)
+        # get a ramdisk of appropriate size, with a secure random mountpoint
+        self.my_ramdisk = RamDisk(str(ramdisk_size),
+                                  self.mnt_pnt_requested,
+                                  self.message_level)
+        (self.success, self.mountPoint, self.ramdiskDev) = self.my_ramdisk.getData()
 
-            if not self.success:
-                raise IOError("Cannot get a ramdisk for some reason. . .")
+        self.mount = self.mountPoint
 
-            #####
-            # Create a temp location on disk to run benchmark tests against
-            self.fs_dir = tempfile.mkdtemp()
+        logMessage("::::::::Ramdisk Mount Point: " + str(self.mountPoint), \
+                   "debug", self.message_level)
+        logMessage("::::::::Ramdisk Device     : " + str(self.ramdiskDev), \
+                   "debug", self.message_level)
+
+        if not self.success:
+            raise IOError("Cannot get a ramdisk for some reason. . .")
+
+        #####
+        # Create a temp location on disk to run benchmark tests against
+        self.fs_dir = tempfile.mkdtemp()
         return self.initializeHelper
 
     ################################################
@@ -81,24 +83,43 @@ class LibTestHelpers(object):
         self.message_level = msg_lvl
 
     ################################################
-
-    def getLibc(self):
+    @classmethod
+    def getLibc(self, osfamily=""):
         """
         """
+        print "---==## OS Family: " + str(osfamily) + " #==---"
         self.libcPath = None  # initial initialization
 
-        self.osFamily = sys.platform.lower()
+        self.osFamily = osfamily
 
         if self.osFamily and  self.osFamily.startswith("darwin"):
             #####
             # For Mac
-            self.libc = C.CDLL("/usr/lib/libc.dylib")
-        if self.osFamily and  self.osFamily.startswith("linux"):
+            try:
+                self.libc = ctypes.CDLL("/usr/lib/libc.dylib")
+            except:
+                raise Exception("DAMN IT JIM!!!")
+            else:
+                print "Loading Mac dylib......................................"
+        elif self.osFamily and  self.osFamily.startswith("linux"):
             #####
             # For Linux
-            self.findLinuxLibC()
+            possible_paths = ["/lib/x86_64-linux-gnu/libc.so.6",
+                              "/lib/i386-linux-gnu/libc.so.6"]
+            for path in possible_paths:
+
+                if os.path.exists(path):
+                    self.libcPath = path
+                    self.libc = ctypes.CDLL(self.libcPath)
+                    break
         else:
             self.libc = self._pass()
+
+        try:
+            self.libc.sync()
+            print":::::Syncing..............."
+        except:
+            raise Exception("..............................Cannot Sync.")
 
         print "OS Family: " + str(self.osFamily)
 
@@ -116,11 +137,11 @@ class LibTestHelpers(object):
 
             if os.path.exists(path):
                 self.libcPath = path
-                self.libc = C.CDLL(self.libcPath)
+                self.libc = ctypes.CDLL(self.libcPath)
                 break
 
     ################################################
-
+    @classmethod
     def _pass(self):
         """
         Filler if a library didn't load properly
@@ -186,7 +207,6 @@ class LibTestHelpers(object):
 
         @author: Roy Nielsen
         """
-        self.getLibc()
         total_time = 0
         if file_path and file_size:
             self.libc.sync()
@@ -267,7 +287,7 @@ class LibTestHelpers(object):
             # CANNOT use os.path.join this way.  os.path.join cannot deal with
             # absolute directories.  May work with mounting ramdisk in local
             # relative directories.
-            unittest.TestCase.assertTrue(self.testCaseInstance, os.path.exists(self.mountPoint + "/" + subdir + "/" +  "test"), "Problem with ramdisk...")
+            self.assertTrue(os.path.exists(self.mountPoint + "/" + subdir + "/" +  "test"), "Problem with ramdisk...")
 
     ##################################
 
@@ -308,7 +328,7 @@ class LibTestHelpers(object):
             speed = fs_time - ram_time
             logMessage("ramdisk: " + str(speed) + " faster...", "debug", self.message_level)
 
-            unittest.TestCase.assertTrue(self.testCaseInstance, (fs_time - ram_time).days>-1, "Problem with ramdisk...")
+            self.assertTrue((fs_time - ram_time).days>-1, "Problem with ramdisk...")
 
     ##################################
 
@@ -334,6 +354,6 @@ class LibTestHelpers(object):
 
         fstime = fsdisk_endtime - fs_starttime
 
-        unittest.TestCase.assertTrue(self.testCaseInstance, (fstime - rtime).days > -11, "Problem with ramdisk...")
+        self.assertTrue((fstime - rtime).days > -1, "Problem with ramdisk...")
 
 ###############################################################################
