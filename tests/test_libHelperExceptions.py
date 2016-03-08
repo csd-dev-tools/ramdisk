@@ -29,7 +29,7 @@ elif sys.platform.startswith("linux"):
     # For Linux
     from linuxTmpfsRamdisk import RamDisk, detach
 
-class test_ramdisk(unittest.TestCase):
+class test_libHelperExceptions(unittest.TestCase):
     """
     """
 
@@ -69,7 +69,7 @@ class test_ramdisk(unittest.TestCase):
         else:
             self.libc = self._pass()
 
-        
+
 
 ###############################################################################
 ##### Helper Classes
