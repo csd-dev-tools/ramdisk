@@ -13,20 +13,20 @@ from commonRamdiskTemplate import RamDiskTemplate
 class RamDisk(RamDiskTemplate):
     """
     http://www.cyberciti.biz/tips/what-is-devshm-and-its-practical-usage.html
-    
+
     In this example, remount /dev/shm with 8G size as follows:
 
     # mount -o remount,size=8G /dev/shm
-    
+
     To be frank, if you have more than 2GB RAM + multiple Virtual machines,
     this hack always improves performance. In this example, you will give you
     tmpfs instance on /disk2/tmpfs which can allocate 5GB RAM/SWAP in 5K inodes
     and it is only accessible by root:
-    
+
     # mount -t tmpfs -o size=5G,nr_inodes=5k,mode=700 tmpfs /disk2/tmpfs
-    
+
     Where,
-    
+
     -o opt1,opt2 : Pass various options with a -o flag followed by a comma
                    separated string of options. In this examples, I used the
                    following options:
@@ -50,7 +50,7 @@ class RamDisk(RamDiskTemplate):
                       pages, whichever is the lower.
        mode=700 : Set initial permissions of the root directory.
        tmpfs : Tmpfs is a file system which keeps all files in virtual memory.
-    
+
     ---------------------------------------------------------------------------
 
     Another link:
@@ -68,14 +68,14 @@ class RamDisk(RamDiskTemplate):
     mount -t tmpfs -o size=512m tmpfs /mnt/ramdisk
 
     """
-    def __init__(self, size=0, mountpoint="",  message_level="normal", 
-                 mode=700, uid=None, gid=None, 
+    def __init__(self, size=0, mountpoint="",  message_level="normal",
+                 mode=700, uid=None, gid=None,
                  fstype="tmpfs", nr_inodes=None, nr_blocks=None):
         """
         """
+        super(RamDisk, self).__init__(size, mountpoint, message_level)
         #####
         # The passed in size of ramdisk should be in 1Mb chunks
-        super(RamDisk, self).__init__(size, mountpoint, message_level)
         self.module_version = '20160224.032043.009191'
 
         self.message_level = message_level

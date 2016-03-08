@@ -1,22 +1,14 @@
-#!/usr/bin/python -u
-"""
-
-@author: Roy Nielsen
-"""
-import re
 import os
+import re
 import sys
-import time
-import unittest
 import tempfile
-import ctypes as C
+import unittest
+import ctypes
 from datetime import datetime
-
 
 sys.path.append("../")
 
 from log_message import logMessage
-from libHelperExceptions import NotValidForThisOS
 
 #####
 # Load OS specific Ramdisks
@@ -27,33 +19,25 @@ if sys.platform.startswith("darwin"):
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
-    from linuxTmpfsRamdisk import RamDisk, detach
+    from linuxTmpfsRamdisk import RamDisk, unmount
 
-class test_ramdisk(unittest.TestCase):
+class GenericRamdiskTest(unittest.TestCase):
     """
-    """
+    Holds helper methods.  DO NOT create an init
+    
+    Inspiration for using classmethod:
+    http://simeonfranklin.com/testing2.pdf
 
+    @author: Roy Nielsen
+    """
     @classmethod
-    def setUpClass(self):
+    def _initializeClass(self, message_level="normal"):
         """
-        Initializer
         """
-        # Start timer in miliseconds
-        self.test_start_time = datetime.now()
-
-        #self.message_level = "debug"
-        self.message_level = "debug"
-
-        self.libcPath = None # initial initialization
-
-        #####
-        # If we don't have a supported platform, skip this test.
-        if not sys.platform.startswith("darwin") and \
-           not sys.platform.startswith("linux"):
-            unittest.SkipTest("This is not valid on this OS")
-
+        self.getLibc(sys.platform.lower())
+        self.initializeHelper = True
         self.subdirs = ["two", "three" "one/four"]
-
+        self.message_level = message_level
         """
         Set up a ramdisk and use that random location as a root to test the
         filesystem functionality of what is being tested.
@@ -74,6 +58,8 @@ class test_ramdisk(unittest.TestCase):
                                   self.message_level)
         (self.success, self.mountPoint, self.ramdiskDev) = self.my_ramdisk.getData()
 
+        self.mount = self.mountPoint
+
         logMessage("::::::::Ramdisk Mount Point: " + str(self.mountPoint), \
                    "debug", self.message_level)
         logMessage("::::::::Ramdisk Device     : " + str(self.ramdiskDev), \
@@ -85,38 +71,60 @@ class test_ramdisk(unittest.TestCase):
         #####
         # Create a temp location on disk to run benchmark tests against
         self.fs_dir = tempfile.mkdtemp()
+        return self.initializeHelper
 
-    def setUp(self):
-        """
-        This method runs before each test run.
-
-        @author: Roy Nielsen
-        """
-        self.libcPath = None # initial initialization
-        #####
-        # setting up to call ctypes to do a filesystem sync
-        if sys.platform.startswith("darwin"):
-            #####
-            # For Mac
-            self.libc = C.CDLL("/usr/lib/libc.dylib")
-        elif sys.platform.startswith("linux"):
-            #####
-            # For Linux
-            self.findLinuxLibC()
-            self.libc = C.CDLL(self.libcPath)
-        else:
-            self.libc = self._pass()
-
-        
-
-###############################################################################
-##### Helper Classes
+    ################################################
+    ##### Helper Methods
 
     def setMessageLevel(self, msg_lvl="normal"):
         """
         Set the logging level to what is passed in.
         """
         self.message_level = msg_lvl
+
+    ################################################
+    @classmethod
+    def getLibc(self, osfamily=""):
+        """
+        """
+        print "---==## OS Family: " + str(osfamily) + " #==---"
+        self.libcPath = None  # initial initialization
+
+        self.osFamily = osfamily
+
+        if self.osFamily and  self.osFamily.startswith("darwin"):
+            #####
+            # For Mac
+            try:
+                self.libc = ctypes.CDLL("/usr/lib/libc.dylib")
+            except:
+                raise Exception("DAMN IT JIM!!!")
+            else:
+                print "Loading Mac dylib......................................"
+        elif self.osFamily and  self.osFamily.startswith("linux"):
+            #####
+            # For Linux
+            possible_paths = ["/lib/x86_64-linux-gnu/libc.so.6",
+                              "/lib/i386-linux-gnu/libc.so.6"]
+            for path in possible_paths:
+
+                if os.path.exists(path):
+                    self.libcPath = path
+                    self.libc = ctypes.CDLL(self.libcPath)
+                    print "     Found libc!!!"
+                    break
+        else:
+            self.libc = self._pass()
+
+        try:
+            self.libc.sync()
+            print":::::Syncing..............."
+        except:
+            raise Exception("..............................Cannot Sync.")
+
+        print "OS Family: " + str(self.osFamily)
+
+    ################################################
 
     def findLinuxLibC(self):
         """
@@ -130,19 +138,25 @@ class test_ramdisk(unittest.TestCase):
 
             if os.path.exists(path):
                 self.libcPath = path
+                self.libc = ctypes.CDLL(self.libcPath)
                 break
 
+    ################################################
+    @classmethod
     def _pass(self):
         """
         Filler if a library didn't load properly
         """
         pass
 
+    ################################################
+
     def touch(self, fname="", message_level="normal") :
         """
         Python implementation of the touch command..
 
-        inspiration: http://stackoverflow.com/questions/1158076/implement-touch-using-python
+        inspiration:
+        http://stackoverflow.com/questions/1158076/implement-touch-using-python
 
         @author: Roy Nielsen
         """
@@ -158,6 +172,7 @@ class test_ramdisk(unittest.TestCase):
                 except Exception, err :
                     logMessage("Cannot open to touch: " + str(fname), "normal", self.message_level)
 
+    ################################################
 
     def mkdirs(self, path="") :
         """
@@ -175,9 +190,11 @@ class test_ramdisk(unittest.TestCase):
                 except Exception, err2 :
                     logMessage("Unexpected Exception trying to makedirs: " + str(err2))
 
+    ################################################
+
     def mkfile(self, file_path="", file_size=0, pattern="rand", block_size=512, mode=0o777):
         """
-        Create a file with "file_path" and "file_size".  To be used in 
+        Create a file with "file_path" and "file_size".  To be used in
         file creation benchmarking - filesystem vs ramdisk.
 
         @parameter: file_path - Full path to the file to create
@@ -233,133 +250,22 @@ class test_ramdisk(unittest.TestCase):
                 total_time = end_time - start_time
         return total_time
 
-    def format_ramdisk(self):
-        """
-        Format Ramdisk
-        """
-        self.my_ramdisk._format()
+    ################################################
 
-###############################################################################
-##### Method Tests
-
-    ##################################
-
-    def test_init(self):
+    def _unloadRamdisk(self):
         """
         """
-        pass
-
-    ##################################
-
-    def test_get_data(self):
-        """
-        """
-        pass
-
-    ##################################
-
-    def test_getRandomizedMountpoint(self):
-        """
-        """
-        pass
-
-    ##################################
-
-    def test_create(self):
-        """
-        """
-        pass
-
-    ##################################
-
-    def test_mount(self):
-        """
-        """
-        pass
-
-    ##################################
-
-    def test_attach(self):
-        """
-        """
-        pass
-
-    ##################################
-
-    def test_remove_journal(self):
-        """
-        """
-        pass
-
-    ##################################
-
-    def test_unmount(self):
-        """
-        """
-        pass
-
-    ##################################
-
-    def test_eject(self):
-        """
-        """
-        pass
-
-    ##################################
-
-    def test_format(self):
-        """
-        """
-        pass
-
-    ##################################
-
-    def test_partition(self):
-        """
-        """
-        pass
-
-    ##################################
-
-    def test_isMemoryAvailable(self):
-        """
-        """
-        pass
-
-    ##################################
-
-    def test_runcmd(self):
-        """
-        """
-        pass
-
-    ##################################
-
-    def test_getDevice(self):
-        """
-        """
-        pass
-
-    ##################################
-
-    def test_setDevice(self):
-        """
-        """
-        pass
-
-    ##################################
-
-    def test_getVersion(self):
-        """
-        """
-        pass
-
-    ##################################
-
-    def test_detach(self):
-        """
-        """
-        pass
+        if self.my_ramdisk.unmount():
+            logMessage(r"Successfully detached disk: " + \
+                       str(self.my_ramdisk.mntPoint).strip(), \
+                       "verbose", self.message_level)
+        else:
+            logMessage(r"Couldn't detach disk: " + \
+                       str(self.my_ramdisk.myRamdiskDev).strip() + \
+                       " : mntpnt: " + str(self.my_ramdisk.mntPoint))
+            raise Exception(r"Cannot eject disk: " + \
+                            str(self.my_ramdisk.myRamdiskDev).strip() + \
+                            " : mntpnt: " + str(self.my_ramdisk.mntPoint))
 
 ###############################################################################
 ##### Functional Tests
@@ -382,7 +288,7 @@ class test_ramdisk(unittest.TestCase):
             # CANNOT use os.path.join this way.  os.path.join cannot deal with
             # absolute directories.  May work with mounting ramdisk in local
             # relative directories.
-            self.assertTrue(os.path.exists(self.mountPoint + "/" + subdir + "/" +  "test"))
+            self.assertTrue(os.path.exists(self.mountPoint + "/" + subdir + "/" +  "test"), "Problem with ramdisk...")
 
     ##################################
 
@@ -407,26 +313,25 @@ class test_ramdisk(unittest.TestCase):
         oneGig = 1000
 
         my_fs_array = [oneHundred, twoHundred, fiveHundred, oneGig]
-        time.sleep(1)
+
         for file_size in my_fs_array:
             logMessage("testfile size: " + str(file_size), "debug", self.message_level)
             #####
             # Create filesystem file and capture the time it takes...
             fs_time = self.mkfile(os.path.join(self.fs_dir, "testfile"), file_size)
             logMessage("fs_time: " + str(fs_time), "debug", self.message_level)
-            time.sleep(1)
 
             #####
             # get the time it takes to create the file in ramdisk...
             ram_time = self.mkfile(os.path.join(self.mountPoint, "testfile"), file_size)
             logMessage("ram_time: " + str(ram_time), "debug", self.message_level)
-            time.sleep(1)
 
             speed = fs_time - ram_time
             logMessage("ramdisk: " + str(speed) + " faster...", "debug", self.message_level)
 
-            self.assertTrue((fs_time - ram_time).days>-1)
+            self.assertTrue((fs_time - ram_time).days>-1, "Problem with ramdisk...")
 
+    ##################################
 
     def test_many_small_files_creation(self):
         """
@@ -450,36 +355,6 @@ class test_ramdisk(unittest.TestCase):
 
         fstime = fsdisk_endtime - fs_starttime
 
-        self.assertTrue((fstime - rtime).days > -11)
-
-###############################################################################
-##### unittest Tear down
-    @classmethod
-    def tearDownClass(self):
-        """
-        disconnect ramdisk
-        """
-        if self.my_ramdisk.unmount():
-            logMessage(r"Successfully detached disk: " + \
-                       str(self.my_ramdisk.mntPoint).strip(), \
-                       "verbose", self.message_level)
-        else:
-            logMessage(r"Couldn't detach disk: " + \
-                       str(self.my_ramdisk.myRamdiskDev).strip() + \
-                       " : mntpnt: " + str(self.my_ramdisk.mntPoint))
-            raise Exception(r"Cannot eject disk: " + \
-                            str(self.my_ramdisk.myRamdiskDev).strip() + \
-                            " : mntpnt: " + str(self.my_ramdisk.mntPoint))
-        #####
-        # capture end time
-        test_end_time = datetime.now()
-
-        #####
-        # Calculate and log how long it took...
-        test_time = (test_end_time - self.test_start_time)
-
-        logMessage(self.__module__ + " took " + str(test_time) + \
-                  " time to complete...",
-                  "normal", self.message_level)
+        self.assertTrue((fstime - rtime).days > -1, "Problem with ramdisk...")
 
 ###############################################################################

@@ -29,22 +29,21 @@ elif sys.platform.startswith("linux"):
     # For Linux
     from linuxTmpfsRamdisk import RamDisk, detach
 
-class test_ramdisk(unittest.TestCase):
+class test_commonRamdiskTemplate(unittest.TestCase):
     """
     """
 
     @classmethod
     def setUpClass(self):
         """
-        Initializer
+        Runs once before any tests start
         """
         # Start timer in miliseconds
         self.test_start_time = datetime.now()
 
-        #self.message_level = "debug"
         self.message_level = "debug"
 
-        self.libcPath = None # initial initialization
+    ##################################
 
     def setUp(self):
         """
@@ -52,52 +51,7 @@ class test_ramdisk(unittest.TestCase):
 
         @author: Roy Nielsen
         """
-        self.libcPath = None # initial initialization
-        #####
-        # setting up to call ctypes to do a filesystem sync
-        if sys.platform.startswith("darwin"):
-            #####
-            # For Mac
-            self.libc = C.CDLL("/usr/lib/libc.dylib")
-        elif sys.platform.startswith("linux"):
-            #####
-            # For Linux
-            self.findLinuxLibC()
-            self.libc = C.CDLL(self.libcPath)
-        else:
-            self.libc = self._pass()
-
-        
-
-###############################################################################
-##### Helper Classes
-
-    def setMessageLevel(self, msg_lvl="normal"):
-        """
-        Set the logging level to what is passed in.
-        """
-        self.message_level = msg_lvl
-
-    def findLinuxLibC(self):
-        """
-        Find Linux Libc library...
-
-        @author: Roy Nielsen
-        """
-        possible_paths = ["/lib/x86_64-linux-gnu/libc.so.6",
-                          "/lib/i386-linux-gnu/libc.so.6"]
-        for path in possible_paths:
-
-            if os.path.exists(path):
-                self.libcPath = path
-                break
-
-    def _pass(self):
-        """
-        Filler if a library didn't load properly
-        """
         pass
-
 
 ###############################################################################
 ##### Method Tests
@@ -128,8 +82,9 @@ class test_ramdisk(unittest.TestCase):
     @classmethod
     def tearDownClass(self):
         """
-        disconnect ramdisk
+        Final cleanup actions...
         """
+
         #####
         # capture end time
         test_end_time = datetime.now()
