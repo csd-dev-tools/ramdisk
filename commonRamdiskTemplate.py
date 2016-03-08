@@ -86,7 +86,7 @@ class RamDiskTemplate(object):
         else :
             success = True
         logMessage("Success: " + str(success) + " in " + \
-                   "__get_randomizedMountpoint: " + str(self.mntPoint), \
+                   "__get_randomizedMountpoint: " + str(self.mntPoint),
                    "debug", self.message_level)
         return success
 
