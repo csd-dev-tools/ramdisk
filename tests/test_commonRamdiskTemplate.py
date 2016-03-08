@@ -43,7 +43,7 @@ class test_commonRamdiskTemplate(unittest.TestCase):
 
         self.message_level = "debug"
 
-        super(RamDisk, self).__init__(size, mountpoint, message_level)
+    ##################################
 
     def setUp(self):
         """
@@ -52,7 +52,6 @@ class test_commonRamdiskTemplate(unittest.TestCase):
         @author: Roy Nielsen
         """
         pass
-
 
 ###############################################################################
 ##### Method Tests
@@ -83,19 +82,8 @@ class test_commonRamdiskTemplate(unittest.TestCase):
     @classmethod
     def tearDownClass(self):
         """
-        disconnect ramdisk
+        Final cleanup actions...
         """
-        if  unmount(self.mount):
-            logMessage(r"Successfully detached disk: " + \
-                       str(self.my_ramdisk.mntPoint).strip(), \
-                       "verbose", self.message_level)
-        else:
-            logMessage(r"Couldn't detach disk: " + \
-                       str(self.my_ramdisk.myRamdiskDev).strip() + \
-                       " : mntpnt: " + str(self.my_ramdisk.mntPoint))
-            raise Exception(r"Cannot eject disk: " + \
-                            str(self.my_ramdisk.myRamdiskDev).strip() + \
-                            " : mntpnt: " + str(self.my_ramdisk.mntPoint))
 
         #####
         # capture end time
