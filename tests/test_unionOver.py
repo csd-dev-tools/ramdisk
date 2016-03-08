@@ -17,6 +17,7 @@ sys.path.append("../")
 
 from log_message import logMessage
 from libHelperExceptions import NotValidForThisOS
+from genericRamdiskTest import GenericRamdiskTest
 
 #####
 # Load OS specific Ramdisks
