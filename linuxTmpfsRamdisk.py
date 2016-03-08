@@ -73,9 +73,9 @@ class RamDisk(RamDiskTemplate):
                  fstype="tmpfs", nr_inodes=None, nr_blocks=None):
         """
         """
+        super(RamDisk, self).__init__(size, mountpoint, message_level)
         #####
         # The passed in size of ramdisk should be in 1Mb chunks
-        super(RamDisk, self).__init__(size, mountpoint, message_level)
         self.module_version = '20160224.032043.009191'
 
         self.message_level = message_level

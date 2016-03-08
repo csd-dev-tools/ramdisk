@@ -111,6 +111,7 @@ class GenericRamdiskTest(unittest.TestCase):
                 if os.path.exists(path):
                     self.libcPath = path
                     self.libc = ctypes.CDLL(self.libcPath)
+                    print "     Found libc!!!"
                     break
         else:
             self.libc = self._pass()
