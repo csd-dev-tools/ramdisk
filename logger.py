@@ -13,11 +13,13 @@ https://docs.python.org/2/library/multiprocessing.html?highlight=logging#logging
 @author: Roy Nielsen
 """
 import re
+import sys
 import time
 import socket
 import calendar
 import datetime
 import logging
+import logging.handlers
 
 ###############################################################################
 # Exception setup
@@ -141,6 +143,8 @@ class Logger(object):
 
         @author: Roy Nielsen
         """
+        if not filename:
+            filename = str(sys.argv[0])
         success = False
         rotate = False
         if extension_type in ["none", "epoch", "time", "inc", "sys"]:
