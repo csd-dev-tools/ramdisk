@@ -16,8 +16,7 @@ import termios
 import threading
 from subprocess import Popen, PIPE
 
-from logger import Logger
-from logger import LogPriority as lp
+from loggers import LogPriority as lp
 
 def OSNotValidForRunWith(Exception):
     """
@@ -45,6 +44,7 @@ class RunWith(object):
     @author: Roy Nielsen
     """
     def __init__(self, logger):
+        self.logger = logger
         self.command = None
         self.output = None
         self.error = None
@@ -52,7 +52,6 @@ class RunWith(object):
         self.returncode = None
         self.printcmd = None
         self.myshell = None
-        self.logger = logger
 
     def set_command(self, command, myshell=False):
         """
