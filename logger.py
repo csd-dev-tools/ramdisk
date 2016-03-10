@@ -12,10 +12,15 @@ https://docs.python.org/2/library/multiprocessing.html?highlight=logging#logging
 
 @author: Roy Nielsen
 """
+import re
 import time
+import socket
 import calendar
 import datetime
 import logging
+
+###############################################################################
+# Exception setup
 
 def IllegalExtensionTypeError(Exception):
     """
@@ -23,6 +28,16 @@ def IllegalExtensionTypeError(Exception):
     """
     def __init__(self,*args,**kwargs):
         Exception.__init__(self,*args,**kwargs)
+
+def IllegalLoggingLevelError(Exception):
+    """
+    Custom Exception
+    """
+    def __init__(self,*args,**kwargs):
+        Exception.__init__(self,*args,**kwargs)
+
+###############################################################################
+# Setting up a funciton for a singleton
 
 def singleton(cls):
     """
@@ -35,24 +50,42 @@ def singleton(cls):
         return instances[cls]
     return getinstance
 
+###############################################################################
+# Main class
+
 @singleton
 class Logger(object):
     """
     """
-    def __init__(self, level="DEBUG"):
+    def __init__(self, environment=None, debug_mode=False, verbose_mode=False, level=-1):
         """
         """
-        if self.validateLevel(level):
-            self.lvl = level
+        self.lvl = level
+        if environment:
+            self.environment = environment
+            if re.match("^debug$", self.environment.getdebugmode()):
+                self.lvl = 10
+            elif re.match("^verbose$", self.environment.getdebugmode()):
+                self.lvl = 20
+        elif debug_mode or verbose_mode:
+            if debug_mode:
+                self.lvl = 10
+            elif verbose_mode:
+                self.lvl = 20
+        else:
+            if not int(self.lvl) > 0:
+                self.lvl = 10
+            elif self.validateLevel(level):
+                self.lvl = level
         self.filename = ""
         self.levels = {"NOTSET" : 0, "DEBUG" : 10, "INFO" : 20, "WARNING" : 30,
                        "ERROR" : 40, "CRITICAL" : 50}
-        self.logHanlder = None
-        self.logHandlers = []
+        self.logr = None
+        self.logrs = {"root" : ""}
 
     #############################################
 
-    def setLoggingLevel(self, level=""):
+    def setInitialLoggingLevel(self, level=""):
         """
         """
         success = False
@@ -63,25 +96,27 @@ class Logger(object):
 
     #############################################
 
-    def validateLevel(self, level="NOTSET"):
+    def validateLevel(self, level=-1):
         success = False
-        if level in self.levels:
+        if int(level) > 0 and int(level) <= 60:
             self.lvl = level
             success = True
+        else:
+            raise IllegalLoggingLevelError("Not a valid value for a logging level.")
         return success
 
     #############################################
 
-    def setUpStandardHanlders(self,  filename = "",
-                                     extension_type="inc",
-                                     log_count=10,
-                                     size=10000000,
-                                     syslog=False,
-                                     myconsole=True):
+    def initializeLogs(self,  filename = "",
+                       extension_type="inc",
+                       logCount=10,
+                       size=10000000,
+                       syslog=False,
+                       myconsole=True):
         """
         Sets up some basic logging.  For more configurable logging, use the
         setUpLogger & setUpHandler methods.
-        
+
         @param: filename: Name of the file you would like to log to. String
 
         @param: extension_type: type of extension to use on the filename. String
@@ -98,8 +133,11 @@ class Logger(object):
         @param: syslog : Whether or not to log to syslog. Bool
 
         @param: console: Whether or not to log to the console. Bool
-        
+
         @NOTE: This only sets up the root logger.
+
+        @note: Interface borrowed from Stonix's LogDispatcher.initializeLogs
+               authored by scmcleni, D. Kennel and R. Nielsen
 
         @author: Roy Nielsen
         """
@@ -113,7 +151,7 @@ class Logger(object):
             if extension_type == "epoch":
                 ####
                 # Use a file extension using the time library "since epoch"
-                self.filename = filename + "." + calendar.timegm(time.gmtime())
+                self.filename = filename + "." + str(time.time())
             if extension_type == "time":
                 ####
                 # Use a file extension using the datetime library
@@ -131,6 +169,58 @@ class Logger(object):
             raise IllegalExtensionTypeError("Cannot use this " + \
                                             "configuration: " + \
                                             str(extension_type))
+        #####
+        # Initialize the root logger
+        self.logr = logging.getLogger("")
+
+        #####
+        # Set logging level for the root logger
+        if not rotate:
+            #####
+            # Set up a regular root log handler
+            fileHandler = logging.FileHandler(self.filename)
+            formatter = self.formatLoggingString()
+            fileHandler.setFormatter(formatter)
+        else:
+            #####
+            # Set up the RotatingFileHandler
+            rotHandler = logging.handlers.RotatingFileHandler(self.filename,
+                                                              maxBytes=size,
+                                                              backupCount=logCount)
+            formatter = self.formatLoggingString()
+            rotHandler.setFormatter(formatter)
+
+        if myconsole:
+            #####
+            # Set up StreamHandler to log to the console
+            conHandler = logging.StreamHandler()
+            formatter = self.formatLoggingString()
+            conHandler.setFormatter(formatter)
+        if syslog:
+            #####
+            # Set up the SysLogHandler
+            sysHandler = logging.handlers.SysLogHandler()
+            formatter = self.formatLoggingString()
+            sysHandler.setFormatter(formatter)
+
+        #####
+        # Add applicable handlers to the logger
+        if not rotate:
+            self.logr.addHandler(fileHandler)
+        elif rotate:
+            self.logr.addHandler(rotHandler)
+
+        if myconsole:
+            self.logr.addHandler(conHandler)
+        if syslog:
+            try:
+                self.logr.addHandler(sysHandler)
+            except socket.error:
+                self.log(40, "Syslog not accepting connections!")
+
+        #####
+        # Set the log level
+        self.logr.setLevel(self.lvl)
 
     #############################################
 
@@ -150,18 +240,88 @@ class Logger(object):
     def setUpLogger(self, *args, **kwargs):
         """
         Template/interface for setting up a logger
-        
+
         One may add several handlers to one logger.
-        
+
         @author: Roy Nielsen
         """
         pass
-    
 
     #############################################
 
-    def go(self, lvl=0, msg=""):
+    def formatLoggingString(self):
         """
+        Will set the logging level of the current self.logr.
+
+        @author: Roy Nielsen
         """
-        if int(lvl) > 0 and int(lvl) <= 50:
-             
+        #####
+        # Process via logging level
+        if int(self.lvl) > 0 and int(self.lvl) < 10:
+            # Quiet, no logging, no formatting...
+            formatter = logging.Formatter('')
+        elif int(self.lvl) >= 10 and int(self.lvl) < 20:
+            #####
+            # Debug
+            formatter = logging.Formatter('%(asctime)s %(name)S %(levelname)s'+\
+                                          ' %(module)s %(funcName)s %(lineno)s'+\
+                                          ' %(message)s')
+        elif int(self.lvl) >= 20 and int(self.lvl) < 30:
+            #####
+            # Info
+            formatter = logging.Formatter('%(asctime)s %(levelname)s ' + \
+                                          '%(module)s %(lineno)s %(message)s')
+        elif int(self.lvl) >=30 and int(self.lvl) < 40:
+            #####
+            # Warning
+            formatter = logging.Formatter('%(asctime)s %(levelname)s ' + \
+                                          '%(module)s %(lineno)s %(message)s')
+        elif int(self.lvl) >= 40 and int(self.lvl) < 50:
+            #####
+            # Error
+            formatter = logging.Formatter('%(asctime)s %(levelname)s ' + \
+                                          '%(module)s %(lineno)s %(message)s')
+        elif int(self.lvl) >= 50 and int(self.lvl) < 60:
+            #####
+            # Critical
+            formatter = logging.Formatter('%(asctime)s %(levelname)s ' + \
+                                          '%(module)s %(lineno)s %(message)s')
+        else:
+            formatter = logging.Formatter('')
+            raise IllegalLoggingLevelError("Not a valid value for a logging level.")
+
+        return formatter
+
+    #############################################
+
+    def log(self, priority=0, msg=""):
+        """
+        Interface to work similar to Stonix's LogDispatcher.log
+
+        @note: Stonix's LogDispatcher.log authored by: scmcleni
+
+        @author: Roy Nielsen
+        """
+        pri = str(priority)
+        if re.match("^\d\d$", pri):
+            #####
+            # Process via numerical logging level
+            self.logr.log(int(priority), msg)
+        else:
+            raise IllegalLoggingLevelError("Not a valid value for a logging level.")
+
+###############################################################################
+# Helper class
+
+class LogPriority(object):
+    """
+    Similar to LogPriority in the Stonix project LogDispatcher, only using
+    numbers instead of strings.
+
+    @note: Author of the Stonix LogPriority is scmcleni
+    """
+    DEBUG = 10
+    INFO = 20
+    WARNING = 30
+    ERROR = 40
+    CRITICAL = 50
