@@ -15,7 +15,9 @@ import termios
 import threading
 from subprocess import Popen, PIPE
 
-from log_message import logMessage
+from logger import Logger
+from logger import LogPriority as lp
+
 from libHelperFunctions import getOsFamily
 
 def OSNotValidForRunWith(Exception):
@@ -43,8 +45,7 @@ class RunWith(object):
 
     @author: Roy Nielsen
     """
-    def __init__(self, message_level="normal"):
-        self.message_level = message_level
+    def __init__(self, logger):
         self.command = None
         self.output = None
         self.error = None
@@ -52,6 +53,7 @@ class RunWith(object):
         self.returncode = None
         self.printcmd = None
         self.myshell = None
+        self.logger = logger
 
     def set_command(self, command, myshell=False):
         """
@@ -110,10 +112,9 @@ class RunWith(object):
 
         @author: Roy Nielsen
         """
-        logMessage("Output: " + str(self.output), "verbose", self.message_level)
-        logMessage("Error: " + str(self.error), "verbose", self.message_level)
-        logMessage("Return code: " + str(self.returncode),
-                   "verbose", self.message_level)
+        self.logger(lp.INFO, "Output: " + str(self.output))
+        self.logger(lp.INFO, "Error: " + str(self.error))
+        self.logger(lp.INFO, "Return code: " + str(self.returncode))
         return self.output, self.error, self.returncode
 
     ############################################################################
@@ -148,25 +149,19 @@ class RunWith(object):
                 self.output, self.error = proc.communicate()
 
             except Exception, err :
-                logMessage("system_call_retval - Unexpected Exception: "  + \
-                           str(err)  + " command: " + self.printcmd, "normal", \
-                           self.message_level)
+                self.logger(lp.WARNING, "system_call_retval - Unexpected Exception: "  + \
+                           str(err)  + " command: " + self.printcmd)
                 raise err
             else :
-                logMessage(self.printcmd + \
+                self.logger(lp.DEBUG, self.printcmd + \
                             " Returned with error/returncode: " + \
-                            str(proc.returncode), \
-                            "debug", \
-                            self.message_level)
+                            str(proc.returncode))
                 proc.stdout.close()
             finally:
-                logMessage("Done with command: " + self.printcmd, \
-                            "verbose", \
-                            self.message_level)
+                self.logger(lp.DEBUG, "Done with command: " + self.printcmd)
                 self.returncode = proc.returncode
         else :
-            logMessage("Cannot run a command that is empty...",
-                       "normal", self.message_level)
+            self.logger(lp.WARNING, "Cannot run a command that is empty...")
             self.output = None
             self.error = None
             self.returncode = None
@@ -190,27 +185,21 @@ class RunWith(object):
                 for line in proc.stderr.readline():
                     self.error = self.error + line
             except Exception, err:
-                logMessage("system_call_retval - Unexpected Exception: "  + \
-                           str(err)  + " command: " + self.printcmd, "normal", \
-                           self.message_level)
+                self.logger(lp.WARNING, "system_call_retval - Unexpected Exception: "  + \
+                           str(err)  + " command: " + self.printcmd)
                 raise err
             else :
-                logMessage(self.printcmd + \
+                self.logger(lp.DEBUG, self.printcmd + \
                             " Returned with error/returncode: " + \
-                            str(proc.returncode), \
-                            "debug", \
-                            self.message_level)
+                            str(proc.returncode))
                 proc.stdout.close()
             finally:
-                logMessage("Done with command: " + self.printcmd, \
-                            "verbose", \
-                            self.message_level)
+                self.logger(lp.DEBUG, "Done with command: " + self.printcmd)
                 self.stdout = proc.stdout
                 self.stderr = proc.stderr
                 self.returncode = proc.returncode
         else :
-            logMessage("Cannot run a command that is empty...",
-                       "normal", self.message_level)
+            self.logger(lp.WARNING, "Cannot run a command that is empty...")
             self.stdout = None
             self.stderr = None
             self.returncode = None
@@ -245,31 +234,26 @@ class RunWith(object):
                              stdout=PIPE, stderr=PIPE, shell=self.myshell)
 
                 timeout = {"value" : False}
-                timer = threading.Timer(timout_sec, self.kill_proc,
+                timer = threading.Timer(timout_sec, self.killProc,
                                         [proc, timeout])
                 timer.start()
                 self.output, self.error = proc.communicate()
                 timer.cancel()
                 self.returncode = proc.returncode
             except Exception, err:
-                logMessage("system_call_retval - Unexpected Exception: "  + \
-                           str(err)  + " command: " + self.printcmd, "normal", \
-                           self.message_level)
+                self.logger(lp.WARNING, "system_call_retval - Unexpected " + \
+                            "Exception: "  + str(err)  + \
+                            " command: " + self.printcmd)
                 raise err
             else :
-                logMessage(self.printcmd + \
+                self.logger(lp.DEBUG, self.printcmd + \
                             " Returned with error/returncode: " + \
-                            str(proc.returncode), \
-                            "debug", \
-                            self.message_level)
+                            str(proc.returncode))
                 proc.stdout.close()
             finally:
-                logMessage("Done with command: " + self.printcmd, \
-                            "verbose", \
-                            self.message_level)
+                self.logger(lp.DEBUG, "Done with command: " + self.printcmd)
         else :
-            logMessage("Cannot run a command that is empty...",
-                       "normal", self.message_level)
+            self.logger(lp.WARNING, "Cannot run a command that is empty...")
             self.stdout = None
             self.stderr = None
             self.returncode = None
@@ -289,13 +273,10 @@ class RunWith(object):
         if re.match("^\s*$", user) or \
            re.match("^\s*$", password) or \
            not self.command :
-            logMessage("Cannot pass in empty parameters...",
-                       "normal", self.message_level)
-            logMessage("user = \"" + str(user) + "\"",
-                       "normal", self.message_level)
-            logMessage("check password...", "normal", self.message_level)
-            logMessage("command = \"" + str(self.command) + "\"",
-                       "normal", self.message_level)
+            self.logger(lp.WARNING, "Cannot pass in empty parameters...")
+            self.logger(lp.WARNING, "user = \"" + str(user) + "\"")
+            self.logger(lp.WARNING, "check password...")
+            self.logger(lp.WARNING, "command = \"" + str(self.command) + "\"")
             return(255)
         else :
             output = ""
@@ -409,22 +390,16 @@ class RunWith(object):
 
         @author: Roy Nielsen
         """
-        logMessage("Starting runAsWithSudo: ", "debug", self.message_level)
-        logMessage("\tuser: \"" + str(user) + "\"", "debug", self.message_level)
-        logMessage("\tcmd : \"" + str(self.command) + "\"",
-                   "debug", self.message_level)
-        logMessage("\tmessage_level: \"" + str(self.message_level) + "\"",
-                   "normal", self.message_level)
+        self.logger(lp.DEBUG, "Starting runAsWithSudo: ")
+        self.logger(lp.DEBUG, "\tuser: \"" + str(user) + "\"")
+        self.logger(lp.DEBUG, "\tcmd : \"" + str(self.command) + "\"")
         if re.match("^\s+$", user) or re.match("^\s+$", password) or \
            not user or not password or \
            not self.command :
-            logMessage("Cannot pass in empty parameters...",
-                       "normal", self.message_level)
-            logMessage("user = \"" + str(user) + "\"",
-                       "normal", self.message_level)
-            logMessage("check password...", "normal", self.message_level)
-            logMessage("command = \"" + str(self.command) + "\"",
-                       "normal", self.message_level)
+            self.logger(lp.WARNING, "Cannot pass in empty parameters...")
+            self.logger(lp.WARNING, "user = \"" + str(user) + "\"")
+            self.logger(lp.WARNING, "check password...")
+            self.logger(lp.WARNING, "command = \"" + str(self.command) + "\"")
             return(255)
         else :
             output = ""
@@ -458,7 +433,7 @@ class RunWith(object):
             try:
                 (master, slave) = pty.openpty()
             except Exception, err:
-                logMessage("Error trying to open pty: " + str(err))
+                self.logger(lp.WARNING, "Error trying to open pty: " + str(err))
                 raise err
             else:
                 try:
@@ -466,7 +441,8 @@ class RunWith(object):
                                  stdin=slave, stdout=slave, stderr=slave,
                                  close_fds=True)
                 except Exception, err:
-                    logMessage("Error opening process to pty: " + str(err))
+                    self.logger(lp.WARNING, "Error opening process to pty: " + \
+                                str(err))
                     raise err
                 else:
                     #####
@@ -548,12 +524,12 @@ class RunThread(threading.Thread) :
 
     @author: Roy Nielsen
     """
-    def __init__(self, command=[], message_level="normal") :
+    def __init__(self, command=[], logger=None) :
         """
         Initialization method
         """
         self.command = command
-        self.message_level = message_level
+        self.logger = logger
         self.retout = None
         self.reterr = None
         threading.Thread.__init__(self)
@@ -565,7 +541,7 @@ class RunThread(threading.Thread) :
             self.shell = False
             self.printcmd = self.command
 
-        logMessage("Initialized runThread...", "normal", self.message_level)
+        self.logger(lp.INFO, "Initialized runThread...")
 
     ##########################################################################
 
@@ -576,20 +552,17 @@ class RunThread(threading.Thread) :
                                         stderr=PIPE,
                                         shell=self.shell)
             except Exception, err :
-                logMessage("Exception trying to open: " + str(self.printcmd), \
-                           "normal", self.message_level)
-                logMessage("Associated exception: " + str(err), "normal", \
-                           self.message_level)
+                self.logger(lp.WARNING, "Exception trying to open: " + \
+                            str(self.printcmd))
+                self.logger(lp.WARNING, "Associated exception: " + str(err))
                 raise err
             else :
                 try:
                     self.retout, self.reterr = p.communicate()
                 except Exception, err :
-                    logMessage("Exception trying to open: " + \
-                               str(self.printcmd), "normal", \
-                               self.message_level)
-                    logMessage("Associated exception: " + str(err), "normal", \
-                               self.message_level)
+                    self.logger(lp.WARNING, "Exception trying to open: " + \
+                               str(self.printcmd))
+                    self.logger(lp.WARNING, "Associated exception: " + str(err))
                     raise err
                 else :
                     #logMessage("Return values: ", "debug", self.message_level)
@@ -597,8 +570,8 @@ class RunThread(threading.Thread) :
                     #           "debug", self.message_level)
                     #logMessage("reterr: " + str(self.reterr),
                     #           "debug", self.message_level)
-                    logMessage("Finished \"run\" of: " + str(self.printcmd), \
-                               "normal", self.message_level)
+                    self.logger(lp.WARNING, "Finished \"run\" of: " + \
+                                str(self.printcmd))
 
     ##########################################################################
 
@@ -608,7 +581,7 @@ class RunThread(threading.Thread) :
 
         @author: Roy Nielsen
         """
-        logMessage("Getting stdout...", "verbose", self.message_level)
+        self.logger(lp.INFO, "Getting stdout...")
         return self.retout
 
     ##########################################################################
@@ -619,12 +592,12 @@ class RunThread(threading.Thread) :
 
         @author: Roy Nielsen
         """
-        logMessage("Getting stderr...", "verbose", self.message_level)
+        self.logger(lp.DEBUG, "Getting stderr...")
         return self.reterr
 
 ##############################################################################
 
-def runMyThreadCommand(cmd=[], message_level="normal") :
+def runMyThreadCommand(cmd=[], logger=None) :
     """
     Use the RunThread class to get the stdout and stderr of a command
 
@@ -632,15 +605,14 @@ def runMyThreadCommand(cmd=[], message_level="normal") :
     """
     retval = None
     reterr = None
-
-    if cmd and message_level :
-        run_thread = RunThread(cmd, message_level)
+    if cmd and logger :
+        run_thread = RunThread(cmd, logger)
         run_thread.start()
         run_thread.join()
         retval = run_thread.getStdout()
         reterr = run_thread.getStderr()
     else :
-        logMessage("Invalid parameters, please report this as a bug.")
+        logger(lp.INFO, "Invalid parameters, please report this as a bug.")
 
     return retval, reterr
 
