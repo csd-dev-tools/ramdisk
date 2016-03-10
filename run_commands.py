@@ -8,6 +8,7 @@ Inspiration for some of the below found on the internet.
 import os
 import re
 import pty
+import sys
 import time
 import types
 import select
@@ -17,8 +18,6 @@ from subprocess import Popen, PIPE
 
 from logger import Logger
 from logger import LogPriority as lp
-
-from libHelperFunctions import getOsFamily
 
 def OSNotValidForRunWith(Exception):
     """
