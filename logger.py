@@ -144,7 +144,7 @@ class Logger(object):
         @author: Roy Nielsen
         """
         if not filename:
-            filename = str(sys.argv[0])
+            filename = str(__name__)
         success = False
         rotate = False
         if extension_type in ["none", "epoch", "time", "inc", "sys"]:
@@ -267,7 +267,7 @@ class Logger(object):
         elif int(self.lvl) >= 10 and int(self.lvl) < 20:
             #####
             # Debug
-            formatter = logging.Formatter('%(asctime)s %(name)S %(levelname)s'+\
+            formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s'+\
                                           ' %(module)s %(funcName)s %(lineno)s'+\
                                           ' %(message)s')
         elif int(self.lvl) >= 20 and int(self.lvl) < 30:
