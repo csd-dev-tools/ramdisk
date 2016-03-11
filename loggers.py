@@ -110,7 +110,7 @@ class Logger(object):
     #############################################
 
     def initializeLogs(self,  filename = "",
-                       extension_type="inc",
+                       extension_type="time",
                        logCount=10,
                        size=10000000,
                        syslog=False,
@@ -161,7 +161,9 @@ class Logger(object):
                 # Use a file extension using the datetime library
                 # Get the UTC time and format a time stamp string
                 # using format YYYYMMDD.HHMMSS.microseconds
-                datestamp = datetime.datetime.utcnow()
+                # 2016/03/11 - Changing to use .now instead of .utcnow
+                # to the time stamp can be correlated with system logs...
+                datestamp = datetime.datetime.now()
                 stamp = datestamp.strftime("%Y%m%d.%H%M%S.%f")
                 self.filename = filename + "." + str(stamp)
             if extension_type == "inc":
