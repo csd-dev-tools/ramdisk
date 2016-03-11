@@ -99,6 +99,11 @@ class Logger(object):
     #############################################
 
     def validateLevel(self, level=-1):
+        """
+        Input validation for the logging level
+        
+        @author: Roy Nielsen
+        """
         success = False
         if int(level) > 0 and int(level) <= 60:
             self.lvl = level
@@ -109,8 +114,23 @@ class Logger(object):
 
     #############################################
 
+    def doRollover(self):
+        """
+        If there is a RotatingFileHandler attaced to the active logger,
+        rotate the log.
+        
+        @author: Roy Nielsen
+        """
+        if self.rotate:
+            try:
+                self.logr.handlers.RotatingFileHandler.doRollover()
+            except:
+                pass
+
+    #############################################
+
     def initializeLogs(self,  filename = "",
-                       extension_type="time",
+                       extension_type="inc",
                        logCount=10,
                        size=10000000,
                        syslog=False,
@@ -151,11 +171,11 @@ class Logger(object):
             if extension_type == "none":
                 ####
                 # No file extension, just use the filename...
-                self.filename = filename
+                self.filename = filename + ".log"
             if extension_type == "epoch":
                 ####
                 # Use a file extension using the time library "since epoch"
-                self.filename = filename + "." + str(time.time())
+                self.filename = filename + "." + str(time.time()) + ".log"
             if extension_type == "time":
                 ####
                 # Use a file extension using the datetime library
@@ -165,12 +185,12 @@ class Logger(object):
                 # to the time stamp can be correlated with system logs...
                 datestamp = datetime.datetime.now()
                 stamp = datestamp.strftime("%Y%m%d.%H%M%S.%f")
-                self.filename = filename + "." + str(stamp)
+                self.filename = filename + "." + str(stamp) + ".log"
             if extension_type == "inc":
                 #####
                 # Get a log rotation method set up.
-                rotate = True
-                self.filename = filename
+                self.rotate = True
+                self.filename = filename + ".log"
         else:
             raise IllegalExtensionTypeError("Cannot use this " + \
                                             "configuration: " + \
@@ -181,7 +201,7 @@ class Logger(object):
 
         #####
         # Set logging level for the root logger
-        if not rotate:
+        if not self.rotate:
             #####
             # Set up a regular root log handler
             fileHandler = logging.FileHandler(self.filename)
@@ -215,6 +235,7 @@ class Logger(object):
             self.logr.addHandler(fileHandler)
         elif rotate:
             self.logr.addHandler(rotHandler)
+            self.doRollover()
 
         if myconsole:
             self.logr.addHandler(conHandler)
