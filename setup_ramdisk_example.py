@@ -5,7 +5,8 @@
 """
 import sys
 
-from log_message import logMessage
+from loggers import Logger
+from loggers import LogPriority as lp
 from optparse import OptionParser, SUPPRESS_HELP
 
 #####
@@ -13,11 +14,11 @@ from optparse import OptionParser, SUPPRESS_HELP
 if sys.platform.startswith("darwin"):
     #####
     # For Mac
-    from macRamdisk import RamDisk, detach
+    from macRamdisk import RamDisk, unmount
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
-    from linuxTmpfsRamdisk import RamDisk, detach
+    from linuxTmpfsRamdisk import RamDisk, unmount
 else:
     print "'" + str(sys.platform) + "' platform not supported..."
 
@@ -28,28 +29,30 @@ parser.add_option("-s", "--size", dest="size",
                   default=str(size),
                   help="Size of ramdisk you want to create in 1 Megabyte blocks")
 parser.add_option("-m", "--mount-point", dest="mntpnt",
-                  default="", 
+                  default="",
                   help="Name of the mountpoint you want to mount to")
-parser.add_option("-d", "--debug", action="store_true", dest="debug", 
+parser.add_option("-d", "--debug", action="store_true", dest="debug",
                   default=0, help="Print debug messages")
-parser.add_option("-v", "--verbose", action="store_true", 
-                  dest="verbose", default=0, 
+parser.add_option("-v", "--verbose", action="store_true",
+                  dest="verbose", default=0,
                   help="Print status messages")
 
 (opts, args) = parser.parse_args()
 
 if opts.verbose != 0:
-    message_level = "verbose"
+    level = Logger(level=lp.INFO)
 elif opts.debug != 0:
-    message_level = "debug"
+    level = Logger(level=lp.DEBUG)
 else:
-    message_level="normal"
+    level=lp.WARNING
 
 if opts.size:
-    size = int(opts.size) # in Megabytes
+    size = int(opts.size)  # in Megabytes
 mntpnt = opts.mntpnt
 
-ramdisk = RamDisk(str(size), mntpnt, "debug")
+logger = Logger()
+
+ramdisk = RamDisk(str(size), mntpnt, logger)
 ramdisk.logData()
 ramdisk.printData()
 
@@ -58,5 +61,3 @@ if not ramdisk.success:
 
 print ramdisk.getDevice()
 
-# print "\n\n"
-# print ramdisk.get_data()

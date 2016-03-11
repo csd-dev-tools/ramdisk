@@ -3,7 +3,8 @@
 @author: Roy Nielsen
 """
 from macRamdisk import detach
-from log_message import log_message
+from loggers import Logger
+from loggers import LogPriority as lp
 from optparse import OptionParser, SUPPRESS_HELP
 
 parser = OptionParser(usage="\n\n%prog [options]\n\n", version="0.7.2")
@@ -19,20 +20,22 @@ parser.add_option("-v", "--verbose", action="store_true",
 (opts, args) = parser.parse_args()
 
 if opts.verbose != 0:
-    message_level = "verbose"
+    level = Logger(level=lp.INFO)
 elif opts.debug != 0:
-    message_level = "debug"
+    level = Logger(level=lp.DEBUG)
 else:
-    message_level="normal"
+    level=lp.WARNING
 
 if opts.device == 0:
     raise Exception("Cannot detach a device with no name..")
 else:
     device = opts.device
     
-if detach(device, message_level):
-    log_message(r"Successfully detached disk: " + str(device).strip(), "verbose", message_level)
+logger = Logger(level=level)
+    
+if detach(device, logger):
+    logger.log(lp.INFO, r"Successfully detached disk: " + str(device).strip())
 else:
-    log_message(r"Couldn't detach disk: " + str(device).strip())
+    logger.log(lp.WARNING, r"Couldn't detach disk: " + str(device).strip())
     raise Exception(r"Cannot eject disk: " + str(device).strip())
 

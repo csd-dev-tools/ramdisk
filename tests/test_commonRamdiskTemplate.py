@@ -15,7 +15,9 @@ from datetime import datetime
 
 sys.path.append("../")
 
-from log_message import logMessage
+from loggers import Logger
+from loggers import LogPriority as lp
+
 from libHelperExceptions import NotValidForThisOS
 
 #####
@@ -27,7 +29,7 @@ if sys.platform.startswith("darwin"):
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
-    from linuxTmpfsRamdisk import RamDisk, detach
+    from linuxTmpfsRamdisk import RamDisk, unmount
 
 class test_commonRamdiskTemplate(unittest.TestCase):
     """
@@ -40,8 +42,6 @@ class test_commonRamdiskTemplate(unittest.TestCase):
         """
         # Start timer in miliseconds
         self.test_start_time = datetime.now()
-
-        self.message_level = "debug"
 
     ##################################
 
@@ -93,8 +93,7 @@ class test_commonRamdiskTemplate(unittest.TestCase):
         # Calculate and log how long it took...
         test_time = (test_end_time - self.test_start_time)
 
-        logMessage(self.__module__ + " took " + str(test_time) + \
-                  " time to complete...",
-                  "normal", self.message_level)
+        self.logger.log(lp.INFO, self.__module__ + " took " + str(test_time) + \
+                  " time to complete...")
 
 ###############################################################################

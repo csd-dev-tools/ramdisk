@@ -12,11 +12,15 @@ import sys
 import argparse
 from datetime import datetime
 
-from log_message import logMessage
+from loggers import Logger
+from loggers import LogPriority as lp
 
 class SedFile4VersionStamp(object):
-    def __init__(self, files=[], message_level="normal"):
-        self.message_level = message_level
+    def __init__(self, files=[], logger=None):
+        if not logger:
+            self.logger = Logger()
+        else:
+            self.logger = logger
         self.acquireStamp()
         self.module_version = '20160224.032043.009191'
         if files:
@@ -33,8 +37,7 @@ class SedFile4VersionStamp(object):
         datestamp = datetime.utcnow()
         
         self.stamp = datestamp.strftime("%Y%m%d.%H%M%S.%f")
-        logMessage("Stamp: " + str(self.stamp), 
-                   "verbose", self.message_level)
+        self.logger.log(lp.DEBUG, "Stamp: " + str(self.stamp))
 
     def sedFileWithDateTimeStamp(self, file2change=""):
         """
@@ -44,8 +47,7 @@ class SedFile4VersionStamp(object):
 
         @author: Roy Nielsen
         """
-        logMessage("********** Entered sed method...**************", 
-                   "debug", self.message_level)
+        self.logger.log(lp.INFO, "********** Entered sed method...**************")
         startString = ""
         found = False
         if file2change:
@@ -57,15 +59,13 @@ class SedFile4VersionStamp(object):
                 check1 = re.match("^(\s+module_version\s*=\s*)\S*", line)
                 check2 = re.match("^(\s+self\.module_version\s*=\s*)\S*", line)
                 if check1:
-                    logMessage("Found first check..",
-                               "debug", self.message_level)
+                    self.logger.log(lp.DEBUG, "Found first check..")
                     startString = check1.group(1)
                     fp.write(re.sub("^\s+module_version\s*=\s*\S*", \
                                     startString + "'" + \
                                     self.stamp + "'", line))
                 elif check2:
-                    logMessage("Found second check...",
-                               "debug", self.message_level)
+                    self.logger.log(lp.DEBUG, "Found second check...")
                     startString = check2.group(1)
                     fp.write(re.sub("^\s+self\.module_version\s*=\s*\S*", \
                                     startString + "'" + \
@@ -101,7 +101,8 @@ if __name__ == "__main__":
         message_level = "verbose"
 
     files = args.files
-    logMessage("Files: " + str(files), "debug", message_level)
+    logger = Logger()
+    logger.log(lp.INFO, "Files: " + str(files))
 
-    SedFile4VersionStamp(files)
+    SedFile4VersionStamp(files, logger=logger)
 

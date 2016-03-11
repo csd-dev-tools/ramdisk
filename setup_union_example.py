@@ -7,7 +7,8 @@
 import os
 import sys
 
-from log_message import logMessage
+from loggers import Logger
+from loggers import LogPriority as lp
 from optparse import OptionParser, SUPPRESS_HELP
 
 #####
@@ -15,11 +16,11 @@ from optparse import OptionParser, SUPPRESS_HELP
 if sys.platform.startswith("darwin"):
     #####
     # For Mac
-    from macRamdisk import RamDisk, detach
+    from macRamdisk import RamDisk, unmount
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
-    from linuxTmpfsRamdisk import RamDisk, detach
+    from linuxTmpfsRamdisk import RamDisk, unmount
 else:
     print "'" + str(sys.platform) + "' platform not supported..."
 
@@ -30,23 +31,23 @@ parser.add_option("-s", "--size", dest="size",
                   default=str(size),
                   help="Size of ramdisk you want to create in 1 Megabyte blocks")
 parser.add_option("-o", "--overlay-point", dest="mntpnt",
-                  default="", 
+                  default="",
                   help="Name of the location you want to put the ramdisk " + \
                   "on top of.")
-parser.add_option("-d", "--debug", action="store_true", dest="debug", 
+parser.add_option("-d", "--debug", action="store_true", dest="debug",
                   default=0, help="Print debug messages")
-parser.add_option("-v", "--verbose", action="store_true", 
-                  dest="verbose", default=0, 
+parser.add_option("-v", "--verbose", action="store_true",
+                  dest="verbose", default=0,
                   help="Print status messages")
 
 (opts, args) = parser.parse_args()
 
 if opts.verbose != 0:
-    message_level = "verbose"
+    level = Logger(level=lp.INFO)
 elif opts.debug != 0:
-    message_level = "debug"
+    level = Logger(level=lp.DEBUG)
 else:
-    message_level="normal"
+    level=lp.WARNING
 
 if opts.size:
     size = int(opts.size) # in Megabytes
@@ -61,7 +62,9 @@ else:
 if not os.path.exists(mntpnt):
     os.makedirs(mntpnt)
 
-ramdisk = RamDisk(size=size, message_level="debug")
+logger = Logger(level=level)
+
+ramdisk = RamDisk(size=size, logger=logger)
 ramdisk.logData()
 ramdisk.printData()
 

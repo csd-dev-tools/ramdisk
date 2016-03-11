@@ -5,7 +5,8 @@ import sys
 from tempfile import mkdtemp
 
 from run_commands import RunWith
-from log_message import logMessage
+from loggers import Logger
+from loggers import LogPriority as lp
 from commonRamdiskTemplate import RamDiskTemplate
 
 ###############################################################################
@@ -61,7 +62,8 @@ class RamDisk(RamDiskTemplate):
     Substitute the following attirbutes for your own values:
 
     [TYPE] is the type of RAM disk to use; either tmpfs or ramfs.
-    [SIZE] is the size to use for the file system. Remember that ramfs does not have a physical limit and is specified as a starting size.
+    [SIZE] is the size to use for the file system. Remember that ramfs does not
+           have a physical limit and is specified as a starting size.
     [FSTYPE] is the type of RAM disk to use; either tmpfs, ramfs, ext4, etc.
     Example:
 
@@ -168,13 +170,12 @@ class RamDisk(RamDiskTemplate):
         """
         success = False
         command = self.buildCommand()
-        self.runWith.set_command(command)
+        self.runWith.setCommand(command)
         self.runWith.communicate()
         retval, reterr, retcode = self.runWith.getNlogReturns()
         if not reterr:
             success = True
         self.printData()
-        self.runWith.getNprintReturns
         self.runWith.getNlogReturns()
         return success
 
@@ -234,7 +235,7 @@ class RamDisk(RamDiskTemplate):
         success = False
 
         command = ["/bin/umount", self.mntPoint]
-        self.runWith.set_command(command)
+        self.runWith.setCommand(command)
         self.runWith.communicate()
         retval, reterr, retcode = self.runWith.getNlogReturns()
         if not reterr:
@@ -306,7 +307,7 @@ def unmount(mnt_point="", message_level="normal"):
     if mnt_point:
         runWith = RunWith(message_level)
         command = ["/bin/umount", mnt_point]
-        runWith.set_command(command)
+        runWith.setCommand(command)
         runWith.communicate()
         retval, reterr, retcode = runWith.getNlogReturns()
         if not reterr:

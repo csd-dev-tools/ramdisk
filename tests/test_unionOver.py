@@ -15,7 +15,8 @@ from datetime import datetime
 
 sys.path.append("../")
 
-from log_message import logMessage
+from loggers import Logger
+from loggers import LogPriority as lp
 from libHelperExceptions import NotValidForThisOS
 from genericRamdiskTest import GenericRamdiskTest
 
@@ -30,7 +31,7 @@ elif sys.platform.startswith("linux"):
     # For Linux
     from linuxTmpfsRamdisk import RamDisk, unmount
 
-class test_unionOver(unittest.TestCase):
+class test_unionOver(GenericRamdiskTest):
     """
     """
 
@@ -44,7 +45,7 @@ class test_unionOver(unittest.TestCase):
         self.test_start_time = datetime.now()
 
         #self.message_level = "debug"
-        self.message_level = "debug"
+        self.logger = Logger()
 
         self.libcPath = None # initial initialization
 
@@ -53,7 +54,7 @@ class test_unionOver(unittest.TestCase):
         if not sys.platform.startswith("darwin") and \
            not sys.platform.startswith("linux"):
             unittest.SkipTest("This is not valid on this OS")
-        GenericRamdiskTest._initializeClass(message_level=self.message_level)
+        GenericRamdiskTest._initializeClass(self.logger)
 
 
     def setUp(self):
@@ -90,11 +91,10 @@ class test_unionOver(unittest.TestCase):
         disconnect ramdisk
         """
         if unmount(self.mount):
-            logMessage(r"Successfully detached disk: " + \
-                       str(self.my_ramdisk.mntPoint).strip(), \
-                       "verbose", self.message_level)
+            self.logger.log(lp.INFO, r"Successfully detached disk: " + \
+                       str(self.my_ramdisk.mntPoint).strip())
         else:
-            logMessage(r"Couldn't detach disk: " + \
+            self.logger.log(lp.WARNING, r"Couldn't detach disk: " + \
                        str(self.my_ramdisk.myRamdiskDev).strip() + \
                        " : mntpnt: " + str(self.my_ramdisk.mntPoint))
             raise Exception(r"Cannot eject disk: " + \
@@ -108,8 +108,7 @@ class test_unionOver(unittest.TestCase):
         # Calculate and log how long it took...
         test_time = (test_end_time - self.test_start_time)
 
-        logMessage(self.__module__ + " took " + str(test_time) + \
-                  " time to complete...",
-                  "normal", self.message_level)
+        self.logger.log(lp.INFO, self.__module__ + " took " + str(test_time) + \
+                  " time to complete...")
 
 ###############################################################################
