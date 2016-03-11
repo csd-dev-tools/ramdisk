@@ -84,7 +84,7 @@ class test_commonRamdiskTemplate(unittest.TestCase):
         """
         Final cleanup actions...
         """
-
+        logger = Logger()
         #####
         # capture end time
         test_end_time = datetime.now()
@@ -93,7 +93,6 @@ class test_commonRamdiskTemplate(unittest.TestCase):
         # Calculate and log how long it took...
         test_time = (test_end_time - self.test_start_time)
 
-        self.logger.log(lp.INFO, self.__module__ + " took " + str(test_time) + \
-                  " time to complete...")
+        logger.log(lp.INFO, self.__module__ + " took " + str(test_time) + " time to complete...")
 
 ###############################################################################
