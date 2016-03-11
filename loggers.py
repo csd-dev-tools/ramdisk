@@ -20,6 +20,7 @@ import calendar
 import datetime
 import logging
 import logging.handlers
+from logging.handlers import RotatingFileHandler
 
 ###############################################################################
 # Exception setup
@@ -104,7 +105,7 @@ class Logger(object):
     def validateLevel(self, level=-1):
         """
         Input validation for the logging level
-        
+
         @author: Roy Nielsen
         """
         success = False
@@ -117,7 +118,7 @@ class Logger(object):
 
     #############################################
 
-    def doRollover(self):
+    def doRollover(self, rothandler):
         """
         If there is a RotatingFileHandler attaced to the active logger,
         rotate the log.
@@ -127,13 +128,13 @@ class Logger(object):
         if self.rotate:
             try:
                 self.logr.handlers.RotatingFileHandler.doRollover()
-            except:
-                pass
+            except Exception, err:
+                self.logr.log(LogPriority.WARNING, "Exception: " + str(err))
 
     #############################################
 
     def initializeLogs(self,  filename = "",
-                       extension_type="inc",
+                       extension_type="time",
                        logCount=10,
                        size=10000000,
                        syslog=False,
@@ -169,11 +170,8 @@ class Logger(object):
         if not filename:
             filename = str(__name__)
         success = False
-        rotate = False
-        fileHandler = None
-        syslogHandler = None
-        rotHandler = None
-        conHandler = None
+        self.rotate = False
+        self.fileHandler = False
         if extension_type in ["none", "epoch", "time", "inc", "sys"]:
             if extension_type == "none":
                 ####
@@ -214,6 +212,7 @@ class Logger(object):
             fileHandler = logging.FileHandler(self.filename)
             formatter = self.formatLoggingString()
             fileHandler.setFormatter(formatter)
+            self.fileHandler = True
         else:
             #####
             # Set up the RotatingFileHandler
@@ -238,13 +237,13 @@ class Logger(object):
 
         #####
         # Add applicable handlers to the logger
-        if not rotate:
+        if not self.rotate and self.fileHandler:
             self.logr.addHandler(fileHandler)
             self.logr.log(LogPriority.DEBUG,"Added FileHandler")
-        elif rotate:
+        elif self.rotate:
             self.logr.addHandler(rotHandler)
             self.logr.log(LogPriority.DEBUG,"Added RotatingFileHandler")
-            self.doRollover()
+            self.doRollover(rotHandler)
 
         if myconsole:
             self.logr.addHandler(conHandler)
@@ -342,9 +341,10 @@ class Logger(object):
         """
         pri = str(priority)
         if re.match("^\d\d$", pri):
+            validatedLvl = int(pri)
             #####
             # Process via numerical logging level
-            self.logr.log(int(pri), str(msg))
+            self.logr.log(validatedLvl, str(msg))
         else:
             raise IllegalLoggingLevelError("Not a valid value for a logging level.")
 
