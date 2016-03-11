@@ -59,12 +59,12 @@ def singleton(cls):
 class Logger(object):
     """
     """
-    def __init__(self, environment=None, debug_mode=False, verbose_mode=False, level=-1):
+    def __init__(self, environ=False, debug_mode=False, verbose_mode=False, level=-1):
         """
         """
         self.lvl = level
-        if environment:
-            self.environment = environment
+        if environ:
+            self.environment = environ
             envDebugMode = self.environment.getdebugmode()
             envVerboseMode = self.environment.getverbosemode()
             if re.match("^debug$", envDebugMode):
@@ -76,11 +76,12 @@ class Logger(object):
                 self.lvl = 10
             elif verbose_mode:
                 self.lvl = 20
-        else:
-            if not int(self.lvl) > 0:
+        if not int(self.lvl) > 0:
                 self.lvl = 10
-            elif self.validateLevel(level):
-                self.lvl = level
+        elif self.validateLevel(level):
+            self.lvl = level
+        else:
+            self.lvl = 30
         self.filename = ""
         self.levels = {"NOTSET" : 0, "DEBUG" : 10, "INFO" : 20, "WARNING" : 30,
                        "ERROR" : 40, "CRITICAL" : 50}
