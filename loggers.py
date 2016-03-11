@@ -65,9 +65,11 @@ class Logger(object):
         self.lvl = level
         if environment:
             self.environment = environment
-            if re.match("^debug$", self.environment.getdebugmode()):
+            envDebugMode = self.environment.getdebugmode()
+            envVerboseMode = self.environment.getverbosemode()
+            if re.match("^debug$", envDebugMode):
                 self.lvl = 10
-            elif re.match("^verbose$", self.environment.getdebugmode()):
+            elif re.match("^verbose$", envVerboseMode):
                 self.lvl = 20
         elif debug_mode or verbose_mode:
             if debug_mode:
@@ -237,15 +239,19 @@ class Logger(object):
         # Add applicable handlers to the logger
         if not rotate:
             self.logr.addHandler(fileHandler)
+            self.logr.log(LogPriority.DEBUG,"Added FileHandler")
         elif rotate:
             self.logr.addHandler(rotHandler)
+            self.logr.log(LogPriority.DEBUG,"Added RotatingFileHandler")
             self.doRollover()
 
         if myconsole:
             self.logr.addHandler(conHandler)
+            self.logr.log(LogPriority.DEBUG,"Added StreamHandler")
         if syslog:
             try:
                 self.logr.addHandler(sysHandler)
+                self.logr.log(LogPriority.DEBUG,"Added SyslogHanlder")
             except socket.error:
                 self.log(40, "Syslog not accepting connections!")
 
@@ -337,7 +343,7 @@ class Logger(object):
         if re.match("^\d\d$", pri):
             #####
             # Process via numerical logging level
-            self.logr.log(int(priority), str(msg))
+            self.logr.log(int(pri), str(msg))
         else:
             raise IllegalLoggingLevelError("Not a valid value for a logging level.")
 
