@@ -151,17 +151,18 @@ class RunWith(object):
                 proc = Popen(self.command, stdout=PIPE, stderr=PIPE, shell=self.myshell)
                 self.libc.sync()
                 self.output, self.error = proc.communicate()
-
+                self.libc.sync()
             except Exception, err :
-                self.logger.log(lp.WARNING, "system_call_retval - Unexpected Exception: "  + \
+                self.logger.log(lp.WARNING, "- Unexpected Exception: "  + \
                            str(err)  + " command: " + self.printcmd)
+                self.logger.log(lp.WARNING, "stderr: " + str(self.error))
                 raise err
             else :
                 self.logger.log(lp.DEBUG, self.printcmd + " Returned with error/returncode: " + str(proc.returncode))
                 proc.stdout.close()
             finally:
                 self.logger.log(lp.DEBUG, "Done with command: " + self.printcmd)
-                self.returncode = proc.returncode
+                self.returncode = str(proc.returncode)
         else :
             self.logger.log(lp.WARNING, "Cannot run a command that is empty...")
             self.output = None
@@ -197,9 +198,9 @@ class RunWith(object):
                 proc.stdout.close()
             finally:
                 self.logger.log(lp.DEBUG, "Done with command: " + self.printcmd)
-                self.stdout = proc.stdout
-                self.stderr = proc.stderr
-                self.returncode = proc.returncode
+                self.output = proc.stdout
+                self.error = proc.stderr
+                self.returncode = str(proc.returncode)
         else :
             self.logger.log(lp.WARNING, "Cannot run a command that is empty...")
             self.stdout = None
@@ -256,8 +257,8 @@ class RunWith(object):
                 self.logger.log(lp.DEBUG, "Done with command: " + self.printcmd)
         else :
             self.logger.log(lp.WARNING, "Cannot run a command that is empty...")
-            self.stdout = None
-            self.stderr = None
+            self.output = None
+            self.error = None
             self.returncode = None
 
         return timeout["value"]

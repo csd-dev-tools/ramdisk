@@ -310,7 +310,7 @@ class Logger(object):
         if re.match("^\d\d$", pri):
             #####
             # Process via numerical logging level
-            self.logr.log(int(priority), msg)
+            self.logr.log(int(priority), str(msg))
         else:
             raise IllegalLoggingLevelError("Not a valid value for a logging level.")
 
