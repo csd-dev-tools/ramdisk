@@ -11,6 +11,7 @@ import pty
 import sys
 import time
 import types
+import ctypes
 import select
 import termios
 import threading
@@ -52,8 +53,14 @@ class RunWith(object):
         self.returncode = None
         self.printcmd = None
         self.myshell = None
+        #####
+        # setting up to call ctypes to do a filesystem sync
+        if sys.platform.lower() == "darwin":
+            self.libc = ctypes.CDLL("/usr/lib/libc.dylib")
+        else:
+            self.libc = None
 
-    def set_command(self, command, myshell=False):
+    def setCommand(self, command, myshell=False):
         """
         initialize a command to run
 
@@ -140,10 +147,9 @@ class RunWith(object):
         @author: Roy Nielsen
         """
         if self.command:
-            try :
-                proc = Popen(self.command,
-                             stdout=PIPE, stderr=PIPE, shell=self.myshell)
-
+            try:
+                proc = Popen(self.command, stdout=PIPE, stderr=PIPE, shell=self.myshell)
+                self.libc.sync()
                 self.output, self.error = proc.communicate()
 
             except Exception, err :
@@ -151,9 +157,7 @@ class RunWith(object):
                            str(err)  + " command: " + self.printcmd)
                 raise err
             else :
-                self.logger.log(lp.DEBUG, self.printcmd + \
-                            " Returned with error/returncode: " + \
-                            str(proc.returncode))
+                self.logger.log(lp.DEBUG, self.printcmd + " Returned with error/returncode: " + str(proc.returncode))
                 proc.stdout.close()
             finally:
                 self.logger.log(lp.DEBUG, "Done with command: " + self.printcmd)
