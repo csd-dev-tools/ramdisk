@@ -43,8 +43,8 @@ class BuildAndRunSuite(object):
 
         @author: Roy Nielsen
         """
+        test_list = []
         if not self.modules:
-            test_list = []
             allfiles = os.listdir(testdir)
             for check_file in allfiles:
                 test_name = str(check_file).split(".")[0]

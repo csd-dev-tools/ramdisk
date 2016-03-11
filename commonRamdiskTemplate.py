@@ -4,14 +4,15 @@ Template for the ramdisk classes
 @author: Roy Nielsen
 """
 from tempfile import mkdtemp
-from log_message import logMessage
+from loggers import LogPriority as lp
+from loggers import Logger
 
 ###############################################################################
 
 class RamDiskTemplate(object):
     """
     """
-    def __init__(self, size=0, mountpoint=None, message_level="normal"):
+    def __init__(self, size=0, mountpoint=None, logger=None):
         """
         """
         #####
@@ -19,7 +20,10 @@ class RamDiskTemplate(object):
         # <YYYY><MM><DD>.<HH><MM><SS>.<microseconds>
         # in UTC time
         self.module_version = '20160224.032043.009191'
-        self.message_level = message_level
+        if not logger:
+            self.logger = Logger()
+        else:
+            self.logger = logger
         self.diskSize = size
         self.success = False
         self.myRamdiskDev = None
@@ -28,10 +32,8 @@ class RamDiskTemplate(object):
         else:
             self.mntPoint = mountpoint
 
-        logMessage("disk size: " + str(self.diskSize), \
-                   "debug", self.message_level)
-        logMessage("volume name: " + str(self.mntPoint), \
-                   "debug", self.message_level)
+        self.logger.log(lp.DEBUG, "disk size: " + str(self.diskSize))
+        self.logger.log(lp.DEBUG, "volume name: " + str(self.mntPoint))
 
     ###########################################################################
 
@@ -60,12 +62,9 @@ class RamDiskTemplate(object):
         Getter for mount data, and if the mounting of a ramdisk was successful
         Also logs the data.
         """
-        logMessage("Success: " + str(self.success), \
-                   "debug", self.message_level)
-        logMessage("Mount point: " + str(self.mntPoint), \
-                   "debug", self.message_level)
-        logMessage("Device: " + str(self.myRamdiskDev), \
-                   "debug", self.message_level)
+        self.logger.log(lp.INFO, "Success: " + str(self.success))
+        self.logger.log(lp.INFO, "Mount point: " + str(self.mntPoint))
+        self.logger.log(lp.INFO, "Device: " + str(self.myRamdiskDev))
         return (self.success, str(self.mntPoint), str(self.myRamdiskDev))
 
     ###########################################################################
@@ -81,13 +80,12 @@ class RamDiskTemplate(object):
         try :
             self.mntPoint = mkdtemp()
         except Exception, err :
-            logMessage("Exception trying to create temporary directory")
+            self.logger.log(lp.WARNING, "Exception trying to create temporary directory")
             raise err
         else :
             success = True
-        logMessage("Success: " + str(success) + " in " + \
-                   "__get_randomizedMountpoint: " + str(self.mntPoint),
-                   "debug", self.message_level)
+        self.logger.log(lp.WARNING, "Success: " + str(success) + " in " + \
+                   "__get_randomizedMountpoint: " + str(self.mntPoint))
         return success
 
     ###########################################################################
