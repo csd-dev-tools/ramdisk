@@ -167,6 +167,10 @@ class Logger(object):
             filename = str(__name__)
         success = False
         rotate = False
+        fileHandler = None
+        syslogHandler = None
+        rotHandler = None
+        conHandler = None
         if extension_type in ["none", "epoch", "time", "inc", "sys"]:
             if extension_type == "none":
                 ####
