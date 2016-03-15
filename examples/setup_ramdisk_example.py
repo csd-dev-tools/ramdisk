@@ -3,22 +3,24 @@
 @author: Roy Nielsen
 
 """
+#--- Native python libraries
 import sys
-
-from loggers import Logger
-from loggers import LogPriority as lp
 from optparse import OptionParser, SUPPRESS_HELP
+
+#--- non-native python libraries in this source tree
+from ..lib.loggers import Logger
+from ..lib.loggers import LogPriority as lp
 
 #####
 # Load OS specific Ramdisks
 if sys.platform.startswith("darwin"):
     #####
     # For Mac
-    from macRamdisk import RamDisk, unmount
+    from ..macRamdisk import RamDisk, unmount
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
-    from linuxTmpfsRamdisk import RamDisk, unmount
+    from ..linuxTmpfsRamdisk import RamDisk, unmount
 else:
     print "'" + str(sys.platform) + "' platform not supported..."
 

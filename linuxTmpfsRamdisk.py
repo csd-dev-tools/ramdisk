@@ -1,12 +1,19 @@
+"""
+Linux tmpfs ramdisk implementation
+
+@author: Roy Nielsen
+"""
+#--- Native python libraries
 import os
 import re
 import pwd
 import sys
 from tempfile import mkdtemp
 
-from run_commands import RunWith
-from loggers import Logger
-from loggers import LogPriority as lp
+#--- non-native python libraries in this source tree
+from lib.run_commands import RunWith
+from lib.loggers import Logger
+from lib.loggers import LogPriority as lp
 from commonRamdiskTemplate import RamDiskTemplate
 
 ###############################################################################

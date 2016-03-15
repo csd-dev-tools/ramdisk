@@ -1,8 +1,10 @@
 #!/usr/bin/python -u
 """
+Test of the Linux tmpfs ramdisk
 
 @author: Roy Nielsen
 """
+#--- Native python libraries
 import re
 import os
 import sys
@@ -12,24 +14,24 @@ import tempfile
 import ctypes as C
 from datetime import datetime
 
-
 sys.path.append("../")
 
-from genericRamdiskTest import GenericRamdiskTest
-from loggers import Logger
-from loggers import LogPriority as lp
-from libHelperExceptions import NotValidForThisOS
+#--- non-native python libraries in this source tree
+from ramdisk.tests.genericRamdiskTest import GenericRamdiskTest
+from ramdisk.lib.loggers import Logger
+from ramdisk.lib.loggers import LogPriority as lp
+from ramdisk.lib.libHelperExceptions import NotValidForThisOS
 
 #####
 # Load OS specific Ramdisks
 if sys.platform.startswith("darwin"):
     #####
     # For Mac
-    from macRamdisk import RamDisk, detach
+    from ramdisk.macRamdisk import RamDisk, detach
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
-    from linuxTmpfsRamdisk import RamDisk, unmount
+    from ramdisk.linuxTmpfsRamdisk import RamDisk, unmount
 
 class test_linuxTmpfsRamdisk(GenericRamdiskTest):
     """

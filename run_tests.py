@@ -1,10 +1,11 @@
 #!/usr/bin/python
 """
-Example of using a "Test Suite" with a directory listing. . .
+Test harness creating a test suite, and running it.
 
 @author: Roy Nielsen
 @note Initial working model: 1/15/2015
 """
+#--- Native python libraries
 import os
 import re
 import sys

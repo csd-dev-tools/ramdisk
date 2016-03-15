@@ -3,9 +3,12 @@ Template for the ramdisk classes
 
 @author: Roy Nielsen
 """
+#--- Native python libraries
 from tempfile import mkdtemp
-from loggers import LogPriority as lp
-from loggers import Logger
+
+#--- non-native python libraries in this source tree
+from ramdisk.lib.loggers import LogPriority as lp
+from ramdisk.lib.loggers import Logger
 
 ###############################################################################
 

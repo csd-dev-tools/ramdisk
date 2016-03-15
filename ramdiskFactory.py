@@ -1,14 +1,20 @@
+"""
+Factory for creating ramdisks.
 
+@note: may be of more use in the tests/testFramework, or example directories
+
+@author: Roy Nielsen
+"""
+#--- Native python libraries
 import re
-
 from tempfile import mkdtemp
 from subprocess import Popen, PIPE, STDOUT
 
-from loggers import Logger
-from loggers import LogPriority as lp
-from run_commands import RunWith
-from libHelperFunctions import getOsFamily
-from ctypes.wintypes import SIZE
+#--- non-native python libraries in this source tree
+from lib.loggers import Logger
+from lib.loggers import LogPriority as lp
+from lib.run_commands import RunWith
+from lib.libHelperFunctions import getOsFamily
 
 def BadRamdiskTypeException(Exception):
     """

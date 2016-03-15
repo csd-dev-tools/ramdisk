@@ -1,8 +1,12 @@
 #!/usr/bin/python -u
 """
+Test unionfs functionality. 
+
+as of 3/15/2016, only the Mac OS X platform is supported.
 
 @author: Roy Nielsen
 """
+#--- Native python libraries
 import re
 import os
 import sys
@@ -12,27 +16,30 @@ import tempfile
 import ctypes as C
 from datetime import datetime
 
-
 sys.path.append("../")
 
-from loggers import Logger
-from loggers import LogPriority as lp
-from libHelperExceptions import NotValidForThisOS
-from genericRamdiskTest import GenericRamdiskTest
+#--- non-native python libraries in this source tree
+from ramdisk.tests.genericRamdiskTest import GenericRamdiskTest
+from ramdisk.lib.loggers import Logger
+from ramdisk.lib.loggers import LogPriority as lp
+from ramdisk.lib.libHelperExceptions import NotValidForThisOS
 
 #####
 # Load OS specific Ramdisks
 if sys.platform.startswith("darwin"):
     #####
     # For Mac
-    from macRamdisk import RamDisk, unmount
+    from ramdisk.macRamdisk import RamDisk, unmount
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
-    from linuxTmpfsRamdisk import RamDisk, unmount
+    from ramdisk.linuxTmpfsRamdisk import RamDisk, unmount
 
 class test_unionOver(GenericRamdiskTest):
     """
+    Test unionfs functionality of ramdisks
+
+    @author: Roy Nielsen
     """
 
     @classmethod

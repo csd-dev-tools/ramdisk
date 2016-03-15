@@ -1,5 +1,7 @@
 """
-@Notes:
+Mac ramdisk + unionfs implementation
+
+@Notes:  Below are the initial notes for creating a ramdisk on the Mac
 
 Things we need to modularize:
 * create
@@ -9,6 +11,7 @@ Things we need to modularize:
 * format (newfs_hfs vs. diskutil)
 * randomize mountpoint
 * turn off journaling, for faster access
+* unionfs setup
 
 Maybe function, or other module
 * Find available memory,
@@ -21,17 +24,19 @@ Maybe function, method  or other module
 
 @author: Roy Nielsen
 """
+#--- Native python libraries
 import os
 import re
 import shutil
 from subprocess import Popen, PIPE
 
-from run_commands import RunWith
-from loggers import Logger
-from loggers import LogPriority as lp
-from libHelperFunctions import getOsFamily
+#--- non-native python libraries in this source tree
 from commonRamdiskTemplate import RamDiskTemplate
-from libHelperExceptions import NotValidForThisOS
+from lib.run_commands import RunWith
+from lib.loggers import Logger
+from lib.loggers import LogPriority as lp
+from lib.libHelperFunctions import getOsFamily
+from lib.libHelperExceptions import NotValidForThisOS
 
 ###############################################################################
 
