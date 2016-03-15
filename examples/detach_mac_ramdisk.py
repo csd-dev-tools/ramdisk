@@ -2,10 +2,13 @@
 """
 @author: Roy Nielsen
 """
-from macRamdisk import detach
-from loggers import Logger
-from loggers import LogPriority as lp
+#--- Native python libraries
 from optparse import OptionParser, SUPPRESS_HELP
+
+#--- non-native python libraries in this source tree
+from ..macRamdisk import detach
+from ..lib.loggers import Logger
+from ..lib.loggers import LogPriority as lp
 
 parser = OptionParser(usage="\n\n%prog [options]\n\n", version="0.7.2")
 

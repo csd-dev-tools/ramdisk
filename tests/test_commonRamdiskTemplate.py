@@ -1,8 +1,10 @@
 #!/usr/bin/python -u
 """
+CommonRamdiskTemplate test.
 
 @author: Roy Nielsen
 """
+#--- Native python libraries
 import re
 import os
 import sys
@@ -12,24 +14,24 @@ import tempfile
 import ctypes as C
 from datetime import datetime
 
-
 sys.path.append("../")
 
-from loggers import Logger
-from loggers import LogPriority as lp
+#--- non-native python libraries in this source tree
+from ramdisk.lib.loggers import Logger
+from ramdisk.lib.loggers import LogPriority as lp
 
-from libHelperExceptions import NotValidForThisOS
+from ramdisk.lib.libHelperExceptions import NotValidForThisOS
 
 #####
 # Load OS specific Ramdisks
 if sys.platform.startswith("darwin"):
     #####
     # For Mac
-    from macRamdisk import RamDisk, detach
+    from ramdisk.macRamdisk import RamDisk, detach
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
-    from linuxTmpfsRamdisk import RamDisk, unmount
+    from ramdisk.linuxTmpfsRamdisk import RamDisk, unmount
 
 class test_commonRamdiskTemplate(unittest.TestCase):
     """

@@ -1,11 +1,19 @@
+"""
+Template for creating a linux "loop" ramdisk.  Dangerous as the "loop" disk
+will continue to dynamically grow until it is out of memory (virtual included)
+
+@author: Roy Nielsen
+"""
+#--- Native python libraries
 import os
 import re
 import sys
 from tempfile import mkdtemp
 
-from run_commands import RunWith
-from loggers import Logger
-from loggers import LogPriority as lp
+#--- non-native python libraries in this source tree
+from lib.run_commands import RunWith
+from lib.loggers import Logger
+from lib.loggers import LogPriority as lp
 from commonRamdiskTemplate import RamDiskTemplate
 
 ###############################################################################
@@ -19,6 +27,10 @@ class RamDisk(RamDiskTemplate):
         RamDiskTemplate.__init__(self, size, mountpoint, message_level)
         self.module_version = '20160224.032043.009191'
         self.logger = Logger()
+        
+        print "#=====================================#"
+        print "# Not yet implemented...              #"
+        print "#=====================================#"
 
     ###########################################################################
 
