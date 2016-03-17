@@ -15,6 +15,8 @@ from optparse import OptionParser, SUPPRESS_HELP, OptionValueError, Option
 testdir = "./tests"
 sys.path.append(testdir)
 
+from lib.loggers import CrazyLogger
+
 ###############################################################################
 
 class BuildAndRunSuite(object):
@@ -165,6 +167,13 @@ if __name__ == "__main__":
                       dest='modules', default=[], help="Use to run a single or " + \
                       "multiple unit tests at once.  Use the test name.")
 
+    parser.add_option("-s", "--skip", action="store_true", 
+                      dest="skip_syslog", default=False,
+                      help="Skip syslog logging so we don't fill up the logs." + \
+                           "This will leave an incremental log by default in " + \
+                           "/tmp/<uid>.stonixtest.<log number>, where log number" +\
+                           " is the order of the last ten stonixtest runs.")
+
     if len(sys.argv) == 1:
         parser.parse_args(['--help'])
 
@@ -179,6 +188,8 @@ if __name__ == "__main__":
         modules = None
     elif options.modules:
         modules = options.modules
+    else:
+        modules = None
 
     print "Modules: " + str(modules)
 
@@ -186,6 +197,8 @@ if __name__ == "__main__":
     # ... processing logging options...
     verbose = options.verbose
     debug = options.debug
+    logger = CrazyLogger(debug_mode=options.debug, verbose_mode=options.verbose)
+    logger.initializeLogs(syslog=options.skip_syslog)
 
     #####
     # ... processing test prefixes

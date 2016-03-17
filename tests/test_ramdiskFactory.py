@@ -4,6 +4,7 @@ Test for the RamdiskFactory
 
 @author: Roy Nielsen
 """
+from __future__ import absolute_import
 #--- Native python libraries
 import re
 import os
@@ -14,23 +15,21 @@ import tempfile
 import ctypes as C
 from datetime import datetime
 
-sys.path.append("../")
-
 #--- non-native python libraries in this source tree
-from ramdisk.lib.loggers import Logger
-from ramdisk.lib.loggers import LogPriority as lp
-from ramdisk.lib.libHelperExceptions import NotValidForThisOS
+from lib.loggers import Logger
+from lib.loggers import LogPriority as lp
+from lib.libHelperExceptions import NotValidForThisOS
 
 #####
 # Load OS specific Ramdisks
 if sys.platform.startswith("darwin"):
     #####
     # For Mac
-    from ramdisk.macRamdisk import RamDisk, unmount
+    from macRamdisk import RamDisk, unmount
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
-    from ramdisk.linuxTmpfsRamdisk import RamDisk, unmount
+    from linuxTmpfsRamdisk import RamDisk, unmount
 
 class test_ramdiskFactory(unittest.TestCase):
     """
@@ -53,7 +52,7 @@ class test_ramdiskFactory(unittest.TestCase):
         # If we don't have a supported platform, skip this test.
         if not sys.platform.startswith("darwin") and \
            not sys.platform.startswith("linux"):
-            unittest.SkipTest("This is not valid on this OS")
+            raise unittest.SkipTest("This is not valid on this OS")
 
 
     def setUp(self):
@@ -91,6 +90,7 @@ class test_ramdiskFactory(unittest.TestCase):
         """
         disconnect ramdisk
         """
+        self.logger = Logger()
         #####
         # capture end time
         test_end_time = datetime.now()
@@ -99,7 +99,6 @@ class test_ramdiskFactory(unittest.TestCase):
         # Calculate and log how long it took...
         test_time = (test_end_time - self.test_start_time)
 
-        self.logger.log(lp.INFO, self.__module__ + " took " + str(test_time) + \
-                  " time to complete...")
+        self.logger.log(lp.INFO, self.__module__ + " took " + str(test_time) + " time to complete...")
 
 ###############################################################################

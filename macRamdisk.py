@@ -33,7 +33,7 @@ from subprocess import Popen, PIPE
 #--- non-native python libraries in this source tree
 from commonRamdiskTemplate import RamDiskTemplate
 from lib.run_commands import RunWith
-from lib.loggers import Logger
+from lib.loggers import CrazyLogger
 from lib.loggers import LogPriority as lp
 from lib.libHelperFunctions import getOsFamily
 from lib.libHelperExceptions import NotValidForThisOS
@@ -56,7 +56,7 @@ class RamDisk(RamDiskTemplate) :
 
     @author: Roy Nielsen
     """
-    def __init__(self, size=0, mountpoint="", logger=None) :
+    def __init__(self, size=0, mountpoint="", logger=False) :
         """
         Constructor
         """

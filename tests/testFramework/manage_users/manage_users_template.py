@@ -6,6 +6,7 @@ unionfs functionality.
 
 @author: Roy Nielsen
 """
+from __future__ import absolute_import
 
 class ManagerUsersTemplate(object):
     """
