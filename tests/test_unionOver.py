@@ -6,6 +6,7 @@ as of 3/15/2016, only the Mac OS X platform is supported.
 
 @author: Roy Nielsen
 """
+from __future__ import absolute_import
 #--- Native python libraries
 import re
 import os
@@ -16,24 +17,22 @@ import tempfile
 import ctypes as C
 from datetime import datetime
 
-sys.path.append("../")
-
 #--- non-native python libraries in this source tree
-from ramdisk.tests.genericRamdiskTest import GenericRamdiskTest
-from ramdisk.lib.loggers import Logger
-from ramdisk.lib.loggers import LogPriority as lp
-from ramdisk.lib.libHelperExceptions import NotValidForThisOS
+from tests.genericRamdiskTest import GenericRamdiskTest
+from lib.loggers import Logger
+from lib.loggers import LogPriority as lp
+from lib.libHelperExceptions import NotValidForThisOS
 
 #####
 # Load OS specific Ramdisks
 if sys.platform.startswith("darwin"):
     #####
     # For Mac
-    from ramdisk.macRamdisk import RamDisk, unmount
+    from macRamdisk import RamDisk, unmount
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
-    from ramdisk.linuxTmpfsRamdisk import RamDisk, unmount
+    from linuxTmpfsRamdisk import RamDisk, unmount
 
 class test_unionOver(GenericRamdiskTest):
     """
@@ -97,6 +96,8 @@ class test_unionOver(GenericRamdiskTest):
         """
         disconnect ramdisk
         """
+        self.logger = Logger()
+
         if unmount(self.mount):
             self.logger.log(lp.INFO, r"Successfully detached disk: " + \
                        str(self.my_ramdisk.mntPoint).strip())

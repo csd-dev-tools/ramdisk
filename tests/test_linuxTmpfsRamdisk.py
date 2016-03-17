@@ -14,24 +14,22 @@ import tempfile
 import ctypes as C
 from datetime import datetime
 
-sys.path.append("../")
-
 #--- non-native python libraries in this source tree
-from ramdisk.tests.genericRamdiskTest import GenericRamdiskTest
-from ramdisk.lib.loggers import Logger
-from ramdisk.lib.loggers import LogPriority as lp
-from ramdisk.lib.libHelperExceptions import NotValidForThisOS
+from tests.genericRamdiskTest import GenericRamdiskTest
+from lib.loggers import Logger
+from lib.loggers import LogPriority as lp
+from lib.libHelperExceptions import NotValidForThisOS
 
 #####
 # Load OS specific Ramdisks
 if sys.platform.startswith("darwin"):
     #####
     # For Mac
-    from ramdisk.macRamdisk import RamDisk, detach
+    from macRamdisk import RamDisk, detach
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
-    from ramdisk.linuxTmpfsRamdisk import RamDisk, unmount
+    from linuxTmpfsRamdisk import RamDisk, unmount
 
 class test_linuxTmpfsRamdisk(GenericRamdiskTest):
     """
@@ -48,7 +46,7 @@ class test_linuxTmpfsRamdisk(GenericRamdiskTest):
 
         self.libcPath = None # initial initialization
 
-        logger = Logger()
+        self.logger = Logger()
 
         #####
         # Initialize the helper class
@@ -57,8 +55,8 @@ class test_linuxTmpfsRamdisk(GenericRamdiskTest):
         #####
         # If we don't have a supported platform, skip this test.
         if not sys.platform.startswith("linux"):
-            unittest.SkipTest("This is not valid on this OS")
-        GenericRamdiskTest._initializeClass(logger)
+            raise unittest.SkipTest("This is not valid on this OS")
+        GenericRamdiskTest._initializeClass(self.logger)
 
     def setUp(self):
         """
@@ -101,6 +99,7 @@ class test_linuxTmpfsRamdisk(GenericRamdiskTest):
         """
         disconnect ramdisk
         """
+        #logger = Logger()
         if  unmount(self.mount):
             self.logger.log(lp.INFO, r"Successfully detached disk: " + \
                        str(self.my_ramdisk.mntPoint).strip())

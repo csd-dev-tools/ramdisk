@@ -3,19 +3,20 @@ Template for the ramdisk classes
 
 @author: Roy Nielsen
 """
+from __future__ import absolute_import
 #--- Native python libraries
 from tempfile import mkdtemp
 
 #--- non-native python libraries in this source tree
-from ramdisk.lib.loggers import LogPriority as lp
-from ramdisk.lib.loggers import Logger
+from lib.loggers import LogPriority as lp
+from lib.loggers import CrazyLogger
 
 ###############################################################################
 
 class RamDiskTemplate(object):
     """
     """
-    def __init__(self, size=0, mountpoint=None, logger=None):
+    def __init__(self, size=0, mountpoint=False, logger=False):
         """
         """
         #####
@@ -24,9 +25,11 @@ class RamDiskTemplate(object):
         # in UTC time
         self.module_version = '20160224.032043.009191'
         if not logger:
-            self.logger = Logger()
+            self.logger = CrazyLogger()
+            self.logger.log(lp.INFO, "Logger: " + str(self.logger))
         else:
             self.logger = logger
+            self.logger.log(lp.INFO, "Logger: " + str(self.logger))
         self.diskSize = size
         self.success = False
         self.myRamdiskDev = None
@@ -87,8 +90,7 @@ class RamDiskTemplate(object):
             raise err
         else :
             success = True
-        self.logger.log(lp.WARNING, "Success: " + str(success) + " in " + \
-                   "__get_randomizedMountpoint: " + str(self.mntPoint))
+            self.logger.log(lp.WARNING, "Success: " + str(success) + " in get_randomizedMountpoint: " + str(self.mntPoint))
         return success
 
     ###########################################################################
