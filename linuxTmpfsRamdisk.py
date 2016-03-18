@@ -12,7 +12,7 @@ from tempfile import mkdtemp
 
 #--- non-native python libraries in this source tree
 from lib.run_commands import RunWith
-from lib.loggers import Logger
+from lib.loggers import CrazyLogger
 from lib.loggers import LogPriority as lp
 from commonRamdiskTemplate import RamDiskTemplate
 

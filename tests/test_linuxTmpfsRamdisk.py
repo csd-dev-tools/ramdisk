@@ -4,6 +4,7 @@ Test of the Linux tmpfs ramdisk
 
 @author: Roy Nielsen
 """
+from __future__ import absolute_import
 #--- Native python libraries
 import re
 import os
@@ -16,7 +17,7 @@ from datetime import datetime
 
 #--- non-native python libraries in this source tree
 from tests.genericRamdiskTest import GenericRamdiskTest
-from lib.loggers import Logger
+from lib.loggers import CrazyLogger
 from lib.loggers import LogPriority as lp
 from lib.libHelperExceptions import NotValidForThisOS
 
@@ -46,7 +47,7 @@ class test_linuxTmpfsRamdisk(GenericRamdiskTest):
 
         self.libcPath = None # initial initialization
 
-        self.logger = Logger()
+        self.logger = CrazyLogger()
 
         #####
         # Initialize the helper class
@@ -99,7 +100,7 @@ class test_linuxTmpfsRamdisk(GenericRamdiskTest):
         """
         disconnect ramdisk
         """
-        #logger = Logger()
+        #logger = CrazyLogger()
         if  unmount(self.mount):
             self.logger.log(lp.INFO, r"Successfully detached disk: " + \
                        str(self.my_ramdisk.mntPoint).strip())
