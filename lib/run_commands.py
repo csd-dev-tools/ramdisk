@@ -19,6 +19,7 @@ import threading
 from subprocess import Popen, PIPE
 
 from .loggers import LogPriority as lp
+from .libHelperFunctions import getLibc
 
 def OSNotValidForRunWith(Exception):
     """
@@ -56,10 +57,7 @@ class RunWith(object):
         self.myshell = None
         #####
         # setting up to call ctypes to do a filesystem sync
-        if sys.platform.lower() == "darwin":
-            self.libc = ctypes.CDLL("/usr/lib/libc.dylib")
-        else:
-            self.libc = None
+        self.libc = getLibc()
 
     def setCommand(self, command, myshell=False):
         """

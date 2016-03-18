@@ -37,7 +37,7 @@ class test_linuxTmpfsRamdisk(GenericRamdiskTest):
     """
 
     @classmethod
-    def setUpClass(self):
+    def setUpInstanceSpecifics(self):
         """
         Initializer
         """
