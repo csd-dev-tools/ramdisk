@@ -3,7 +3,6 @@ Template for the ramdisk classes
 
 @author: Roy Nielsen
 """
-from __future__ import absolute_import
 #--- Native python libraries
 from tempfile import mkdtemp
 

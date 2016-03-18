@@ -13,7 +13,6 @@ import unittest
 from optparse import OptionParser, SUPPRESS_HELP, OptionValueError, Option
 
 testdir = "./tests"
-sys.path.append(testdir)
 
 from lib.loggers import CrazyLogger
 
@@ -90,16 +89,16 @@ class BuildAndRunSuite(object):
             test_name = str(check_file).split("/")[-1]
             test_name = str(test_name).split(".")[0]
             print "test_name: " + str(test_name)
-            test_name_import_path = "." + ".".join([self.test_dir_name, test_name])
+            test_name_import_path = ".".join([self.test_dir_name, test_name])
             print "test_name_import_path: " + str(test_name_import_path)
 
             ################################################
             # Test class needs to be named the same as the
             #   filename for this to work.
             # import the file named in "test_name" variable
-            test_to_run = __import__(test_name)
+            module_to_run = __import__(test_name_import_path, fromlist=[test_name], level=-1)
             # getattr(x, 'foobar') is equivalent to x.foobar
-            test_to_run = getattr(test_to_run, test_name)
+            test_to_run = getattr(module_to_run, test_name)
             # Add the test class to the test suite
             self.test_suite.addTest(unittest.makeSuite(test_to_run))
 
