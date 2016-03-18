@@ -116,7 +116,8 @@ class GenericRamdiskTest(unittest.TestCase):
             #####
             # For Linux
             possible_paths = ["/lib/x86_64-linux-gnu/libc.so.6",
-                              "/lib/i386-linux-gnu/libc.so.6"]
+                              "/lib/i386-linux-gnu/libc.so.6",
+                              "/usr/lib64/libc.so.6"]
             for path in possible_paths:
 
                 if os.path.exists(path):
