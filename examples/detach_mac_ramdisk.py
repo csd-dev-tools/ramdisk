@@ -2,9 +2,15 @@
 """
 @author: Roy Nielsen
 """
-from macRamdisk import detach
-from log_message import log_message
+from __future__ import absolute_import
+#--- Native python libraries
+import sys
 from optparse import OptionParser, SUPPRESS_HELP
+sys.path.append("..")
+#--- non-native python libraries in this source tree
+from macRamdisk import detach
+from lib.loggers import CrazyLogger
+from lib.loggers import LogPriority as lp
 
 parser = OptionParser(usage="\n\n%prog [options]\n\n", version="0.7.2")
 
@@ -19,20 +25,23 @@ parser.add_option("-v", "--verbose", action="store_true",
 (opts, args) = parser.parse_args()
 
 if opts.verbose != 0:
-    message_level = "verbose"
+    level = Logger(level=lp.INFO)
 elif opts.debug != 0:
-    message_level = "debug"
+    level = Logger(level=lp.DEBUG)
 else:
-    message_level="normal"
+    level=lp.WARNING
 
 if opts.device == 0:
     raise Exception("Cannot detach a device with no name..")
 else:
     device = opts.device
     
-if detach(device, message_level):
-    log_message(r"Successfully detached disk: " + str(device).strip(), "verbose", message_level)
+logger = CrazyLogger(level=level)
+logger.initializeLogs()
+    
+if detach(device, logger):
+    logger.log(lp.INFO, r"Successfully detached disk: " + str(device).strip())
 else:
-    log_message(r"Couldn't detach disk: " + str(device).strip())
+    logger.log(lp.WARNING, r"Couldn't detach disk: " + str(device).strip())
     raise Exception(r"Cannot eject disk: " + str(device).strip())
 
