@@ -246,7 +246,7 @@ class CrazyLogger(object):
         if myconsole:
             self.logr.addHandler(conHandler)
             self.logr.log(LogPriority.DEBUG,"Added StreamHandler")
-        if syslog:
+        if self.syslog:
             try:
                 self.logr.addHandler(sysHandler)
                 self.logr.log(LogPriority.DEBUG,"Added SyslogHanlder")

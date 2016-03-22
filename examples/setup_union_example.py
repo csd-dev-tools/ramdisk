@@ -8,21 +8,21 @@
 import os
 import sys
 from optparse import OptionParser, SUPPRESS_HELP
-
+sys.path.append("..")
 #--- non-native python libraries in this source tree
-from ..lib.loggers import Logger
-from ..lib.loggers import LogPriority as lp
+from lib.loggers import CrazyLogger
+from lib.loggers import LogPriority as lp
 
 #####
 # Load OS specific Ramdisks
 if sys.platform.startswith("darwin"):
     #####
     # For Mac
-    from ..macRamdisk import RamDisk, unmount
+    from macRamdisk import RamDisk, unmount
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
-    from ..linuxTmpfsRamdisk import RamDisk, unmount
+    from linuxTmpfsRamdisk import RamDisk, unmount
 else:
     print "'" + str(sys.platform) + "' platform not supported..."
 
@@ -64,7 +64,8 @@ else:
 if not os.path.exists(mntpnt):
     os.makedirs(mntpnt)
 
-logger = Logger(level=level)
+logger = CrazyLogger(level=level)
+logger.initializeLogs()
 
 ramdisk = RamDisk(size=size, logger=logger)
 ramdisk.logData()
