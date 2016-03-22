@@ -3,24 +3,25 @@
 @author: Roy Nielsen
 
 """
+from __future__ import absolute_import
 #--- Native python libraries
 import sys
 from optparse import OptionParser, SUPPRESS_HELP
-
+sys.path.append("..")
 #--- non-native python libraries in this source tree
-from ..lib.loggers import Logger
-from ..lib.loggers import LogPriority as lp
+from lib.loggers import CrazyLogger
+from lib.loggers import LogPriority as lp
 
 #####
 # Load OS specific Ramdisks
 if sys.platform.startswith("darwin"):
     #####
     # For Mac
-    from ..macRamdisk import RamDisk, unmount
+    from macRamdisk import RamDisk, unmount
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
-    from ..linuxTmpfsRamdisk import RamDisk, unmount
+    from linuxTmpfsRamdisk import RamDisk, unmount
 else:
     print "'" + str(sys.platform) + "' platform not supported..."
 
@@ -52,7 +53,8 @@ if opts.size:
     size = int(opts.size)  # in Megabytes
 mntpnt = opts.mntpnt
 
-logger = Logger()
+logger = CrazyLogger()
+logger.initializeLogs()
 
 ramdisk = RamDisk(str(size), mntpnt, logger)
 ramdisk.logData()
