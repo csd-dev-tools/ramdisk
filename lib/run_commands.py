@@ -18,8 +18,9 @@ import termios
 import threading
 from subprocess import Popen, PIPE
 
-from .loggers import LogPriority as lp
-from .libHelperFunctions import getLibc
+from lib.loggers import LogPriority as lp
+from lib.loggers import CrazyLogger
+from lib.libHelperFunctions import getLibc
 
 def OSNotValidForRunWith(Exception):
     """
@@ -46,8 +47,11 @@ class RunWith(object):
 
     @author: Roy Nielsen
     """
-    def __init__(self, logger):
-        self.logger = logger
+    def __init__(self, logger=False):
+        if not logger:
+            self.logger = CrazyLogger()
+        else:
+            self.logger = logger
         self.command = None
         self.output = None
         self.error = None

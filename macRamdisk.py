@@ -645,17 +645,17 @@ class RamDisk(RamDiskTemplate) :
 
 ###############################################################################
 
-def unmount(device=" ", message_level="normal"):
+def unmount(device=" ", logger=False):
     """
     On the Mac, call detach.
 
     @author: Roy Nielsen
     """
-    detach(device, message_level)
+    detach(device, logger)
 
 ###############################################################################
 
-def detach(device=" ", logger=None):
+def detach(device=" ", logger=False):
     """
     Eject the ramdisk
     Detach (on the mac) is a better solution than unmount and eject
@@ -666,7 +666,9 @@ def detach(device=" ", logger=None):
     """
     success = False
     if not logger:
-        logger = Logger()
+        logger = CrazyLogger()
+    else:
+        logger = logger
     myRunWith = RunWith(logger)
     if not re.match("^\s*$", device):
         cmd = ["/usr/bin/hdiutil", "detach", device]

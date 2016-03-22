@@ -22,7 +22,7 @@ from lib.loggers import LogPriority as lp
 if sys.platform.startswith("darwin"):
     #####
     # For Mac
-    from macRamdisk import RamDisk, detach
+    from macRamdisk import RamDisk, unmount
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
@@ -81,6 +81,7 @@ class GenericRamdiskTest(unittest.TestCase):
 
         self.setUpInstanceSpecifics()
 
+    @classmethod
     def setUpInstanceSpecifics(self):
         """
         Call the child class setUpClass initializer, if possible..
@@ -369,9 +370,19 @@ class GenericRamdiskTest(unittest.TestCase):
     ##################################
 
     @classmethod
+    def tearDownInstanceSpecifics(self):
+        """
+        Skeleton method in case a child class wants/needs to override it.
+
+        @author: Roy Nielsen
+        """
+        pass
+
+    @classmethod
     def tearDownClass(self):
         """
         """
+        self.tearDownInstanceSpecifics()
         if unmount(self.mount):
             self.logger.log(lp.INFO, r"Successfully detached disk: " + \
                        str(self.my_ramdisk.mntPoint).strip())

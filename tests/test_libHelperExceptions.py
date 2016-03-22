@@ -16,7 +16,7 @@ import ctypes as C
 from datetime import datetime
 
 #--- non-native python libraries in this source tree
-from lib.loggers import Logger
+from lib.loggers import CrazyLogger
 from lib.loggers import LogPriority as lp
 from lib.libHelperExceptions import NotValidForThisOS
 
@@ -44,7 +44,7 @@ class test_libHelperExceptions(unittest.TestCase):
         # Start timer in miliseconds
         self.test_start_time = datetime.now()
 
-        self.logger = Logger()
+        self.logger = CrazyLogger()
 
         self.libcPath = None # initial initialization
 
@@ -125,7 +125,7 @@ class test_libHelperExceptions(unittest.TestCase):
         """
         disconnect ramdisk
         """
-        logger = Logger()
+        logger = CrazyLogger()
         #####
         # capture end time
         test_end_time = datetime.now()
