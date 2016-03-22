@@ -2,13 +2,15 @@
 """
 @author: Roy Nielsen
 """
+from __future__ import absolute_import
 #--- Native python libraries
+import sys
 from optparse import OptionParser, SUPPRESS_HELP
-
+sys.path.append("..")
 #--- non-native python libraries in this source tree
-from ..macRamdisk import detach
-from ..lib.loggers import Logger
-from ..lib.loggers import LogPriority as lp
+from macRamdisk import detach
+from lib.loggers import CrazyLogger
+from lib.loggers import LogPriority as lp
 
 parser = OptionParser(usage="\n\n%prog [options]\n\n", version="0.7.2")
 
@@ -34,7 +36,8 @@ if opts.device == 0:
 else:
     device = opts.device
     
-logger = Logger(level=level)
+logger = CrazyLogger(level=level)
+logger.initializeLogs()
     
 if detach(device, logger):
     logger.log(lp.INFO, r"Successfully detached disk: " + str(device).strip())
