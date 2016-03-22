@@ -308,7 +308,7 @@ class CrazyLogger(object):
 
         #####
         # Get the name of the program using this library
-        prog = sys.argv[0]
+        prog = sys.argv[0].split("/")[-1]
 
         #####
         # Get the filename of the code calling CrazyLogger.log()
