@@ -57,7 +57,6 @@ class test_linuxTmpfsRamdisk(GenericRamdiskTest):
         # If we don't have a supported platform, skip this test.
         if not sys.platform.startswith("linux"):
             raise unittest.SkipTest("This is not valid on this OS")
-        GenericRamdiskTest._initializeClass(self.logger)
 
     def setUp(self):
         """
