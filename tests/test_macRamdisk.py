@@ -3,6 +3,8 @@
 
 @author: Roy Nielsen
 """
+from __future__ import absolute_import
+#--- Native python libraries
 import re
 import os
 import sys
@@ -12,12 +14,11 @@ import tempfile
 import ctypes as C
 from datetime import datetime
 
-
-sys.path.append("../")
-
-from genericRamdiskTest import GenericRamdiskTest
-from log_message import logMessage
-from libHelperExceptions import NotValidForThisOS
+#--- non-native python libraries in this source tree
+from tests.genericRamdiskTest import GenericRamdiskTest
+from lib.loggers import CrazyLogger
+from lib.loggers import LogPriority as lp
+from lib.libHelperExceptions import NotValidForThisOS
 
 #####
 # Load OS specific Ramdisks
@@ -35,30 +36,14 @@ class test_macRamdisk(GenericRamdiskTest):
     """
 
     @classmethod
-    def setUpClass(self):
+    def setUpInstanceSpecifics(self):
         """
         Initializer
         """
-        # Start timer in miliseconds
-        self.test_start_time = datetime.now()
-
-        #self.message_level = "debug"
-        self.message_level = "debug"
-
-        #####
-        # Initialize the helper class
-        #self.initializeHelper = False
-
         #####
         # If we don't have a supported platform, skip this test.
-        if not sys.platform.startswith("darwin") and \
-           not sys.platform.startswith("linux"):
-            unittest.SkipTest("This is not valid on this OS")
-        GenericRamdiskTest._initializeClass(message_level=self.message_level)
-        #self._initializeClass(self.initializeHelper)
-        #self.mount = self.mountPoint
-        self.libcPath = None # initial initialization
-        #GenericRamdiskTest.getLibc()
+        if not sys.platform.startswith("darwin"):
+            raise unittest.SkipTest("This is not valid on this OS")
 
     ##################################
 
@@ -69,6 +54,7 @@ class test_macRamdisk(GenericRamdiskTest):
         @author: Roy Nielsen
         """
         #self.getLibc()
+        pass
 
 ###############################################################################
 ##### Method Tests
@@ -90,21 +76,10 @@ class test_macRamdisk(GenericRamdiskTest):
 ###############################################################################
 ##### unittest Tear down
     @classmethod
-    def tearDownClass(self):
+    def tearDownInstanceSpecifics(self):
         """
         disconnect ramdisk
         """
-        unmount(self.mount)
-        #####
-        # capture end time
-        test_end_time = datetime.now()
-
-        #####
-        # Calculate and log how long it took...
-        test_time = (test_end_time - self.test_start_time)
-
-        logMessage(self.__module__ + " took " + str(test_time) + \
-                  " time to complete...",
-                  "normal", self.message_level)
+        pass
 
 ###############################################################################

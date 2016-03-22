@@ -1,3 +1,10 @@
+"""
+Generic ramdisk test, with helper functions. Inherited by other tests.
+
+@author: Roy Nielsen
+"""
+#--- Native python libraries
+from __future__ import absolute_import
 import os
 import re
 import sys
@@ -5,17 +12,17 @@ import tempfile
 import unittest
 import ctypes
 from datetime import datetime
-
-sys.path.append("../")
-
-from log_message import logMessage
+#sys.path.append("../")
+#--- non-native python libraries in this source tree
+from lib.loggers import CrazyLogger
+from lib.loggers import LogPriority as lp
 
 #####
 # Load OS specific Ramdisks
 if sys.platform.startswith("darwin"):
     #####
     # For Mac
-    from macRamdisk import RamDisk, detach
+    from macRamdisk import RamDisk, unmount
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
@@ -24,20 +31,21 @@ elif sys.platform.startswith("linux"):
 class GenericRamdiskTest(unittest.TestCase):
     """
     Holds helper methods.  DO NOT create an init
-    
+
     Inspiration for using classmethod:
     http://simeonfranklin.com/testing2.pdf
 
     @author: Roy Nielsen
     """
     @classmethod
-    def _initializeClass(self, message_level="normal"):
+    def setUpClass(self):
         """
         """
         self.getLibc(sys.platform.lower())
-        self.initializeHelper = True
         self.subdirs = ["two", "three" "one/four"]
-        self.message_level = message_level
+        self.logger = CrazyLogger()
+        self.logger.log(lp.CRITICAL, "Logger initialized............................")
+
         """
         Set up a ramdisk and use that random location as a root to test the
         filesystem functionality of what is being tested.
@@ -53,17 +61,13 @@ class GenericRamdiskTest(unittest.TestCase):
         self.mnt_pnt_requested = False
 
         # get a ramdisk of appropriate size, with a secure random mountpoint
-        self.my_ramdisk = RamDisk(str(ramdisk_size),
-                                  self.mnt_pnt_requested,
-                                  self.message_level)
+        self.my_ramdisk = RamDisk(size=str(ramdisk_size), logger=self.logger)
         (self.success, self.mountPoint, self.ramdiskDev) = self.my_ramdisk.getData()
 
         self.mount = self.mountPoint
 
-        logMessage("::::::::Ramdisk Mount Point: " + str(self.mountPoint), \
-                   "debug", self.message_level)
-        logMessage("::::::::Ramdisk Device     : " + str(self.ramdiskDev), \
-                   "debug", self.message_level)
+        self.logger.log(lp.INFO, "::::::::Ramdisk Mount Point: " + str(self.mountPoint))
+        self.logger.log(lp.INFO, "::::::::Ramdisk Device     : " + str(self.ramdiskDev))
 
         if not self.success:
             raise IOError("Cannot get a ramdisk for some reason. . .")
@@ -71,18 +75,26 @@ class GenericRamdiskTest(unittest.TestCase):
         #####
         # Create a temp location on disk to run benchmark tests against
         self.fs_dir = tempfile.mkdtemp()
-        return self.initializeHelper
+
+        # Start timer in miliseconds
+        self.test_start_time = datetime.now()
+
+        self.setUpInstanceSpecifics()
+
+    @classmethod
+    def setUpInstanceSpecifics(self):
+        """
+        Call the child class setUpClass initializer, if possible..
+
+        Here to be over-ridden by a child class.
+
+        @author: Roy Nielsen
+        """
+        pass
 
     ################################################
     ##### Helper Methods
 
-    def setMessageLevel(self, msg_lvl="normal"):
-        """
-        Set the logging level to what is passed in.
-        """
-        self.message_level = msg_lvl
-
-    ################################################
     @classmethod
     def getLibc(self, osfamily=""):
         """
@@ -105,7 +117,8 @@ class GenericRamdiskTest(unittest.TestCase):
             #####
             # For Linux
             possible_paths = ["/lib/x86_64-linux-gnu/libc.so.6",
-                              "/lib/i386-linux-gnu/libc.so.6"]
+                              "/lib/i386-linux-gnu/libc.so.6",
+                              "/usr/lib64/libc.so.6"]
             for path in possible_paths:
 
                 if os.path.exists(path):
@@ -151,7 +164,7 @@ class GenericRamdiskTest(unittest.TestCase):
 
     ################################################
 
-    def touch(self, fname="", message_level="normal") :
+    def touch(self, fname="", message_level="normal"):
         """
         Python implementation of the touch command..
 
@@ -160,35 +173,34 @@ class GenericRamdiskTest(unittest.TestCase):
 
         @author: Roy Nielsen
         """
-        if re.match("^\s*$", str(fname)) :
-            logMessage("Cannot touch a file without a filename....", \
-                       "normal", self.message_level)
-        else :
+        if re.match("^\s*$", str(fname)):
+            self.logger.log(lp.WARNING, "Cannot touch a file without a filename....")
+        else:
             try:
                 os.utime(fname, None)
             except:
-                try :
+                try:
                     open(fname, 'a').close()
-                except Exception, err :
-                    logMessage("Cannot open to touch: " + str(fname), "normal", self.message_level)
+                except Exception, err:
+                    self.logger.log(lp.WARNING, "Cannot open to touch: " + str(fname))
 
     ################################################
 
-    def mkdirs(self, path="") :
+    def mkdirs(self, path=""):
         """
         A function to do an equivalent of "mkdir -p"
         """
-        if not path :
-            logMessage("Bad path...")
-        else :
+        if not path:
+            self.logger.log(lp.WARNING, "Bad path...")
+        else:
             if not os.path.exists(str(path)):
                 try:
                     os.makedirs(str(path))
                 except OSError as err1:
-                    logMessage("OSError exception attempting to create directory: " + str(path))
-                    logMessage("Exception: " + str(err1))
-                except Exception, err2 :
-                    logMessage("Unexpected Exception trying to makedirs: " + str(err2))
+                    self.logger.log(lp.WARNING, "OSError exception attempting to create directory: " + str(path))
+                    self.logger.log(lp.WARNING, "Exception: " + str(err1))
+                except Exception, err2:
+                    self.logger.log(lp.WARNING, "Unexpected Exception trying to makedirs: " + str(err2))
 
     ################################################
 
@@ -216,7 +228,7 @@ class GenericRamdiskTest(unittest.TestCase):
                 tmpfile_path = os.path.join(file_path, "testfile")
             else:
                 tmpfile_path = file_path
-            logMessage("Writing to: " + tmpfile_path, "debug", self.message_level)
+            self.logger.log(lp.DEBUG, "Writing to: " + tmpfile_path)
             try:
                 # Get the number of blocks to create
                 blocks = file_size/block_size
@@ -241,10 +253,9 @@ class GenericRamdiskTest(unittest.TestCase):
                 # capture end time
                 end_time = datetime.now()
             except Exception, err:
-                logMessage("Exception trying to write temp file for "    + \
-                           "benchmarking...", "normal", self.message_level)
-                logMessage("Exception thrown: " + str(err), \
-                           "normal", self.message_level)
+                self.logger.log(lp.WARNING, "Exception trying to write temp file for "  + \
+                                "benchmarking...")
+                self.logger.log(lp.WARNING, "Exception thrown: " + str(err))
                 total_time = 0
             else:
                 total_time = end_time - start_time
@@ -256,11 +267,10 @@ class GenericRamdiskTest(unittest.TestCase):
         """
         """
         if self.my_ramdisk.unmount():
-            logMessage(r"Successfully detached disk: " + \
-                       str(self.my_ramdisk.mntPoint).strip(), \
-                       "verbose", self.message_level)
+            self.logger.log(lp.INFO, r"Successfully detached disk: " + \
+                       str(self.my_ramdisk.mntPoint).strip())
         else:
-            logMessage(r"Couldn't detach disk: " + \
+            self.logger.log(lp.WARNING, r"Couldn't detach disk: " + \
                        str(self.my_ramdisk.myRamdiskDev).strip() + \
                        " : mntpnt: " + str(self.my_ramdisk.mntPoint))
             raise Exception(r"Cannot eject disk: " + \
@@ -279,7 +289,7 @@ class GenericRamdiskTest(unittest.TestCase):
         # Do file setup for this test
         for subdir in self.subdirs:
             dirpath = self.mountPoint + "/" + subdir
-            logMessage("DIRPATH: : " + str(dirpath), "debug", self.message_level)
+            self.logger.log(lp.DEBUG, "DIRPATH: : " + str(dirpath))
             self.mkdirs(dirpath)
             self.touch(dirpath + "/" + "test")
 
@@ -315,21 +325,21 @@ class GenericRamdiskTest(unittest.TestCase):
         my_fs_array = [oneHundred, twoHundred, fiveHundred, oneGig]
 
         for file_size in my_fs_array:
-            logMessage("testfile size: " + str(file_size), "debug", self.message_level)
+            self.logger.log(lp.INFO, "testfile size: " + str(file_size))
             #####
             # Create filesystem file and capture the time it takes...
             fs_time = self.mkfile(os.path.join(self.fs_dir, "testfile"), file_size)
-            logMessage("fs_time: " + str(fs_time), "debug", self.message_level)
+            self.logger.log(lp.INFO, "fs_time: " + str(fs_time))
 
             #####
             # get the time it takes to create the file in ramdisk...
             ram_time = self.mkfile(os.path.join(self.mountPoint, "testfile"), file_size)
-            logMessage("ram_time: " + str(ram_time), "debug", self.message_level)
+            self.logger.log(lp.INFO, "ram_time: " + str(ram_time))
 
             speed = fs_time - ram_time
-            logMessage("ramdisk: " + str(speed) + " faster...", "debug", self.message_level)
+            self.logger.log(lp.INFO, "ramdisk: " + str(speed) + " faster...")
 
-            self.assertTrue((fs_time - ram_time).days>-1, "Problem with ramdisk...")
+            self.assertTrue((fs_time - ram_time).days > -1, "Problem with ramdisk...")
 
     ##################################
 
@@ -356,5 +366,43 @@ class GenericRamdiskTest(unittest.TestCase):
         fstime = fsdisk_endtime - fs_starttime
 
         self.assertTrue((fstime - rtime).days > -1, "Problem with ramdisk...")
+
+    ##################################
+
+    @classmethod
+    def tearDownInstanceSpecifics(self):
+        """
+        Skeleton method in case a child class wants/needs to override it.
+
+        @author: Roy Nielsen
+        """
+        pass
+
+    @classmethod
+    def tearDownClass(self):
+        """
+        """
+        self.tearDownInstanceSpecifics()
+        if unmount(self.mount):
+            self.logger.log(lp.INFO, r"Successfully detached disk: " + \
+                       str(self.my_ramdisk.mntPoint).strip())
+        else:
+            self.logger.log(lp.WARNING, r"Couldn't detach disk: " + \
+                       str(self.my_ramdisk.myRamdiskDev).strip() + \
+                       " : mntpnt: " + str(self.my_ramdisk.mntPoint))
+            raise Exception(r"Cannot eject disk: " + \
+                            str(self.my_ramdisk.myRamdiskDev).strip() + \
+                            " : mntpnt: " + str(self.my_ramdisk.mntPoint))
+        #####
+        # capture end time
+        test_end_time = datetime.now()
+
+        #####
+        # Calculate and log how long it took...
+        test_time = (test_end_time - self.test_start_time)
+
+        self.logger.log(lp.INFO, self.__module__ + " took " + str(test_time) + \
+                  " time to complete...")
+
 
 ###############################################################################
