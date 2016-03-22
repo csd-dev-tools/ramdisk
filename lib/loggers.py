@@ -174,7 +174,7 @@ class CrazyLogger(object):
         @author: Roy Nielsen
         """
         if not filename:
-            filename = str(__name__)
+            filename = sys.argv[0].split("/")[-1]
         success = False
         self.syslog = syslog
         self.rotate = False
