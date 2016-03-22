@@ -17,21 +17,21 @@ from datetime import datetime
 sys.path.append("../")
 
 #--- non-native python libraries in this source tree
-from ..lib.loggers import Logger
-from ..lib.loggers import LogPriority as lp
-from ..lib.libHelperExceptions import NotValidForThisOS
-from ..lib.genericRamdiskTest import GenericRamdiskTest
+from lib.loggers import CrazyLogger
+from lib.loggers import LogPriority as lp
+from lib.libHelperExceptions import NotValidForThisOS
+from tests.genericRamdiskTest import GenericRamdiskTest
 
 #####
 # Load OS specific Ramdisks
 if sys.platform.startswith("darwin"):
     #####
     # For Mac
-    from ..macRamdisk import RamDisk, unmount
+    from macRamdisk import RamDisk, unmount
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
-    from ..linuxTmpfsRamdisk import RamDisk, unmount
+    from linuxTmpfsRamdisk import RamDisk, unmount
 
 class test_ramdisk(GenericRamdiskTest):
     """
@@ -67,7 +67,7 @@ class test_ramdisk(GenericRamdiskTest):
         ramdisk_size = size = size_in_mb
         self.mnt_pnt_requested = ""
 
-        self.logger = Logger()
+        self.logger = CrazyLogger()
 
         self.success = False
         self.mountPoint = False

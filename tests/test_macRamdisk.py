@@ -40,7 +40,7 @@ class test_macRamdisk(GenericRamdiskTest):
         """
         Initializer
         """
-       #####
+        #####
         # If we don't have a supported platform, skip this test.
         if not sys.platform.startswith("darwin"):
             raise unittest.SkipTest("This is not valid on this OS")
@@ -76,7 +76,7 @@ class test_macRamdisk(GenericRamdiskTest):
 ###############################################################################
 ##### unittest Tear down
     @classmethod
-    def tearDownClass(self):
+    def tearDownInstanceSpecifics(self):
         """
         disconnect ramdisk
         """

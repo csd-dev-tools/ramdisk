@@ -19,7 +19,7 @@ from datetime import datetime
 
 #--- non-native python libraries in this source tree
 from tests.genericRamdiskTest import GenericRamdiskTest
-from lib.loggers import Logger
+from lib.loggers import CrazyLogger
 from lib.loggers import LogPriority as lp
 from lib.libHelperExceptions import NotValidForThisOS
 
@@ -42,25 +42,16 @@ class test_unionOver(GenericRamdiskTest):
     """
 
     @classmethod
-    def setUpClass(self):
+    def setUpClassInstanceSpecifics(self):
         """
         Initializer
         """
         unittest.SkipTest("Needs appropriate tests written")
-        # Start timer in miliseconds
-        self.test_start_time = datetime.now()
-
-        #self.message_level = "debug"
-        self.logger = Logger()
-
-        self.libcPath = None # initial initialization
 
         #####
         # If we don't have a supported platform, skip this test.
-        if not sys.platform.startswith("darwin") and \
-           not sys.platform.startswith("linux"):
-            unittest.SkipTest("This is not valid on this OS")
-        GenericRamdiskTest._initializeClass(self.logger)
+        if not sys.platform.startswith("darwin"):
+            raise unittest.SkipTest("This is not valid on this OS")
 
 
     def setUp(self):
@@ -92,31 +83,10 @@ class test_unionOver(GenericRamdiskTest):
 ###############################################################################
 ##### unittest Tear down
     @classmethod
-    def tearDownClass(self):
+    def tearDownClassInstanceSpecifics(self):
         """
         disconnect ramdisk
         """
-        self.logger = Logger()
-
-        if unmount(self.mount):
-            self.logger.log(lp.INFO, r"Successfully detached disk: " + \
-                       str(self.my_ramdisk.mntPoint).strip())
-        else:
-            self.logger.log(lp.WARNING, r"Couldn't detach disk: " + \
-                       str(self.my_ramdisk.myRamdiskDev).strip() + \
-                       " : mntpnt: " + str(self.my_ramdisk.mntPoint))
-            raise Exception(r"Cannot eject disk: " + \
-                            str(self.my_ramdisk.myRamdiskDev).strip() + \
-                            " : mntpnt: " + str(self.my_ramdisk.mntPoint))
-        #####
-        # capture end time
-        test_end_time = datetime.now()
-
-        #####
-        # Calculate and log how long it took...
-        test_time = (test_end_time - self.test_start_time)
-
-        self.logger.log(lp.INFO, self.__module__ + " took " + str(test_time) + \
-                  " time to complete...")
+        pass
 
 ###############################################################################
