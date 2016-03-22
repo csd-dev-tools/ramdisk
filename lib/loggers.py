@@ -16,6 +16,7 @@ import re
 import sys
 import time
 import socket
+import inspect
 import calendar
 import datetime
 import logging
@@ -60,10 +61,11 @@ def singleton_decorator(cls):
 class CrazyLogger(object):
     """
     """
-    def __init__(self, environ=False, debug_mode=False, verbose_mode=False, level=-1):
+    def __init__(self, environ=False, debug_mode=False, verbose_mode=False, level=30):
         """
         """
-        self.lvl = level
+        print ".............Level: " + str(level)
+        self.lvl = int(level)
         if environ:
             self.environment = environ
             envDebugMode = self.environment.getdebugmode()
@@ -77,12 +79,15 @@ class CrazyLogger(object):
                 self.lvl = 10
             elif verbose_mode:
                 self.lvl = 20
-        if not int(self.lvl) > 0:
-                self.lvl = 10
-        elif self.validateLevel(level):
-            self.lvl = level
+        #####
+        # If the first three aren't passed in, make a guess based on level
+        if self.lvl < 0:
+            self.lvl = 20
+        elif self.lvl > 0:
+            self.validateLevel(self.lvl)
         else:
             self.lvl = 30
+
         self.filename = ""
         self.levels = {"NOTSET" : 0, "DEBUG" : 10, "INFO" : 20, "WARNING" : 30,
                        "ERROR" : 40, "CRITICAL" : 50}
@@ -91,7 +96,7 @@ class CrazyLogger(object):
 
     #############################################
 
-    def setInitialLoggingLevel(self, level=""):
+    def setInitialLoggingLevel(self, level=30):
         """
         """
         success = False
@@ -102,12 +107,13 @@ class CrazyLogger(object):
 
     #############################################
 
-    def validateLevel(self, level=-1):
+    def validateLevel(self, level=30):
         """
         Input validation for the logging level
 
         @author: Roy Nielsen
         """
+        
         success = False
         if int(level) > 0 and int(level) <= 60:
             self.lvl = level
@@ -170,6 +176,7 @@ class CrazyLogger(object):
         if not filename:
             filename = str(__name__)
         success = False
+        self.syslog = syslog
         self.rotate = False
         self.fileHandler = False
         if extension_type in ["none", "epoch", "time", "inc", "sys"]:
@@ -210,8 +217,6 @@ class CrazyLogger(object):
             #####
             # Set up a regular root log handler
             fileHandler = logging.FileHandler(self.filename)
-            formatter = self.formatLoggingString()
-            fileHandler.setFormatter(formatter)
             self.fileHandler = True
         else:
             #####
@@ -219,21 +224,14 @@ class CrazyLogger(object):
             rotHandler = logging.handlers.RotatingFileHandler(self.filename,
                                                               maxBytes=size,
                                                               backupCount=logCount)
-            formatter = self.formatLoggingString()
-            rotHandler.setFormatter(formatter)
-
         if myconsole:
             #####
             # Set up StreamHandler to log to the console
             conHandler = logging.StreamHandler()
-            formatter = self.formatLoggingString()
-            conHandler.setFormatter(formatter)
-        if syslog:
+        if self.syslog:
             #####
             # Set up the SysLogHandler
             sysHandler = logging.handlers.SysLogHandler()
-            formatter = self.formatLoggingString()
-            sysHandler.setFormatter(formatter)
 
         #####
         # Add applicable handlers to the logger
@@ -286,65 +284,99 @@ class CrazyLogger(object):
 
     #############################################
 
-    def formatLoggingString(self):
-        """
-        Will set the logging level of the current self.logr.
-
-        @author: Roy Nielsen
-        """
-        #####
-        # Process via logging level
-        if int(self.lvl) > 0 and int(self.lvl) < 10:
-            # Quiet, no logging, no formatting...
-            formatter = logging.Formatter('')
-        elif int(self.lvl) >= 10 and int(self.lvl) < 20:
-            #####
-            # Debug
-            formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s'+\
-                                          ' %(module)s %(funcName)s %(lineno)s'+\
-                                          ' %(message)s')
-        elif int(self.lvl) >= 20 and int(self.lvl) < 30:
-            #####
-            # Info
-            formatter = logging.Formatter('%(asctime)s %(levelname)s ' + \
-                                          '%(module)s %(lineno)s %(message)s')
-        elif int(self.lvl) >=30 and int(self.lvl) < 40:
-            #####
-            # Warning
-            formatter = logging.Formatter('%(asctime)s %(levelname)s ' + \
-                                          '%(module)s %(lineno)s %(message)s')
-        elif int(self.lvl) >= 40 and int(self.lvl) < 50:
-            #####
-            # Error
-            formatter = logging.Formatter('%(asctime)s %(levelname)s ' + \
-                                          '%(module)s %(lineno)s %(message)s')
-        elif int(self.lvl) >= 50 and int(self.lvl) < 60:
-            #####
-            # Critical
-            formatter = logging.Formatter('%(asctime)s %(levelname)s ' + \
-                                          '%(module)s %(lineno)s %(message)s')
-        else:
-            formatter = logging.Formatter('')
-            raise IllegalLoggingLevelError("Not a valid value for a logging level.")
-
-        return formatter
-
-    #############################################
-
     def log(self, priority=0, msg=""):
         """
-        Interface to work similar to Stonix's LogDispatcher.log
+        Interface to work similar to Stonix's LogDispatcher.py
 
-        @note: Stonix's LogDispatcher.log authored by: scmcleni
+        @note: Stonix's LogDispatcher.py authored by: scmcleni
 
         @author: Roy Nielsen
         """
         pri = str(priority)
-        if re.match("^\d\d$", pri):
+        if re.match("^\d\d$", pri) and self.validateLevel():
             validatedLvl = int(pri)
+        else:
+            raise IllegalLoggingLevelError("Cannot log at this priority level: " + pri)
+        ####
+        # Use the datetime library to get the time for a timestamp
+        # using format YYYYi-MM-DD-HH-MM-SS
+        # Only dash separators are used to make for easy numeric processing
+        # using local time so the time stamp can be correlated with 
+        # system logs...
+        datestamp = datetime.datetime.now()
+        timestamp = datestamp.strftime("%Y-%m-%d-%H-%M-%S")
+
+        #####
+        # Get the name of the program using this library
+        prog = sys.argv[0]
+
+        #####
+        # Get the filename of the code calling CrazyLogger.log()
+        # members = inspect.getmembers(inspect.stack(), inspect.iscode)
+        # print "Members: " + str(members)
+        # co_filename = members[1][3]
+
+        (frame, fullLengthFilename, line_number, function_name, lines, index) = inspect.getouterframes(inspect.currentframe())[1]
+        filename = fullLengthFilename.split("/")[-1]
+
+        if not self.syslog:
             #####
-            # Process via numerical logging level
+            # longPrefix message to be in the format: 
+            # <timestamp> <calling_script_name> : <filename_of_calling_function>, <name_of_calling_function> (<line number of calling function>)
+            longPrefix = '{} {} : {}, {} ({}) '.format(str(timestamp),
+                                                       str(prog), 
+                                                       str(filename), 
+                                                       str(function_name), 
+                                                       str(line_number))
+            #####
+            # shorterFormat message to be in the format: 
+            # <timestamp> <calling_script_name> : <name_of_calling_function> (<line number of calling function>)
+            shortFormat = '{} {} : {} ({}) '.format(str(timestamp),
+                                                    str(prog),
+                                                    str(function_name),
+                                                    str(line_number))
+        else:
+            #####
+            # longPrefix message to be in the format: 
+            # <calling_script_name> : <filename_of_calling_function>, <name_of_calling_function> (<line number of calling function>)
+            longPrefix = '{} : {}, {} ({}) '.format(str(prog), 
+                                                    str(filename), 
+                                                    str(function_name), 
+                                                    str(line_number))
+            #####
+            # shorterFormat message to be in the format: 
+            # <calling_script_name> : <name_of_calling_function> (<line number of calling function>)
+            shortFormat = '{} : {} ({}) '.format(str(prog),
+                                                 str(function_name), 
+                                                 str(line_number))
+
+        
+        #####
+        # Process via logging level
+        if int(self.lvl) > 0 and int(self.lvl) < 10:
+            # Quiet, no prefix or formatting...
             self.logr.log(validatedLvl, str(msg))
+
+        elif int(self.lvl) >= 10 and int(self.lvl) < 20:
+            #####
+            # Debug
+            self.logr.log(validatedLvl, longPrefix + "DEBUG: (" + pri + ") " + str(msg))
+        elif int(self.lvl) >= 20 and int(self.lvl) < 30:
+            #####
+            # Info
+            self.logr.log(validatedLvl, longPrefix + "DEBUG: (" + pri + ") " + str(msg))
+        elif int(self.lvl) >=30 and int(self.lvl) < 40:
+            #####
+            # Warning
+            self.logr.log(validatedLvl, longPrefix + "DEBUG: (" + pri + ") " + str(msg))
+        elif int(self.lvl) >= 40 and int(self.lvl) < 50:
+            #####
+            # Error
+            self.logr.log(validatedLvl, longPrefix + "DEBUG: (" + pri + ") " + str(msg))
+        elif int(self.lvl) >= 50 and int(self.lvl) < 60:
+            #####
+            # Critical
+            self.logr.log(validatedLvl, longPrefix + "DEBUG: (" + pri + ") " + str(msg))
         else:
             raise IllegalLoggingLevelError("Not a valid value for a logging level.")
 
@@ -358,8 +390,9 @@ class LogPriority(object):
 
     @note: Author of the Stonix LogPriority is scmcleni
     """
-    DEBUG = 10
-    INFO = 20
-    WARNING = 30
-    ERROR = 40
-    CRITICAL = 50
+    DEBUG = int(10)
+    INFO = int(20)
+    WARNING = int(30)
+    ERROR = int(40)
+    CRITICAL = int(50)
+
