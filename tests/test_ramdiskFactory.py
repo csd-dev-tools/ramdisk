@@ -19,6 +19,7 @@ from datetime import datetime
 from lib.loggers import CrazyLogger
 from lib.loggers import LogPriority as lp
 from lib.libHelperExceptions import NotValidForThisOS
+from tests.genericRamdiskTestUtilities import GenericRamdiskTestUtilities
 
 #####
 # Load OS specific Ramdisks
@@ -31,7 +32,7 @@ elif sys.platform.startswith("linux"):
     # For Linux
     from linuxTmpfsRamdisk import RamDisk, unmount
 
-class test_ramdiskFactory(unittest.TestCase):
+class test_ramdiskFactory(unittest.TestCase, GenericRamdiskTestUtilities):
     """
     """
 
@@ -53,7 +54,7 @@ class test_ramdiskFactory(unittest.TestCase):
         if not sys.platform.startswith("darwin") and \
            not sys.platform.startswith("linux"):
             raise unittest.SkipTest("This is not valid on this OS")
-
+        raise unittest.SkipTest("Not a supported tests....")
 
     def setUp(self):
         """

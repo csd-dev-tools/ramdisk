@@ -20,7 +20,7 @@ from subprocess import Popen, PIPE
 
 from lib.loggers import LogPriority as lp
 from lib.loggers import CrazyLogger
-from lib.libHelperFunctions import getLibc
+from lib.get_libc import getLibc
 
 def OSNotValidForRunWith(Exception):
     """
