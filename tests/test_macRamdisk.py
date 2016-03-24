@@ -44,6 +44,8 @@ class test_macRamdisk(GenericRamdiskTest):
         # If we don't have a supported platform, skip this test.
         if not sys.platform.startswith("darwin"):
             raise unittest.SkipTest("This is not valid on this OS")
+        self.getLibc()
+        
 
     ##################################
 
