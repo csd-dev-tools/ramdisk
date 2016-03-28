@@ -1,8 +1,11 @@
 #!/usr/bin/python -u
 """
+CommonRamdiskTemplate test.
 
 @author: Roy Nielsen
 """
+from __future__ import absolute_import
+#--- Native python libraries
 import re
 import os
 import sys
@@ -12,11 +15,11 @@ import tempfile
 import ctypes as C
 from datetime import datetime
 
+#--- non-native python libraries in this source tree
+from lib.loggers import CrazyLogger
+from lib.loggers import LogPriority as lp
 
-sys.path.append("../")
-
-from log_message import logMessage
-from libHelperExceptions import NotValidForThisOS
+from lib.libHelperExceptions import NotValidForThisOS
 
 #####
 # Load OS specific Ramdisks
@@ -27,7 +30,7 @@ if sys.platform.startswith("darwin"):
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
-    from linuxTmpfsRamdisk import RamDisk, detach
+    from linuxTmpfsRamdisk import RamDisk, unmount
 
 class test_commonRamdiskTemplate(unittest.TestCase):
     """
@@ -40,8 +43,6 @@ class test_commonRamdiskTemplate(unittest.TestCase):
         """
         # Start timer in miliseconds
         self.test_start_time = datetime.now()
-
-        self.message_level = "debug"
 
     ##################################
 
@@ -84,7 +85,7 @@ class test_commonRamdiskTemplate(unittest.TestCase):
         """
         Final cleanup actions...
         """
-
+        self.logger = CrazyLogger()
         #####
         # capture end time
         test_end_time = datetime.now()
@@ -93,8 +94,6 @@ class test_commonRamdiskTemplate(unittest.TestCase):
         # Calculate and log how long it took...
         test_time = (test_end_time - self.test_start_time)
 
-        logMessage(self.__module__ + " took " + str(test_time) + \
-                  " time to complete...",
-                  "normal", self.message_level)
+        self.logger.log(lp.INFO, self.__module__ + " took " + str(test_time) + " time to complete...")
 
 ###############################################################################

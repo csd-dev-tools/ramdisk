@@ -1,11 +1,19 @@
+"""
+Linux tmpfs ramdisk implementation
+
+@author: Roy Nielsen
+"""
+#--- Native python libraries
 import os
 import re
 import pwd
 import sys
 from tempfile import mkdtemp
 
-from run_commands import RunWith
-from log_message import logMessage
+#--- non-native python libraries in this source tree
+from lib.run_commands import RunWith
+from lib.loggers import CrazyLogger
+from lib.loggers import LogPriority as lp
 from commonRamdiskTemplate import RamDiskTemplate
 
 ###############################################################################
@@ -61,24 +69,24 @@ class RamDisk(RamDiskTemplate):
     Substitute the following attirbutes for your own values:
 
     [TYPE] is the type of RAM disk to use; either tmpfs or ramfs.
-    [SIZE] is the size to use for the file system. Remember that ramfs does not have a physical limit and is specified as a starting size.
+    [SIZE] is the size to use for the file system. Remember that ramfs does not
+           have a physical limit and is specified as a starting size.
     [FSTYPE] is the type of RAM disk to use; either tmpfs, ramfs, ext4, etc.
     Example:
 
     mount -t tmpfs -o size=512m tmpfs /mnt/ramdisk
 
     """
-    def __init__(self, size=0, mountpoint="",  message_level="normal",
+    def __init__(self, size=0, mountpoint="",  logger=False,
                  mode=700, uid=None, gid=None,
                  fstype="tmpfs", nr_inodes=None, nr_blocks=None):
         """
         """
-        super(RamDisk, self).__init__(size, mountpoint, message_level)
+        super(RamDisk, self).__init__(size, mountpoint, logger)
         #####
         # The passed in size of ramdisk should be in 1Mb chunks
         self.module_version = '20160224.032043.009191'
-
-        self.message_level = message_level
+        self.logger = logger
         if not sys.platform.startswith("linux"):
             raise self.NotValidForThisOS("This ramdisk is only viable for a Linux.")
 
@@ -119,7 +127,7 @@ class RamDisk(RamDiskTemplate):
 
         #####
         # Initialize the RunWith helper for executing shelled out commands.
-        self.runWith = RunWith(self.message_level)
+        self.runWith = RunWith(self.logger)
         self.runWith.getNlogReturns()
         self.success = self._mount()
 
@@ -168,13 +176,12 @@ class RamDisk(RamDiskTemplate):
         """
         success = False
         command = self.buildCommand()
-        self.runWith.set_command(command)
+        self.runWith.setCommand(command)
         self.runWith.communicate()
         retval, reterr, retcode = self.runWith.getNlogReturns()
         if not reterr:
             success = True
         self.printData()
-        self.runWith.getNprintReturns
         self.runWith.getNlogReturns()
         return success
 
@@ -218,7 +225,7 @@ class RamDisk(RamDiskTemplate):
 
         #####
         # Initialize the RunWith helper for executing shelled out commands.
-        self.runWith = RunWith(self.message_level)
+        self.runWith = RunWith(self.logger)
 
         self.buildCommand()
         self._mount()
@@ -234,7 +241,7 @@ class RamDisk(RamDiskTemplate):
         success = False
 
         command = ["/bin/umount", self.mntPoint]
-        self.runWith.set_command(command)
+        self.runWith.setCommand(command)
         self.runWith.communicate()
         retval, reterr, retcode = self.runWith.getNlogReturns()
         if not reterr:
@@ -285,18 +292,18 @@ class RamDisk(RamDiskTemplate):
 
 ###############################################################################
 
-def detach(mnt_point="", message_level="normal"):
+def detach(mnt_point="", logger=False):
     """
     Mirror for the unmount function...
 
     @author: Roy Nielsen
     """
-    success = unmount(mnt_point, message_level)
+    success = unmount(mnt_point, logger)
     return success
 
 ###############################################################################
 
-def unmount(mnt_point="", message_level="normal"):
+def unmount(mnt_point="", logger=False):
     """
     Unmount the ramdisk
 
@@ -304,9 +311,9 @@ def unmount(mnt_point="", message_level="normal"):
     """
     success = False
     if mnt_point:
-        runWith = RunWith(message_level)
+        runWith = RunWith(logger)
         command = ["/bin/umount", mnt_point]
-        runWith.set_command(command)
+        runWith.setCommand(command)
         runWith.communicate()
         retval, reterr, retcode = runWith.getNlogReturns()
         if not reterr:
