@@ -34,6 +34,9 @@ elif sys.platform.startswith("linux"):
 
 class test_linuxTmpfsRamdisk(GenericRamdiskTest):
     """
+    Test for the Linux tmpfs Ramdisk interface
+
+    @author: Roy Nielsen
     """
 
     @classmethod
@@ -41,11 +44,8 @@ class test_linuxTmpfsRamdisk(GenericRamdiskTest):
         """
         Initializer
         """
-        unittest.SkipTest("Appropriate tests need to be written...")
         # Start timer in miliseconds
         self.test_start_time = datetime.now()
-
-        self.libcPath = None # initial initialization
 
         self.logger = CrazyLogger()
 
@@ -99,26 +99,7 @@ class test_linuxTmpfsRamdisk(GenericRamdiskTest):
         """
         disconnect ramdisk
         """
-        #logger = CrazyLogger()
-        if  unmount(self.mount):
-            self.logger.log(lp.INFO, r"Successfully detached disk: " + \
-                       str(self.my_ramdisk.mntPoint).strip())
-        else:
-            self.logger.log(lp.WARNING, r"Couldn't detach disk: " + \
-                       str(self.my_ramdisk.myRamdiskDev).strip() + \
-                       " : mntpnt: " + str(self.my_ramdisk.mntPoint))
-            raise Exception(r"Cannot eject disk: " + \
-                            str(self.my_ramdisk.myRamdiskDev).strip() + \
-                            " : mntpnt: " + str(self.my_ramdisk.mntPoint))
-        #####
-        # capture end time
-        test_end_time = datetime.now()
-
-        #####
-        # Calculate and log how long it took...
-        test_time = (test_end_time - self.test_start_time)
-
-        self.logger.log(lp.INFO, self.__module__ + " took " + str(test_time) + \
-                  " time to complete...")
+        pass
 
 ###############################################################################
+
