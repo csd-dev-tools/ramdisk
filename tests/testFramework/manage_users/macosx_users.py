@@ -8,7 +8,12 @@ unionfs functionality.
 """
 from __future__ import absolute_import
 
-class MacOSXUsersTemplate(object):
+from lib.run_commands import RunWith
+from lib.loggers import CrazyLogger
+from lib.loggers import LogPriority as lp
+from tests.testFramework.manage_users.manage_users_template import ManageUsersTemplate
+
+class MacOSXUser(ManagerUsersTemplate):
     """
     Class to manage user properties.
 
@@ -28,20 +33,67 @@ class MacOSXUsersTemplate(object):
 
     @author: Roy Nielsen
     """
-    def __init__(self, logger, userName="", userShell="/bin/bash",
+    def __init__(self, userName="", userShell="/bin/bash",
                        userComment="", userUid=0, userPriGid=20,
-                       userHomeDir="/tmp"):
+                       userHomeDir="/tmp", logger=False):
+        super(MacOSXUser, self).__init__(userName, userShell,
+                                         userComment, userUid, userPriGid,
+                                         userHomeDir, logger)
+        self.module_version = '20160225.125554.540679'
         self.dscl = "/usr/bin/dscl"
 
         if not userName:
             raise ""
-        
+
         if not userUid or self.uidTaken():
-            self.findUserUid()
+            self.findUniqueUid()
         else:
-            
-        
+            pass
+
         pass
+
+    def setDscl(self, directory="", action="", object="", property="", value=""):
+        """
+        Using dscl to set a value in a directory...
+        
+        @auther: Roy Nielsen
+        """
+        success = False
+        if directory and action and object and property and value:
+            cmd = [self.dscl, directory, action, object, property, value]
+
+            self.runWith.setCommand(cmd)
+            self.runWith.communicate()
+            retval, reterr, retcode = self.runWith.getNlogReturns()
+    
+            if reterr:
+                success = False
+                raise Exception("Error trying to set a value with dscl (" + \
+                                str(reterr).strip() + ")")
+            else:
+                success = True
+
+        return success                
+
+    def getDscl(self, directory="", action="", object="", property="", value=""):
+        """
+        Using dscl to retrieve a value from the directory
+        
+        @author: Roy Nielsen
+        """
+        retval = False
+        if directory and action and object and property and value:
+            cmd = [self.dscl, directory, action, object, property]
+
+            self.runWith.setCommand(cmd)
+            self.runWith.communicate()
+            retval, reterr, retcode = self.runWith.getNlogReturns()
+    
+            if reterr:
+                success = False
+                raise Exception("Error trying to set a value with dscl (" + \
+                                str(reterr).strip() + ")")
+        return retval
 
     def findUniqueUid(self):
         """
@@ -51,8 +103,23 @@ class MacOSXUsersTemplate(object):
 
         @author: Roy Nielsen
         """
-        pass
-    
+        success = False
+        cmd = [self.dscl, ".", "-list", "/Users", "UniqueID"]
+
+        self.runWith.setCommand(cmd)
+        self.runWith.communicate()
+        retval, reterr, retcode = self.runWith.getNlogReturns()
+
+        if reterr:
+            success = False
+            raise Exception("Error trying to create ramdisk(" + \
+                            str(reterr).strip() + ")")
+        else:
+            #####
+            # Sort the list, add one to the highest value and return that
+            # value
+            pass
+
     def uidTaken(self):
         """
         See if the UID requested has been taken.  Only approve uid's over 1k
@@ -62,7 +129,16 @@ class MacOSXUsersTemplate(object):
         """
         success = False
         cmd = [self.dscl, ".", "-list", "/Users", "UniqueID"]
-        pass
+
+        self.runWith.setCommand(cmd)
+        self.runWith.communicate()
+        retval, reterr, retcode = self.runWith.getNlogReturns()
+
+        if reterr:
+            success = False
+            raise Exception("Error trying to create ramdisk(" + \
+                            str(reterr).strip() + ")")
+        else:
 
     def setUserShell(self, user="", shell=""):
         """
@@ -70,15 +146,47 @@ class MacOSXUsersTemplate(object):
 
         @author: Roy Nielsen
         """
-        pass
+        success = False
+        if user and shell:
+            cmd = [self.dscl, "-create", "/Users/" + str(user),
+                   "UserShell", str(shell)]
+
+            self.runWith.setCommand(cmd)
+            self.runWith.communicate()
+            retval, reterr, retcode = self.runWith.getNlogReturns()
+    
+            if reterr:
+                success = False
+                raise Exception("Error trying to create ramdisk(" + \
+                                str(reterr).strip() + ")")
+            else:
+                success = True
+
+        return success                
 
     def setUserComment(self, user="", comment=""):
         """
-        dscl . -create /Users/luser RealName "Lucius Q. User"
+        dscl . -create /Users/luser RealName "Real A. Name"
 
         @author: Roy Nielsen
         """
-        pass
+        success = False
+
+        if user and comment:
+            cmd = [self.dscl, ".", "-create", "/Users/" + str(user),
+                   "RealName", str(comment)]
+            self.runWith.setCommand(cmd)
+            self.runWith.communicate()
+            retval, reterr, retcode = self.runWith.getNlogReturns()
+    
+            if reterr:
+                success = False
+                raise Exception("Error trying to create ramdisk(" + \
+                                str(reterr).strip() + ")")
+            else:
+                success = True
+            
+        return success
 
     def setUserUid(self, user="", uid=""):
         """
@@ -86,7 +194,23 @@ class MacOSXUsersTemplate(object):
 
         @author: Roy Nielsen
         """
-        pass
+        success = False
+
+        if user and uid:
+            cmd = [self.dscl, ".", "-create", "/Users/" + str(user),
+                   "UniqueID", str(uid)]
+            self.runWith.setCommand(cmd)
+            self.runWith.communicate()
+            retval, reterr, retcode = self.runWith.getNlogReturns()
+    
+            if reterr:
+                success = False
+                raise Exception("Error trying to create ramdisk(" + \
+                                str(reterr).strip() + ")")
+            else:
+                success = True
+            
+        return success
 
     def setUserPriGid(self, user="", priGid=""):
         """
@@ -94,13 +218,29 @@ class MacOSXUsersTemplate(object):
 
         @author: Roy Nielsen
         """
-        pass
+        self.runWith.setCommand(cmd)
+        self.runWith.communicate()
+        retval, reterr, retcode = self.runWith.getNlogReturns()
+
+        if reterr:
+            success = False
+            raise Exception("Error trying to create ramdisk(" + \
+                            str(reterr).strip() + ")")
+        else:
 
     def setUserHomeDir(self, user="", userHome = ""):
         """
         dscl . -create /Users/luser NFSHomeDirectory /Users/luser
         """
-        pass
+        self.runWith.setCommand(cmd)
+        self.runWith.communicate()
+        retval, reterr, retcode = self.runWith.getNlogReturns()
+
+        if reterr:
+            success = False
+            raise Exception("Error trying to create ramdisk(" + \
+                            str(reterr).strip() + ")")
+        else:
 
     def addUserToGroup(self, user="", group=""):
         """
@@ -108,12 +248,28 @@ class MacOSXUsersTemplate(object):
 
         @author: Roy Nielsen
         """
-        pass
+        self.runWith.setCommand(cmd)
+        self.runWith.communicate()
+        retval, reterr, retcode = self.runWith.getNlogReturns()
+
+        if reterr:
+            success = False
+            raise Exception("Error trying to create ramdisk(" + \
+                            str(reterr).strip() + ")")
+        else:
 
     def rmUserFromGroup(self):
         """
         """
-        pass
+        self.runWith.setCommand(cmd)
+        self.runWith.communicate()
+        retval, reterr, retcode = self.runWith.getNlogReturns()
+
+        if reterr:
+            success = False
+            raise Exception("Error trying to create ramdisk(" + \
+                            str(reterr).strip() + ")")
+        else:
 
     def setUserPassword(self, user="", password=""):
         """
@@ -121,7 +277,15 @@ class MacOSXUsersTemplate(object):
 
         @author: Roy Nielsen
         """
-        pass
+        self.runWith.setCommand(cmd)
+        self.runWith.communicate()
+        retval, reterr, retcode = self.runWith.getNlogReturns()
+
+        if reterr:
+            success = False
+            raise Exception("Error trying to create ramdisk(" + \
+                            str(reterr).strip() + ")")
+        else:
 
     def setUserLoginKeychainPassword(self, user="", password=""):
         """
@@ -144,7 +308,15 @@ class MacOSXUsersTemplate(object):
         #####
         # else set the login keychain password
 
-        pass
+        self.runWith.setCommand(cmd)
+        self.runWith.communicate()
+        retval, reterr, retcode = self.runWith.getNlogReturns()
+
+        if reterr:
+            success = False
+            raise Exception("Error trying to create ramdisk(" + \
+                            str(reterr).strip() + ")")
+        else:
 
     def createHomeDirectory(self, user=""):
         """
@@ -152,15 +324,45 @@ class MacOSXUsersTemplate(object):
 
         @author: Roy Nielsen
         """
-        pass
+        self.runWith.setCommand(cmd)
+        self.runWith.communicate()
+        retval, reterr, retcode = self.runWith.getNlogReturns()
+
+        if reterr:
+            success = False
+            raise Exception("Error trying to create ramdisk(" + \
+                            str(reterr).strip() + ")")
+        else:
 
     def rmUser(self, user=""):
         """
 
         """
-        pass
+        self.runWith.setCommand(cmd)
+        self.runWith.communicate()
+        retval, reterr, retcode = self.runWith.getNlogReturns()
+
+        if reterr:
+            success = False
+            raise Exception("Error trying to create ramdisk(" + \
+                            str(reterr).strip() + ")")
+        else:
 
     def rmUserHome(self, user=""):
+        """
+
+        """
+        self.runWith.setCommand(cmd)
+        self.runWith.communicate()
+        retval, reterr, retcode = self.runWith.getNlogReturns()
+
+        if reterr:
+            success = False
+            raise Exception("Error trying to create ramdisk(" + \
+                            str(reterr).strip() + ")")
+        else:
+
+    def validateUser(self):
         """
 
         """
