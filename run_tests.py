@@ -15,14 +15,19 @@ from optparse import OptionParser, SUPPRESS_HELP, OptionValueError, Option
 testdir = "./tests"
 
 from lib.loggers import CrazyLogger
+from lib.loggers import LogPriority as lp
 
 ###############################################################################
 
 class BuildAndRunSuite(object):
 
-    def __init__(self):
+    def __init__(self, logger):
         """
         """
+        if logger:
+            self.logger = logger
+        else:
+            self.logger = CrazyLogger()
         self.module_version = '20160224.032043.009191'
         self.prefix=[]
 
@@ -85,12 +90,12 @@ class BuildAndRunSuite(object):
         #####
         # Import each of the tests and add them to the suite
         for check_file in test_list:
-            print str(check_file)
+            self.logger.log(lp.DEBUG, str(check_file))
             test_name = str(check_file).split("/")[-1]
             test_name = str(test_name).split(".")[0]
-            print "test_name: " + str(test_name)
+            self.logger.log(lp.DEBUG, "test_name: " + str(test_name))
             test_name_import_path = ".".join([self.test_dir_name, test_name])
-            print "test_name_import_path: " + str(test_name_import_path)
+            self.logger.log(lp.DEBUG, "test_name_import_path: " + str(test_name_import_path))
 
             ################################################
             # Test class needs to be named the same as the
@@ -190,14 +195,14 @@ if __name__ == "__main__":
     else:
         modules = None
 
-    print "Modules: " + str(modules)
-
     #####
     # ... processing logging options...
     verbose = options.verbose
     debug = options.debug
     logger = CrazyLogger(debug_mode=options.debug, verbose_mode=options.verbose)
     logger.initializeLogs(syslog=options.skip_syslog)
+
+    logger.log(lp.DEBUG, "Modules: " + str(modules))
 
     #####
     # ... processing test prefixes
@@ -207,5 +212,5 @@ if __name__ == "__main__":
         prefix = ["test_"]
 
 
-    bars = BuildAndRunSuite()
+    bars = BuildAndRunSuite(logger)
     bars.run_suite(modules)

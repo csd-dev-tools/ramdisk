@@ -19,7 +19,7 @@ from datetime import datetime
 from lib.loggers import CrazyLogger
 from lib.loggers import LogPriority as lp
 from lib.libHelperExceptions import NotValidForThisOS
-from tests.genericRamdiskTestUtilities import GenericRamdiskTestUtilities
+from tests.genericTestUtilities import GenericTestUtilities
 
 #####
 # Load OS specific Ramdisks
@@ -32,7 +32,7 @@ elif sys.platform.startswith("linux"):
     # For Linux
     from linuxTmpfsRamdisk import RamDisk, unmount
 
-class test_ramdiskFactory(unittest.TestCase, GenericRamdiskTestUtilities):
+class test_ramdiskFactory(unittest.TestCase, GenericTestUtilities):
     """
     """
 
