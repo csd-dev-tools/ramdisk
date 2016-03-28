@@ -1,13 +1,20 @@
+"""
+Factory for creating ramdisks.
 
+@note: may be of more use in the tests/testFramework, or example directories
+
+@author: Roy Nielsen
+"""
+#--- Native python libraries
 import re
-
 from tempfile import mkdtemp
 from subprocess import Popen, PIPE, STDOUT
 
-from log_message import logMessage
-from run_commands import RunWith
-from libHelperFunctions import getOsFamily
-from ctypes.wintypes import SIZE
+#--- non-native python libraries in this source tree
+from lib.loggers import Logger
+from lib.loggers import LogPriority as lp
+from lib.run_commands import RunWith
+from lib.libHelperFunctions import getOsFamily
 
 def BadRamdiskTypeException(Exception):
     """
@@ -33,20 +40,20 @@ class RamDiskFactory(object):
     @parameter message_level: Level of logging a person wishes to log at.
                               see logMessage in the log_message module.
 
-    @method: getRamdisk: Will return either a new ramdisk, or make the 
+    @method: getRamdisk: Will return either a new ramdisk, or make the
                          self.activeRamdisk the ramdisk with the name of the
-                         passed in mountpoint (if found).  Otherwise, the 
+                         passed in mountpoint (if found).  Otherwise, the
                          self.activeRamdisk is initialized to None.
 
     @method getModuleVersion: gets the version of this module.
-    
+
     @method unmountActiveRamdisk: Unmounts the active ramdisk.
-    
+
     @method unmountRamdisk: Unmounts the mountpoint that is passed in.
-    
+
     @author: Roy Nielsen
     """
-    def __init__(self, message_level="normal"):
+    def __init__(self, logger=None):
         """
         Identify OS and instantiate an instance of a ramdisk
         """
@@ -55,7 +62,10 @@ class RamDiskFactory(object):
         self.size = 0
         self.mountpoint = None
         self.ramdiskType = None
-        self.message_level = message_level
+        if not logger:
+            self.logger = Logger()
+        else:
+            self.logger = logger
         self.activeRamdisk = None
         self.ramdisks = []
         self.validRamdiskTypes = ["loop", "tmpfs"]
@@ -87,19 +97,19 @@ class RamDiskFactory(object):
                 #####
                 # Found MacOS
                 from macRamdisk import RamDisk
-                self.activeRamdisk = RamDisk(size, mountpoint, self.message_level)
+                self.activeRamdisk = RamDisk(size, mountpoint, self.logger)
 
             elif self.myosfamily == "linux" and ramdiskType == "loop":
                 #####
                 # Found Linux with a loopback ramdisk request
                 from linuxLoopRamdisk import RamDisk
-                self.activeRamdisk = RamDisk(mountpoint, self.message_level)
+                self.activeRamdisk = RamDisk(mountpoint, self.logger)
 
             elif self.myosfamily == "linux" and ramdiskType == "tmpfs":
                 #####
                 # Found Linux with a tmpfs ramdisk request.
                 from linuxTmpfsRamdisk import RamDisk
-                self.activeRamdisk = RamDisk(size, mountpoint, self.message_level)
+                self.activeRamdisk = RamDisk(size, mountpoint, self.logger)
 
             else:
                 #####
@@ -143,7 +153,7 @@ class RamDiskFactory(object):
         """
         success = False
 
-        success = self.activeRamdisk.unmount(self.message_level)
+        success = self.activeRamdisk.unmount(self.logger)
 
         return success
 

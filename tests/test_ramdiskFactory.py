@@ -1,8 +1,11 @@
 #!/usr/bin/python -u
 """
+Test for the RamdiskFactory
 
 @author: Roy Nielsen
 """
+from __future__ import absolute_import
+#--- Native python libraries
 import re
 import os
 import sys
@@ -12,24 +15,24 @@ import tempfile
 import ctypes as C
 from datetime import datetime
 
-
-sys.path.append("../")
-
-from log_message import logMessage
-from libHelperExceptions import NotValidForThisOS
+#--- non-native python libraries in this source tree
+from lib.loggers import CrazyLogger
+from lib.loggers import LogPriority as lp
+from lib.libHelperExceptions import NotValidForThisOS
+from tests.genericTestUtilities import GenericTestUtilities
 
 #####
 # Load OS specific Ramdisks
 if sys.platform.startswith("darwin"):
     #####
     # For Mac
-    from macRamdisk import RamDisk, detach
+    from macRamdisk import RamDisk, unmount
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
-    from linuxTmpfsRamdisk import RamDisk, detach
+    from linuxTmpfsRamdisk import RamDisk, unmount
 
-class test_ramdiskFactory(unittest.TestCase):
+class test_ramdiskFactory(unittest.TestCase, GenericTestUtilities):
     """
     """
 
@@ -42,7 +45,7 @@ class test_ramdiskFactory(unittest.TestCase):
         # Start timer in miliseconds
         self.test_start_time = datetime.now()
 
-        self.message_level = "debug"
+        self.logger = CrazyLogger()
 
         self.libcPath = None # initial initialization
 
@@ -50,8 +53,8 @@ class test_ramdiskFactory(unittest.TestCase):
         # If we don't have a supported platform, skip this test.
         if not sys.platform.startswith("darwin") and \
            not sys.platform.startswith("linux"):
-            unittest.SkipTest("This is not valid on this OS")
-
+            raise unittest.SkipTest("This is not valid on this OS")
+        raise unittest.SkipTest("Not a supported tests....")
 
     def setUp(self):
         """
@@ -88,6 +91,7 @@ class test_ramdiskFactory(unittest.TestCase):
         """
         disconnect ramdisk
         """
+        self.logger = CrazyLogger()
         #####
         # capture end time
         test_end_time = datetime.now()
@@ -96,8 +100,6 @@ class test_ramdiskFactory(unittest.TestCase):
         # Calculate and log how long it took...
         test_time = (test_end_time - self.test_start_time)
 
-        logMessage(self.__module__ + " took " + str(test_time) + \
-                  " time to complete...",
-                  "normal", self.message_level)
+        self.logger.log(lp.INFO, self.__module__ + " took " + str(test_time) + " time to complete...")
 
 ###############################################################################
