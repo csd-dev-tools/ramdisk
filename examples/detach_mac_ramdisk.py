@@ -25,9 +25,9 @@ parser.add_option("-v", "--verbose", action="store_true",
 (opts, args) = parser.parse_args()
 
 if opts.verbose != 0:
-    level = Logger(level=lp.INFO)
+    level = CrazyLogger(level=lp.INFO)
 elif opts.debug != 0:
-    level = Logger(level=lp.DEBUG)
+    level = CrazyLogger(level=lp.DEBUG)
 else:
     level=lp.WARNING
 
