@@ -6,7 +6,7 @@ unionfs functionality.
 
 @author: Roy Nielsen
 """
-from __future__ import absolute_import
+#from __future__ import absolute_import
 import re
 
 from lib.run_commands import RunWith
@@ -23,10 +23,10 @@ class BadUserInfoError(Exception):
     def __init__(self, *args, **kwargs):
         Exception.__init__(self, *args, **kwargs)
 
-class ManagerUsersTemplate(object):
+class ManageUser(object):
     """
     Class to manage user properties.
-    
+
     @author: Roy Nielsen
     """
     def __init__(self, userName="", userShell="/bin/bash",

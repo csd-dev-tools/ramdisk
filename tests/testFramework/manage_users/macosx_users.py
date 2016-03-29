@@ -7,13 +7,15 @@ unionfs functionality.
 @author: Roy Nielsen
 """
 from __future__ import absolute_import
+from .manage_user import ManageUser
+import re
+import os
+import sys
+import shutil
 
-from lib.run_commands import RunWith
-from lib.loggers import CrazyLogger
 from lib.loggers import LogPriority as lp
-from tests.testFramework.manage_users.manage_users_template import ManageUsersTemplate
 
-class MacOSXUser(ManagerUsersTemplate):
+class MacOSXUser(ManageUser):
     """
     Class to manage user properties.
 
@@ -34,8 +36,8 @@ class MacOSXUser(ManagerUsersTemplate):
     @author: Roy Nielsen
     """
     def __init__(self, userName="", userShell="/bin/bash",
-                       userComment="", userUid=0, userPriGid=20,
-                       userHomeDir="/tmp", logger=False):
+                 userComment="", userUid=0, userPriGid=20,
+                 userHomeDir="/tmp", logger=False):
         super(MacOSXUser, self).__init__(userName, userShell,
                                          userComment, userUid, userPriGid,
                                          userHomeDir, logger)
@@ -45,17 +47,17 @@ class MacOSXUser(ManagerUsersTemplate):
         if not userName:
             raise ""
 
-        if not userUid or self.uidTaken():
+        if not userUid or self.uidTaken(userUid):
             self.findUniqueUid()
         else:
             pass
 
         pass
 
-    def setDscl(self, directory="", action="", object="", property="", value=""):
+    def setDscl(self, directory=".", action="", object="", property="", value=""):
         """
         Using dscl to set a value in a directory...
-        
+
         @auther: Roy Nielsen
         """
         success = False
@@ -65,7 +67,7 @@ class MacOSXUser(ManagerUsersTemplate):
             self.runWith.setCommand(cmd)
             self.runWith.communicate()
             retval, reterr, retcode = self.runWith.getNlogReturns()
-    
+
             if reterr:
                 success = False
                 raise Exception("Error trying to set a value with dscl (" + \
@@ -73,12 +75,12 @@ class MacOSXUser(ManagerUsersTemplate):
             else:
                 success = True
 
-        return success                
+        return success
 
     def getDscl(self, directory="", action="", object="", property="", value=""):
         """
         Using dscl to retrieve a value from the directory
-        
+
         @author: Roy Nielsen
         """
         retval = False
@@ -88,7 +90,7 @@ class MacOSXUser(ManagerUsersTemplate):
             self.runWith.setCommand(cmd)
             self.runWith.communicate()
             retval, reterr, retcode = self.runWith.getNlogReturns()
-    
+
             if reterr:
                 success = False
                 raise Exception("Error trying to set a value with dscl (" + \
@@ -104,41 +106,42 @@ class MacOSXUser(ManagerUsersTemplate):
         @author: Roy Nielsen
         """
         success = False
-        cmd = [self.dscl, ".", "-list", "/Users", "UniqueID"]
+        maxUserID = 0
+        newUserID = 0
+        userList = self.getDscl(".", "-list", "/Users", "UniqueID")
 
-        self.runWith.setCommand(cmd)
-        self.runWith.communicate()
-        retval, reterr, retcode = self.runWith.getNlogReturns()
+        #####
+        # Sort the list, add one to the highest value and return that
+        # value
+        for user in str(userList).split("\n"):
+            if int(user.split()[1]) > maxUserID:
+                maxUserID = int(user.split()[1])
 
-        if reterr:
-            success = False
-            raise Exception("Error trying to create ramdisk(" + \
-                            str(reterr).strip() + ")")
-        else:
-            #####
-            # Sort the list, add one to the highest value and return that
-            # value
-            pass
+        newUserID = str(int(maxUserID + 1))
 
-    def uidTaken(self):
+        return newUserID
+
+    def uidTaken(self, uid):
         """
         See if the UID requested has been taken.  Only approve uid's over 1k
            $ dscl . -list /Users UniqueID
 
         @author: Roy Nielsen
         """
+        uidList = []
         success = False
-        cmd = [self.dscl, ".", "-list", "/Users", "UniqueID"]
+        userList = self.getDscl(".", "-list", "/Users", "UniqueID")
 
-        self.runWith.setCommand(cmd)
-        self.runWith.communicate()
-        retval, reterr, retcode = self.runWith.getNlogReturns()
+        #####
+        # Sort the list, add one to the highest value and return that
+        # value
+        for user in str(userList).split("\n"):
+            uidList.append(str(user.split()[1]))
 
-        if reterr:
-            success = False
-            raise Exception("Error trying to create ramdisk(" + \
-                            str(reterr).strip() + ")")
-        else:
+        if str(uid) in uidList:
+            success = True
+
+        return success
 
     def setUserShell(self, user="", shell=""):
         """
@@ -148,21 +151,12 @@ class MacOSXUser(ManagerUsersTemplate):
         """
         success = False
         if user and shell:
-            cmd = [self.dscl, "-create", "/Users/" + str(user),
-                   "UserShell", str(shell)]
-
-            self.runWith.setCommand(cmd)
-            self.runWith.communicate()
-            retval, reterr, retcode = self.runWith.getNlogReturns()
-    
-            if reterr:
-                success = False
-                raise Exception("Error trying to create ramdisk(" + \
-                                str(reterr).strip() + ")")
-            else:
+            isSetDSL = self.setDscl(".", "-create", "/Users/" + str(user),
+                                   "UserShell", str(shell))
+            if isSetDSL:
                 success = True
 
-        return success                
+        return success
 
     def setUserComment(self, user="", comment=""):
         """
@@ -173,19 +167,11 @@ class MacOSXUser(ManagerUsersTemplate):
         success = False
 
         if user and comment:
-            cmd = [self.dscl, ".", "-create", "/Users/" + str(user),
-                   "RealName", str(comment)]
-            self.runWith.setCommand(cmd)
-            self.runWith.communicate()
-            retval, reterr, retcode = self.runWith.getNlogReturns()
-    
-            if reterr:
-                success = False
-                raise Exception("Error trying to create ramdisk(" + \
-                                str(reterr).strip() + ")")
-            else:
+            isSetDSL = self.setDscl(".", "-create", "/Users/" + str(user),
+                                   "RealName", str(comment))
+            if isSetDSL:
                 success = True
-            
+
         return success
 
     def setUserUid(self, user="", uid=""):
@@ -197,19 +183,12 @@ class MacOSXUser(ManagerUsersTemplate):
         success = False
 
         if user and uid:
-            cmd = [self.dscl, ".", "-create", "/Users/" + str(user),
-                   "UniqueID", str(uid)]
-            self.runWith.setCommand(cmd)
-            self.runWith.communicate()
-            retval, reterr, retcode = self.runWith.getNlogReturns()
-    
-            if reterr:
-                success = False
-                raise Exception("Error trying to create ramdisk(" + \
-                                str(reterr).strip() + ")")
-            else:
+            isSetDSL = self.setDscl(".", "-create", "/Users/" + str(user),
+                                   "UniqueID", str(uid))
+
+            if isSetDSL:
                 success = True
-            
+
         return success
 
     def setUserPriGid(self, user="", priGid=""):
@@ -218,29 +197,40 @@ class MacOSXUser(ManagerUsersTemplate):
 
         @author: Roy Nielsen
         """
-        self.runWith.setCommand(cmd)
-        self.runWith.communicate()
-        retval, reterr, retcode = self.runWith.getNlogReturns()
+        success = False
 
-        if reterr:
-            success = False
-            raise Exception("Error trying to create ramdisk(" + \
-                            str(reterr).strip() + ")")
-        else:
+        if user and priGid:
+            isSetDSL = self.setDscl(".", "-create", "/Users/" + str(user),
+                                    "PrimaryGroupID", str(priGid))
 
-    def setUserHomeDir(self, user="", userHome = ""):
+            if isSetDSL:
+                success = True
+
+        return success
+
+    def setUserHomeDir(self, user=""):
         """
+        Create a "local" home directory
+
         dscl . -create /Users/luser NFSHomeDirectory /Users/luser
-        """
-        self.runWith.setCommand(cmd)
-        self.runWith.communicate()
-        retval, reterr, retcode = self.runWith.getNlogReturns()
 
-        if reterr:
-            success = False
-            raise Exception("Error trying to create ramdisk(" + \
-                            str(reterr).strip() + ")")
-        else:
+        better yet:
+
+        createhomedir -l -u <username>
+
+        @author: Roy Nielsen
+        """
+        success = False
+
+        if user:
+            isSetDSCL = self.setDscl(".", "-create", "/Users/" + str(user),
+                                     "NFSHomeDirectory", str("/Users/" + str(user)))
+            if not isSetDSCL:
+                success = False
+            else:
+                success = True
+
+        return success
 
     def addUserToGroup(self, user="", group=""):
         """
@@ -248,28 +238,32 @@ class MacOSXUser(ManagerUsersTemplate):
 
         @author: Roy Nielsen
         """
-        self.runWith.setCommand(cmd)
-        self.runWith.communicate()
-        retval, reterr, retcode = self.runWith.getNlogReturns()
+        success = False
 
-        if reterr:
+        if user and group:
+            isSetDSCL = self.setDscl(".", "-append", "/Groups/" + str(group),
+                                     "GroupMembership", str(user))
+        if not isSetDSCL:
             success = False
-            raise Exception("Error trying to create ramdisk(" + \
-                            str(reterr).strip() + ")")
         else:
+            success = True
 
-    def rmUserFromGroup(self):
+        return success
+
+    def rmUserFromGroup(self, user="", group=""):
         """
         """
-        self.runWith.setCommand(cmd)
-        self.runWith.communicate()
-        retval, reterr, retcode = self.runWith.getNlogReturns()
+        success = False
 
-        if reterr:
+        if user and group:
+            isSetDSCL = self.setDscl(".", "-delete", "/Groups/" + str(group),
+                                     "GroupMembership", str(user))
+        if not isSetDSCL:
             success = False
-            raise Exception("Error trying to create ramdisk(" + \
-                            str(reterr).strip() + ")")
         else:
+            success = True
+
+        return success
 
     def setUserPassword(self, user="", password=""):
         """
@@ -277,20 +271,31 @@ class MacOSXUser(ManagerUsersTemplate):
 
         @author: Roy Nielsen
         """
-        self.runWith.setCommand(cmd)
-        self.runWith.communicate()
-        retval, reterr, retcode = self.runWith.getNlogReturns()
+        success = False
 
-        if reterr:
+        if user and password:
+            isSetDSCL = self.setDscl("."", -passwd", "/Users/" + str(user),
+                                     password)
+
+        if not isSetDSCL:
             success = False
-            raise Exception("Error trying to create ramdisk(" + \
-                            str(reterr).strip() + ")")
         else:
+            success = True
+
+        return success
 
     def setUserLoginKeychainPassword(self, user="", password=""):
         """
         Use the "security" command to set the login keychain.  If it has not
         been created, create the login keychain.
+
+        Needs research.. Not sure if a sudo'd admin can use the security
+        command to change another user's keychain password...
+
+        possibly:
+        security set-keychain-password -o oldpassword -p newpassword file.keychain
+
+        where file.keychain is the default login.keychain of another user?
 
         @author: Roy Nielsen
         """
@@ -308,15 +313,7 @@ class MacOSXUser(ManagerUsersTemplate):
         #####
         # else set the login keychain password
 
-        self.runWith.setCommand(cmd)
-        self.runWith.communicate()
-        retval, reterr, retcode = self.runWith.getNlogReturns()
-
-        if reterr:
-            success = False
-            raise Exception("Error trying to create ramdisk(" + \
-                            str(reterr).strip() + ")")
-        else:
+        pass
 
     def createHomeDirectory(self, user=""):
         """
@@ -324,46 +321,88 @@ class MacOSXUser(ManagerUsersTemplate):
 
         @author: Roy Nielsen
         """
-        self.runWith.setCommand(cmd)
-        self.runWith.communicate()
-        retval, reterr, retcode = self.runWith.getNlogReturns()
+        success = False
 
-        if reterr:
-            success = False
-            raise Exception("Error trying to create ramdisk(" + \
-                            str(reterr).strip() + ")")
-        else:
+        if user:
+            cmd = ["/usr/sbin/createhomedir", "-c", " -u", + str(user)]
+            self.runWith.setCommand(cmd)
+            self.runWith.communicate()
+            retval, reterr, retcode = self.runWith.getNlogReturns()
+
+            if reterr:
+                success = False
+                raise Exception("Error trying to create ramdisk(" + \
+                                str(reterr).strip() + ")")
+            else:
+                success = True
+
+        return success
 
     def rmUser(self, user=""):
         """
+        dscl . delete /Users/<user>
 
+        @author: Roy Nielsen
         """
-        self.runWith.setCommand(cmd)
-        self.runWith.communicate()
-        retval, reterr, retcode = self.runWith.getNlogReturns()
+        success = False
 
-        if reterr:
-            success = False
-            raise Exception("Error trying to create ramdisk(" + \
-                            str(reterr).strip() + ")")
-        else:
+        if user:
+            cmd = [self.dscl, ".", "-delete", "/Users/" + str(user)]
+            self.runWith.setCommand(cmd)
+            self.runWith.communicate()
+            retval, reterr, retcode = self.runWith.getNlogReturns()
+
+            if reterr:
+                success = False
+                raise Exception("Error trying to create ramdisk(" + \
+                                str(reterr).strip() + ")")
+            else:
+                success = True
+
+            return success
 
     def rmUserHome(self, user=""):
         """
 
         """
-        self.runWith.setCommand(cmd)
-        self.runWith.communicate()
-        retval, reterr, retcode = self.runWith.getNlogReturns()
+        success = False
+        if user:
+            try:
+                shutil.rmtree("/Users/" + str(user))
+            except IOError or OSError, err:
+                self.logger.log(lp.INFO, "Exception trying to remove user home...")
+                self.logger.log(lp.INFO, "Exception: " + str(err))
+                raise err
+            else:
+                success = True
 
-        if reterr:
-            success = False
-            raise Exception("Error trying to create ramdisk(" + \
-                            str(reterr).strip() + ")")
-        else:
+        return success
 
     def validateUser(self):
         """
+        Future functionality... validate that the passed in parameters to the
+        class instanciation match.
 
+        @author:
         """
         pass
+
+    def isUserInstalled(self, user=""):
+        """
+        Check if the user "user" is installed
+
+        @author Roy Nielsen
+        """
+        success = False
+
+        if user:
+            cmd = [self.dscl, ".", "-read", "/Users/" + str(user)]
+            self.runWith.setCommand(cmd)
+            self.runWith.communicate()
+            retval, reterr, retcode = self.runWith.getNlogReturns()
+
+            if not reterr:
+                success = True
+
+        return success
+
