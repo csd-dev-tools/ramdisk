@@ -54,11 +54,35 @@ class MacOSXUser(ManageUser):
 
         pass
 
+    def createStandardUser(self, userName, password):
+        """
+        Creates a user that has the "next" uid in line to be used, then puts
+        in in a group of the same id.  Uses /bin/bash as the standard shell.
+        The userComment is left empty.  Primary use is managing a user
+        during test automation, when requiring a "user" context.
+        
+        It does not set a login keychain password as that is created on first
+        login to the GUI.
+
+        @author: Roy Nielsen
+        """
+        self.createBasicUser(userName)
+        newUserID = self.findUniqueUid()
+        newUserGID = newUserID
+        self.setUserUid(userName, newUserID)
+        self.setUserPriGid(userName, newUserID)
+        self.setUserHomeDir(userName)
+        self.setUserShell(userName, "/bin/bash")
+        self.setUserPassword(userName, password)
+        #####
+        # Don't need to set the user login keychain password as it should be
+        # created on first login.
+
     def setDscl(self, directory=".", action="", object="", property="", value=""):
         """
         Using dscl to set a value in a directory...
 
-        @auther: Roy Nielsen
+        @author: Roy Nielsen
         """
         success = False
         if directory and action and object and property and value:
@@ -83,7 +107,7 @@ class MacOSXUser(ManageUser):
 
         @author: Roy Nielsen
         """
-        retval = False
+        success = False
         if directory and action and object and property and value:
             cmd = [self.dscl, directory, action, object, property]
 
@@ -91,8 +115,9 @@ class MacOSXUser(ManageUser):
             self.runWith.communicate()
             retval, reterr, retcode = self.runWith.getNlogReturns()
 
-            if reterr:
-                success = False
+            if not reterr:
+                success = True
+            else:
                 raise Exception("Error trying to set a value with dscl (" + \
                                 str(reterr).strip() + ")")
         return retval
@@ -142,6 +167,31 @@ class MacOSXUser(ManageUser):
             success = True
 
         return success
+
+    def createBasicUser(self, userName=""):
+        """
+        Create a username with just a moniker.  Allow the system to take care of
+        the rest.
+        
+        Only allow usernames with letters and numbers.
+        
+        On the MacOS platform, all other steps must also be done.
+        
+        @author: Roy Nielsen
+        """
+        success = False
+        if userName and re.match("^[A-Za-z0-9]*$"):
+            cmd = [self.dscl, ".", "-create", "/Users/" + str(userName)]
+            self.runWith.setCommand(cmd)
+            self.runWith.communicate()
+            retval, reterr, retcode = self.runWith.getNlogReturns()
+
+            if reterr:
+                success = False
+                raise Exception("Error trying to set a value with dscl (" + \
+                                str(reterr).strip() + ")")
+        return success
+            
 
     def setUserShell(self, user="", shell=""):
         """
