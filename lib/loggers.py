@@ -12,6 +12,7 @@ https://docs.python.org/2/library/multiprocessing.html?highlight=logging#logging
 
 @author: Roy Nielsen
 """
+#from __future__ import absolute_import
 import re
 import sys
 import time
@@ -22,7 +23,7 @@ import datetime
 import logging
 import logging.handlers
 from logging.handlers import RotatingFileHandler
-
+#sys.path.append("..")
 ###############################################################################
 # Exception setup
 

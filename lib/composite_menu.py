@@ -4,13 +4,14 @@ be used to create a basic menu.
 
 @author: Roy Nielsen
 """
+from __future__ import absolute_import
 # system libraries
 import re
 import sys
-
+sys.path.append("..")
 from lib.loggers import CrazyLogger
 from lib.loggers import LogPriority as lp
-from lib.run_commands import RunWith
+from lib.run_commands import RunWith, runMyThreadCommand
 
 class MenuComponent(object):
     """
@@ -33,6 +34,8 @@ class MenuComponent(object):
         
         self.action = False
         self.anchor = False
+
+        self.run = runMyThreadCommand
 
     def menuAction(self):
         """
@@ -196,8 +199,10 @@ class MenuComposite(MenuComponent) :
         # Print the menu and act on the menu selection
         while True :
             # print out the menu item
-            self.runner.setCommand("/usr/bin/clear")
-            self.runner.communicate()
+            #self.runner.setCommand("/usr/bin/clear")
+            #self.runner.wait()
+            #self.run(["/usr/bin/clear"], self.logger)
+            print "\033c"
             print "\n" + self.name + " Menu\n"
             i = 1
             for item in self.child_nodes :
@@ -329,3 +334,4 @@ if __name__ == "__main__" :
     ##########
     # Call main menu
     main_menu.menuAction()
+
