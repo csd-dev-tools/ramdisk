@@ -17,9 +17,9 @@ import select
 import termios
 import threading
 from subprocess import Popen, PIPE
-
-from lib.loggers import LogPriority as lp
+sys.path.append("..")
 from lib.loggers import CrazyLogger
+from lib.loggers import LogPriority as lp
 from lib.get_libc import getLibc
 
 def OSNotValidForRunWith(Exception):
@@ -48,7 +48,7 @@ class RunWith(object):
     @author: Roy Nielsen
     """
     def __init__(self, logger=False):
-        if not logger:
+        if not isinstance(logger, (bool, CrazyLogger)):
             self.logger = CrazyLogger()
         else:
             self.logger = logger
@@ -183,8 +183,7 @@ class RunWith(object):
         """
         if self.command :
             try:
-                proc = Popen(self.command,
-                             stdout=PIPE, stderr=PIPE, shell=self.myshell)
+                proc = Popen(self.command, stdout=PIPE, stderr=PIPE, shell=self.myshell)
                 proc.wait()
                 for line in proc.stdout.readline():
                     self.output = self.output + line
@@ -530,12 +529,11 @@ class RunThread(threading.Thread) :
 
     @author: Roy Nielsen
     """
-    def __init__(self, command=[], logger=None) :
+    def __init__(self, command=[], logger=False) :
         """
         Initialization method
         """
         self.command = command
-        self.logger = logger
         self.retout = None
         self.reterr = None
         threading.Thread.__init__(self)
@@ -546,8 +544,10 @@ class RunThread(threading.Thread) :
         if isinstance(self.command, types.StringTypes) :
             self.shell = False
             self.printcmd = self.command
-
-        self.logger(lp.INFO, "Initialized runThread...")
+        if not isinstance(logger, (bool, CrazyLogger)):
+            self.logger = CrazyLogger()
+        else:
+            self.logger = logger
 
     ##########################################################################
 
@@ -603,7 +603,7 @@ class RunThread(threading.Thread) :
 
 ##############################################################################
 
-def runMyThreadCommand(cmd=[], logger=None) :
+def runMyThreadCommand(cmd=[], logger=False) :
     """
     Use the RunThread class to get the stdout and stderr of a command
 
@@ -611,6 +611,8 @@ def runMyThreadCommand(cmd=[], logger=None) :
     """
     retval = None
     reterr = None
+    print str(cmd)
+    print str(logger)
     if cmd and logger :
         run_thread = RunThread(cmd, logger)
         run_thread.start()
