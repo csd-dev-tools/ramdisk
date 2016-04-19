@@ -36,35 +36,42 @@ class ManageUser(object):
 
         #####
         # Set up logging
-        if not logger:
+        if not isinstance(logger, CrazyLogger):
             self.logger = CrazyLogger()
-            self.logger.initializeLogs()
+            #####
+            # THIS IS A LIBRARY, SO LOGS SHOULD BE INITIALIZED ELSEWHERE...
+            # self.logger.initializeLogs()
             self.logger.log(lp.INFO, "Logger: " + str(self.logger))
         else:
             self.logger = logger
             self.logger.log(lp.INFO, "Logger: " + str(self.logger))
 
-        if userName:
+        if self.saneUserName(userName):
             self.userName = userName
         else:
-            raise BadUserInfoError("Need a user name...")
+            raise BadUserInfoError("Need a valid user name...")
 
-        if userShell:
+        if self.saneUserShell(userShell):
             self.userShell = userShell
         else:
             raise BadUserInfoError("Need a valid user shell...")
 
-        if userComment:
+        if self.saneUserComment(userComment):
             self.userComment = userComment
         else:
             self.userComment=""
 
-        if re.match("\d+^", str(userUid)):
-            self.userUid = userUid
+        if self.saneUserUid(str(userUid)):
+            self.userUid = self.userUid
         else:
             raise BadUserInfoError("Need a valid user UID...")
 
-        if userHomeDir:
+        if self.saneUserPriGid(str(userPriGid)):
+            self.userUid = userUid
+        else:
+            raise BadUserInfoError("Need a valid user Primary GID...")
+
+        if self.saneUserHomeDir(userHomeDir):
             self.userHomeDir = userHomeDir
         else:
             raise BadUserInfoError("Need a user Home Directory...")
@@ -73,11 +80,79 @@ class ManageUser(object):
         # Initialize the RunWith helper for executing shelled out commands.
         self.runWith = RunWith(self.logger)
 
+    def saneUserName(self, userName=""):
+        """
+        """
+        sane = False
+        if userName and isinstance(userName, basestring):
+            if re.match("^[A-Za-z][A-Za-z0-9]*", userName):
+                sane = True
+        return sane
 
-    def setUserName(self):
+    def saneGroupName(self, groupName=""):
         """
         """
-        pass
+        sane = False
+        if groupName and isinstance(groupName, basestring):
+            if re.match("^[A-Za-z][A-Za-z0-9]*", groupName):
+                sane = True
+        return sane
+
+    def saneUserShell(self, userShell=""):
+        """
+        """
+        sane = False
+        if userShell and isinstance(userShell, basestring):
+            if re.match("^[A-Za-z/][A-Za-z0-9/]*", userShell):
+                sane = True
+        return sane
+
+    def saneUserComment(self, userComment=""):
+        """
+        """
+        sane = False
+        if userComment and isinstance(userComment, basestring):
+            if re.match("^[A-Za-z][A-Za-z0-9]*", userComment):
+                sane = True
+        return sane
+
+ 
+    def saneUserUid(self, userUid=""):
+        """
+        """
+        sane = False
+        if userUid and isinstance(userUid, [basestring, int]):
+            if re.match("^\d+", str(userUid)):
+                sane = True
+        return sane
+
+    def saneUserPriGid(self, userPriGid=1000):
+        """
+        """
+        sane = False
+        if userPriGid and isinstance(userPriGid, [basestring, int]):
+            if re.match("^\d+", str(userPriGid)):
+                sane = True
+        return sane
+
+    def saneUserHomeDir(self, userHomeDir=""):
+        """
+        """
+        sane = False
+        if userHomeDir and isinstance(userHomeDir, basestring):
+            if re.match("^[A-Za-z/][A-Za-z0-9/]*", userHomeDir):
+                sane = True
+        return sane
+
+
+    def setUserName(self, userName=""):
+        """
+        """
+        sane = False
+        if self.sanatizeUserName(userName):
+            sane = True
+            self.userName = userName
+        return sane
 
     def setUserShell(self, user="", shell=""):
         """

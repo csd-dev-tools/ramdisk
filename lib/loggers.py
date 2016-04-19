@@ -61,7 +61,14 @@ def singleton_decorator(cls):
 @singleton_decorator
 class CrazyLogger(object):
     """
+    Class to set up logging, with easy string referencing loggers and their
+    handlers.
+    
+    @author: Roy Nielsen
     """
+    
+    instanciatedLoggers = {}
+
     def __init__(self, environ=False, debug_mode=False, verbose_mode=False, level=30):
         """
         """
