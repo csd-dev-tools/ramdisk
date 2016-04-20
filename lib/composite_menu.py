@@ -8,6 +8,9 @@ from __future__ import absolute_import
 # system libraries
 import re
 import sys
+import tty
+import termios
+
 sys.path.append("..")
 from lib.loggers import CrazyLogger
 from lib.loggers import LogPriority as lp
@@ -42,13 +45,31 @@ class MenuComponent(object):
         """
         pass
 
+    def get_key(self):
+        """
+        Wait for a keypress and return a single character string.
+
+        If either of the Unix-specific tty or termios are not found
+        we allow the ImportError to proagate..
+        
+        @author: unknown
+        """
+        fd = sys.stdin.fileno()
+        original_attributes = termios.tcgetattr(fd)
+        try:
+            tty.setraw(sys.stdin.fileno())
+            ch = sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, original_attributes)
+        return ch
+
     def get_value(self, g_key=False, g_value=None):
         """
         Get the value of a psudo-global value.  Not using python globals.
-        Child classes should be able to look up these values, found in the 
+        Child classes should be able to look up these values, found in the
         MenuComposite with the Anchor (first MenuComponent)
         
-        g_value is the name of the self.conf.get_<var-name> routine to get 
+        g_value is the name of the self.conf.get_<var-name> routine to get
                 that variable
 
         Author: Roy Nielsen
@@ -118,7 +139,7 @@ class MenuComponent(object):
     def print_name(self) :
         """
         Print the name of the MenuItem for the menu.
-        
+
         Author: Roy Nielsen
         """
         print self.name
@@ -127,7 +148,7 @@ class MenuComponent(object):
 class MenuItem(MenuComponent) :
     """
     Leaf class - Inherits the MenuComponent class.
-    
+
     Author: Roy Nielsen
     """
     def __init__(self, name, action=False) :
@@ -162,28 +183,28 @@ class MenuItem(MenuComponent) :
 class MenuComposite(MenuComponent) :
     """
     Composite method found in the link above.  This controls a menu level.
-    
+
     @author: Roy Nielsen
     """
     def __init__(self, name, action=False) :
         """
         Initialization method.
-        
+
         @author: Roy Nielsen
         """
         MenuComponent.__init__(self, name)
         if self.validateAction(action):
             self.action = action
         self.child_nodes = []
-        
+
         self.print_name()
 
     def menuAction(self) :
         """
         Create the menu - execute the exec string first if it's not empty.
-        
-        Print each MenuItem of this MenuComposite in order, 
-        
+
+        Print each MenuItem of this MenuComposite in order,
+
         @author: Roy Nielsen
         """
         success = False
@@ -203,6 +224,8 @@ class MenuComposite(MenuComponent) :
             #self.runner.wait()
             #self.run(["/usr/bin/clear"], self.logger)
             print "\033c"
+            #curses.initscr().clear()
+            #win.refresh()
             print "\n" + self.name + " Menu\n"
             i = 1
             for item in self.child_nodes :
@@ -215,7 +238,7 @@ class MenuComposite(MenuComponent) :
                 print "[" + str(i+1) + "] Quit"
             else :
                 print "[" + str(i) + "] Quit"
-                
+
             print "\nSelect an option and hit Enter"
 
             # get input from the command line
@@ -334,4 +357,10 @@ if __name__ == "__main__" :
     ##########
     # Call main menu
     main_menu.menuAction()
+    
+    print "---------------------------------------"
+    print "======================================="
+    print "### Ready To Work...                ###"
+    print "======================================="
+    print "---------------------------------------"
 
