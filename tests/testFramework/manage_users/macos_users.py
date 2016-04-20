@@ -46,15 +46,7 @@ class MacOSUser(ManageUser):
         self.module_version = '20160225.125554.540679'
         self.dscl = "/usr/bin/dscl"
 
-        if not userName:
-            raise ""
-
-        if not userUid or self.uidTaken(userUid):
-            self.findUniqueUid()
-        else:
-            pass
-
-        pass
+    #----------------------------------------------------------------------
 
     def createStandardUser(self, userName, password):
         """
@@ -62,7 +54,7 @@ class MacOSUser(ManageUser):
         in in a group of the same id.  Uses /bin/bash as the standard shell.
         The userComment is left empty.  Primary use is managing a user
         during test automation, when requiring a "user" context.
-        
+
         It does not set a login keychain password as that is created on first
         login to the GUI.
 
@@ -79,6 +71,8 @@ class MacOSUser(ManageUser):
         #####
         # Don't need to set the user login keychain password as it should be
         # created on first login.
+
+    #----------------------------------------------------------------------
 
     def setDscl(self, directory=".", action="", object="", property="", value=""):
         """
@@ -102,6 +96,8 @@ class MacOSUser(ManageUser):
                 success = True
 
         return success
+
+    #----------------------------------------------------------------------
 
     def getDscl(self, directory="", action="", dirobj="", property=""):
         """
@@ -144,6 +140,8 @@ class MacOSUser(ManageUser):
                                 str(reterr).strip() + ")")
         return retval
 
+    #----------------------------------------------------------------------
+
     def findUniqueUid(self):
         """
         We need to make sure to find an unused uid (unique ID) for the user,
@@ -168,6 +166,8 @@ class MacOSUser(ManageUser):
 
         return newUserID
 
+    #----------------------------------------------------------------------
+
     def uidTaken(self, uid):
         """
         See if the UID requested has been taken.  Only approve uid's over 1k
@@ -189,6 +189,8 @@ class MacOSUser(ManageUser):
             success = True
 
         return success
+
+    #----------------------------------------------------------------------
 
     def createBasicUser(self, userName=""):
         """
@@ -215,6 +217,7 @@ class MacOSUser(ManageUser):
                                 str(reterr).strip() + ")")
         return success
             
+    #----------------------------------------------------------------------
 
     def setUserShell(self, user="", shell=""):
         """
@@ -231,6 +234,8 @@ class MacOSUser(ManageUser):
 
         return success
 
+    #----------------------------------------------------------------------
+
     def setUserComment(self, user="", comment=""):
         """
         dscl . -create /Users/luser RealName "Real A. Name"
@@ -246,6 +251,8 @@ class MacOSUser(ManageUser):
                 success = True
 
         return success
+
+    #----------------------------------------------------------------------
 
     def setUserUid(self, user="", uid=""):
         """
@@ -264,6 +271,8 @@ class MacOSUser(ManageUser):
 
         return success
 
+    #----------------------------------------------------------------------
+
     def setUserPriGid(self, user="", priGid=""):
         """
         dscl . -create /Users/luser PrimaryGroupID 20
@@ -280,6 +289,8 @@ class MacOSUser(ManageUser):
                 success = True
 
         return success
+
+    #----------------------------------------------------------------------
 
     def setUserHomeDir(self, user="", userHome=""):
         """
@@ -307,6 +318,8 @@ class MacOSUser(ManageUser):
 
         return success
 
+    #----------------------------------------------------------------------
+
     def createHomeDirectory(self, user=""):
         """
         createhomedir -c -u luser
@@ -333,6 +346,8 @@ class MacOSUser(ManageUser):
 
         return success
 
+    #----------------------------------------------------------------------
+
     def addUserToGroup(self, user="", group=""):
         """
         dscl . -append /Groups/admin GroupMembership luser
@@ -351,6 +366,8 @@ class MacOSUser(ManageUser):
 
         return success
 
+    #----------------------------------------------------------------------
+
     def rmUserFromGroup(self, user="", group=""):
         """
         """
@@ -365,6 +382,8 @@ class MacOSUser(ManageUser):
             success = True
 
         return success
+
+    #----------------------------------------------------------------------
 
     def setUserPassword(self, user="", password=""):
         """
@@ -384,6 +403,8 @@ class MacOSUser(ManageUser):
             success = True
 
         return success
+
+    #----------------------------------------------------------------------
 
     def setUserLoginKeychainPassword(self, user="", password=""):
         """
@@ -420,6 +441,8 @@ class MacOSUser(ManageUser):
 
         pass
 
+    #----------------------------------------------------------------------
+
     def rmUser(self, user=""):
         """
         dscl . delete /Users/<user>
@@ -442,6 +465,8 @@ class MacOSUser(ManageUser):
                 success = True
 
             return success
+
+    #----------------------------------------------------------------------
 
     def rmUserHome(self, user=""):
         """
@@ -471,6 +496,8 @@ class MacOSUser(ManageUser):
                 success = True
 
         return success
+
+    #----------------------------------------------------------------------
 
     def validateUser(self, userName=False, userShell=False, userComment=False,
                      userUid=False, userPriGid=False, userHomeDir=False):
@@ -527,27 +554,45 @@ class MacOSUser(ManageUser):
 
         return sane
 
+    #----------------------------------------------------------------------
+
     def getUser(self, userName=""):
         """
         """
         userInfo = False
         if self.saneUserName(userName):
-            userInfo = self.getDscl(".", "read", "/Users/" + str(userName), "uid")
+            output = self.getDscl(".", "read", "/Users/" + str(userName), "RecordName")
+            try:
+                userInfo = output.split()[1]
+            except (KeyError, IndexError), err:
+                self.logger.log(lp.INFO, "Error attempting to find user" + \
+                                         str(userName) + " in the " + \
+                                         "directory service.")
         else:
             raise BadUserInfoError("Need a valid user name...")
 
         return userInfo
+
+    #----------------------------------------------------------------------
 
     def getUserShell(self, userName=""):
         """
         """
         userShell = False
         if self.saneUserName(userName):
-            userShell = self.getDscl(".", "read", "/Users/" + str(userName), "UserShell")
+            output = self.getDscl(".", "read", "/Users/" + str(userName), "UserShell")
+            try:
+                userShell = output.split()[1]
+            except (KeyError, IndexError), err:
+                self.logger.log(lp.INFO, "Error attempting to find user" + \
+                                         str(userName) + " in the " + \
+                                         "directory service.")
         else:
             raise BadUserInfoError("Need a valid user name...")
 
         return userShell
+
+    #----------------------------------------------------------------------
 
     def getUserComment(self, userName=""):
         """
@@ -557,59 +602,82 @@ class MacOSUser(ManageUser):
             #####
             # Need to process the output to get the right information due to a
             # spurrious "\n" in the output
-            userComment = self.getDscl(".", "read", "/Users/" + str(userName), "RealName")
+            output = self.getDscl(".", "read", "/Users/" + str(userName), "RealName")
+            try:
+                userComment = output[1]
+            except (KeyError, IndexError), err:
+                self.logger.log(lp.INFO, "Error attempting to find user" + \
+                                         str(userName) + " in the " + \
+                                         "directory service.")
         else:
             raise BadUserInfoError("Need a valid user name...")
 
         return userComment
+
+    #----------------------------------------------------------------------
 
     def getUserUid(self, userName=""):
         """
         """
         userUid = False
         if self.saneUserName(userName):
-            userUid = self.getDscl(".", "read", "/Users/" + str(userName), "UniqueID")
+            output = self.getDscl(".", "read", "/Users/" + str(userName), "UniqueID")
             #####
             # Process to get out the right information....
-
-
-
+            try:
+                userUid = output.split()[1]
+            except (KeyError, IndexError), err:
+                self.logger.log(lp.INFO, "Error attempting to find user" + \
+                                         str(userName) + " in the " + \
+                                         "directory service.")
         else:
             raise BadUserInfoError("Need a valid user name...")
 
         return userUid
 
+    #----------------------------------------------------------------------
+
     def getUserPriGid(self, userName=""):
         """
         """
-        userGid = False
+        userPriGid = False
         if self.saneUserName(userName):
-            userGid = self.getDscl(".", "read", "/Users/" + str(userName), "PrimaryGroupID")
+            output = self.getDscl(".", "read", "/Users/" + str(userName), "PrimaryGroupID")
             #####
             # Process to get out the right information....
-
-
-
+            try:
+                userPriGid = output.split()[1]
+            except (KeyError, IndexError), err:
+                self.logger.log(lp.INFO, "Error attempting to find user" + \
+                                         str(userName) + " in the " + \
+                                         "directory service.")
         else:
             raise BadUserInfoError("Need a valid user name...")
 
-        return userGid
+        return userPriGid
+
+    #----------------------------------------------------------------------
 
     def getUserHomeDir(self, userName=""):
         """
         """
         userHomeDir = False
         if self.saneUserName(userName):
-            userHomeDir = self.getDscl(".", "read", "/Users/" + str(userName), "NFSHomeDirectory")
+            output = self.getDscl(".", "read", "/Users/" + str(userName), "NFSHomeDirectory")
             #####
             # Process to get out the right information....
-
-
-
+            try:
+                userHomeDir = output.split()[1]
+            except (KeyError, IndexError), err:
+                self.logger.log(lp.INFO, "Error attempting to find user" + \
+                                         str(userName) + " in the " + \
+                                         "directory service.")
         else:
             raise BadUserInfoError("Need a valid user name...")
 
         return userHomeDir
+
+    #----------------------------------------------------------------------
 
     def isUserInstalled(self, user=""):
         """
@@ -617,6 +685,7 @@ class MacOSUser(ManageUser):
 
         @author Roy Nielsen
         """
+        success = False
         if self.saneUserName(user):
             cmd = [self.dscl, ".", "-read", "/Users/" + str(user)]
             self.runWith.setCommand(cmd)
@@ -626,4 +695,43 @@ class MacOSUser(ManageUser):
             if not reterr:
                 success = True
 
+        return success
+
+    #----------------------------------------------------------------------
+
+    def fixUserHome(self, userName=""):
+        """
+        Get the user information from the local directory and fix the user
+        ownership and group of the user's home directory to reflect
+        what is in the local directory service.
+
+        @author: Roy Nielsen
+        """
+        success = False
+        if self.saneUserName(userName):
+            #####
+            # Acquire the user data based on the username first.
+            try:
+                userUid = self.getUserUid(userName)
+                userPriGid = self.getUserPriGid(userName)
+                userHomeDir = self.getUserHomeDir(userName)
+            except BadUserInfoError, err:
+                self.logger.log(lp.INFO, "Exception trying to find: \"" + str(userName) + "\" user information")
+                self.logger.log(lp.INFO, "err: " + str(err))
+            else:
+                success = True
+
+        if success:
+            try:
+                for root, dirs, files in os.walk(userHomeDir):
+                    for d in dirs:
+                        os.chown(os.path.join(root, d), userUid, userPriGid)
+                    for f in files:
+                        os.chown(os.path.join(root, d, f), userUid, userPriGid)
+            except:
+                success = False
+                self.logger.log(lp.INFO, "Exception attempting to chown...")
+                raise err
+            else:
+                success = True
         return success
