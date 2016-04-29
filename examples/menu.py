@@ -81,7 +81,7 @@ if __name__ == "__main__" :
     basic_choice = MenuItem("Basic Choice", basic)
     advanced_choice = MenuComposite("Advanced Choice")
 
-    main_menu.set_anchor()
+    main_menu.setAnchor()
 
     main_menu.appendChild(basic_choice)
     main_menu.appendChild(advanced_choice)
@@ -97,3 +97,4 @@ if __name__ == "__main__" :
     ##########
     # Call main menu
     main_menu.menuAction()
+

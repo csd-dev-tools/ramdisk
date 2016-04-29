@@ -16,29 +16,67 @@ from lib.loggers import CrazyLogger
 from lib.loggers import LogPriority as lp
 from lib.run_commands import RunWith, runMyThreadCommand
 
+class NotASaneNameError(Exception):
+    """
+    Meant for being thrown when an action/class being run/instanciated is not
+    applicable for the running operating system.
+
+    @author: Roy Nielsen
+    """
+    def __init__(self, *args, **kwargs):
+        Exception.__init__(self, *args, **kwargs)
+
+class NotASaneActionError(Exception):
+    """
+    Meant for being thrown when an action/class being run/instanciated is not
+    applicable for the running operating system.
+
+    @author: Roy Nielsen
+    """
+    def __init__(self, *args, **kwargs):
+        Exception.__init__(self, *args, **kwargs)
+
+logger = CrazyLogger(debug_mode=True)
+
 class MenuComponent(object):
     """
     """
-    def __init__(self, name, options=False):
+    g_dict = {"default": "default"}
+    def __init__(self, name, action=False):
         """
         """
-        if isinstance(options, dict):
-            self.g_dict = options
-        else:
-            self.g_dict = {}
-        if isinstance(name, str):
+        #####
+        # Check name and action first.
+        if self.isSaneAction(name):
             self.name = name
-        else: 
-            raise Exception("Need a valid name...")
+            if self.isSaneAction(action):
+                self.action = action
+            else:
+                logger.log(lp.INFO, "Parse error - (" + str(action) + \
+                                         ") not a valid action.")
+        else:
+            raise NotASaneNameError("Parse error - (" + str(name) + \
+                                    ") not a valid name.")
+
+        if self.isSaneAction(action):
+            self.action = action
 
         self.runner = RunWith()
         self.logger = CrazyLogger(debug_mode=True)
         self.logger.initializeLogs()
         
+        #####
+        # Required specific to the menu system
+        self.g_dict = {}
         self.action = False
         self.anchor = False
 
         self.run = runMyThreadCommand
+
+    def menuAction(self, *args, **kwargs):
+        """
+        """
+        pass
 
     def menuAction(self):
         """
@@ -63,19 +101,16 @@ class MenuComponent(object):
             termios.tcsetattr(fd, termios.TCSADRAIN, original_attributes)
         return ch
 
-    def get_value(self, g_key=False, g_value=None):
+    def getValue(self, g_key=False):
         """
         Get the value of a psudo-global value.  Not using python globals.
-        Child classes should be able to look up these values, found in the
+        Child classes should be able to look up these values, found in the 
         MenuComposite with the Anchor (first MenuComponent)
         
-        g_value is the name of the self.conf.get_<var-name> routine to get
-                that variable
-
-        Author: Roy Nielsen
+        @author: Roy Nielsen
         """
         retval = False
-        if g_key and g_value is not None:
+        if isinstance(g_key, basestring):
             while not self.anchor:
                 self = self.previous
             try:
@@ -85,7 +120,7 @@ class MenuComponent(object):
 
         return retval
 
-    def set_value(self, g_key=False, g_value=None, type=None):
+    def setValue(self, g_key=False, g_value=None):
         """
         Set a value in the 'anchor' node of the menu.
 
@@ -97,46 +132,53 @@ class MenuComponent(object):
         Author: Roy Nielsen
         """
         success = False
-        if not g_key and g_value is not None and type is not None:
+        if isinstance(g_key, basestring) and \
+           isinstance(g_value, (bool, basestring, int)):
             while not self.anchor :
                 self = self.previous
-                print self.name + " " + str(g_key) + " = " + \
-                                        str(g_value) + ", " + \
-                                        str(type)
-
-            if isinstance(g_value, str(type)):
+            try:
                 self.g_dict[g_key] = g_value
                 success = True
+            except (KeyError, IndexError), err:
+                pass
 
         return success
 
-    def validateName(self, name=False):
+    def isSaneName(self, name=False):
         """
+        Perform validation on the name to make sure it doen't have any
+        potentially mallicious characters.
         """
-        success = False
-        if name:
+        sane = False
+        if isinstance(name, basestring):
             try:
-                re.match("^[A-Za-z0-9]*", name)
+                re.match("^[A-Za-z0-9\s\.,]*", name)
             except:
                 pass
             else:
-                success = True
+                sane = True
+        return sane
 
-    def validateAction(self, action=False):
+    def isSaneAction(self, action=False):
         """
+        Perform validation on the name to make sure it doen't have any
+        potentially mallicious characters.
         """
-        success = False
-        if action:
+        sane = False
+        action = str(action)
+        if isinstance(action, (basestring, bool)) and action is not True:
             try:
                 re.match("^[A-Za-z0-9]*", str(action))
             except:
                 pass
             else:
-                success = True
+                sane = True
+        elif isinstance(action, bool):
+            sane = True
 
-        return success
+        return sane
 
-    def print_name(self) :
+    def printName(self) :
         """
         Print the name of the MenuItem for the menu.
 
@@ -157,14 +199,23 @@ class MenuItem(MenuComponent) :
         of the menu item.
         """
         MenuComponent.__init__(self, name)
-        print str(action)
-        if action:
-            if self.validateAction(action):
-                self.action = action
+        try:
+            self.isSaneName(name)
+        except NotASaneNameError, err:
+            self.logger.log(lp.DEBUG, str(err))
+            self.logger.log(lp.DEBUG, "name or action: " + str(name) + " is not valid.")
         else:
-            self.action()
+            self.name = name
 
-    def menuAction(self):
+        try:
+            self.isSaneAction(action)
+        except NotASaneActionError, err:
+            self.logger.log(lp.DEBUG, str(err))
+            self.logger.log(lp.DEBUG, "name or action: " + str(action) + " is not valid.")
+        else:
+            self.action = action
+
+    def menuAction(self, *args, **kwargs):
         """
         Node specific action method. -- Run the function that is passed in.
 
@@ -172,8 +223,8 @@ class MenuItem(MenuComponent) :
         """
         success = False
         if self.action:
-            if self.validateAction(self.action):
-                success = self.action()
+            if self.isSaneAction(self.action):
+                success = self.action(*args, **kwargs)
 
             print self.name
 
@@ -186,20 +237,44 @@ class MenuComposite(MenuComponent) :
 
     @author: Roy Nielsen
     """
-    def __init__(self, name, action=False) :
+    def __init__(self, name, action=False):
         """
         Initialization method.
 
         @author: Roy Nielsen
         """
-        MenuComponent.__init__(self, name)
-        if self.validateAction(action):
+        MenuComponent.__init__(self, name, action)
+        try:
+            self.isSaneName(name)
+        except NotASaneNameError, err:
+            self.logger.log(lp.DEBUG, str(err))
+            self.logger.log(lp.DEBUG, "name or action: " + str(name) + " is not valid.")
+        else:
+            self.name = name
+
+        try:
+            self.isSaneAction(action)
+        except NotASaneActionError, err:
+            self.logger.log(lp.DEBUG, str(err))
+            self.logger.log(lp.DEBUG, "name or action: " + str(action) + " is not valid.")
+        else:
             self.action = action
+            
         self.child_nodes = []
 
-        self.print_name()
+        self.printName()
 
-    def menuAction(self) :
+    def goToMainMenu(self):
+        """
+        Go back to the main menu
+        
+        @author: rsn
+        """
+        while not self.anchor:
+            self = self.previous
+        self.menuAction()
+
+    def menuAction(self, *args, **kwargs) :
         """
         Create the menu - execute the exec string first if it's not empty.
 
@@ -219,23 +294,35 @@ class MenuComposite(MenuComponent) :
         #####
         # Print the menu and act on the menu selection
         while True :
-            # print out the menu item
-            #self.runner.setCommand("/usr/bin/clear")
-            #self.runner.wait()
-            #self.run(["/usr/bin/clear"], self.logger)
+            try:
+                quit = self.getValue("quit")
+            except KeyError:
+                quit = False
+
+            #####
+            # Write out the ANSI code to clear the screen - might not work
+            # if a user's terminal is set to unicode
             print "\033c"
-            #curses.initscr().clear()
-            #win.refresh()
+            sys.stdout.write("\033c")
+            #####
+            # Start menu logic
             print "\n" + self.name + " Menu\n"
             i = 1
             for item in self.child_nodes :
                 print "[" + str(i) + "] " + self.child_nodes[(i-1)].name
                 i = i + 1
             if not self.anchor :
-                print "[" + str(i) + "] Return to " + \
-                      self.previous.name + \
-                      " Menu"
-                print "[" + str(i+1) + "] Quit"
+                if not self.anchor:
+                    print "[" + str(i) + "] Return to " + \
+                          self.previous.name + \
+                          " Menu"
+                if self.anchor:
+                    print "[" + str(i+1) + "] Quit"
+                elif self.previous.anchor:
+                    print "[" + str(i+1) + "] Quit"
+                elif not self.anchor and not self.previous.anchor:
+                    print "[" + str(i+1) + "] Main menu"
+                    print "[" + str(i+2) + "] Quit"
             else :
                 print "[" + str(i) + "] Quit"
 
@@ -247,29 +334,78 @@ class MenuComposite(MenuComponent) :
             # Figure out which number (or [Q|q] they hit
             if re.match("^\d+$", enter) :
                 enter = int(enter)
-            elif re.match("^[Qq]$", enter) :
+            elif re.match("^[Qq]$", enter) and not quit:
+                break
+            elif re.match("^[Qq]$", enter) and quit:
                 try :
                     sys.exit()
                 except OSError, err :
                     self.logger.log(lp.DEBUG, "OSError on attempt to exit: " + \
                                     str(err))
+            elif re.match("^[Mm]$", enter):
+                self.goToMainMenu()
             else :
                 continue
             
+            if enter == (len(self.child_nodes)+1) and self.anchor and not quit:
+                while not self.anchor:
+                    self = self.previous
+                break
+            if enter == (len(self.child_nodes)+1) and self.anchor and quit:
+                try :
+                    sys.exit()
+                except OSError, err :
+                    self.logger.log(lp.DEBUG, "OSError on attempt to exit: " + \
+                                    str(err))
             # go back to the previous menu    
-            if enter == (len(self.child_nodes)+1) :
+            if enter == (len(self.child_nodes)+1) and self.previous.anchor :
+                while not self.anchor:
+                    self = self.previous
+                break
+            if enter == (len(self.child_nodes)+1) and not self.anchor and not self.previous.anchor :
                 break
 
             # Either quit, or execute the "execute" method of the MenuItem, or
             # MenuComposite
-            if enter == (len(self.child_nodes)+ 2) and not self.anchor:
+            if enter == (len(self.child_nodes)+ 1) and self.anchor and not quit:
+                while not self.anchor:
+                    self = self.previous
+                break
+            if enter == (len(self.child_nodes)+ 1) and self.anchor and quit:
                 try :
                     sys.exit()
                 except OSError, err :
-                    self.logger.log(lp.DEBUG, "OSError on attempt to exit: " + \
-                                    str(err))
+                    self.logger.log(lp.DEBUG, "OSError on attempt to exit: " + str(err))
+            elif enter == (len(self.child_nodes)+ 2) and self.previous.anchor and not quit:
+                while not self.anchor:
+                    self = self.previous
+                break
+            elif enter == (len(self.child_nodes)+ 2) and self.previous.anchor and quit:
+                try :
+                    sys.exit()
+                except OSError, err :
+                    self.logger.log(lp.DEBUG, "OSError on attempt to exit: " + str(err))
+            elif enter == (len(self.child_nodes)+ 2) and not self.previous.anchor:
+                self.goToMainMenu()
+            elif enter == (len(self.child_nodes)+ 3) and not self.previous.anchor:
+                while not self.anchor:
+                    self = self.previous
+                break
+            elif enter == (len(self.child_nodes)+ 3) and not self.previous.anchor:
+                try :
+                    sys.exit()
+                except OSError, err :
+                    self.logger.log(lp.DEBUG, "OSError on attempt to exit: " + str(err))
                                     
             elif enter >= 0 and enter <= len(self.child_nodes) :
+                #####
+                # If the action parameter
+                if self.action:
+                    print "Action: " + str(self.action)
+                    success = self.action(self, *args, **kwargs)
+
+                self.logger.log(lp.DEBUG, "Action returns success: " + str(success))
+
                 self.child_nodes[(enter-1)].menuAction()
             else :
                 continue
@@ -289,7 +425,7 @@ class MenuComposite(MenuComponent) :
         child.current = child
 
 
-    def set_anchor(self) :
+    def setAnchor(self) :
         """
         Set this MenuComposite as the "anchor" or "head" of the tree
         
@@ -329,19 +465,19 @@ def advanced3():
     print "Press any key to continue"
     # get input from the command line
     sys.stdin.readline()
-    
+
 
 if __name__ == "__main__" :
     """
     Example usage of this library
-    
+
     @author: Roy Nielsen
     """
     main_menu = MenuComposite("Main")
     basic_choice = MenuItem("Basic Choice", basic)
     advanced_choice = MenuComposite("Advanced Choice")
 
-    main_menu.set_anchor()
+    main_menu.setAnchor()
 
     main_menu.appendChild(basic_choice)
     main_menu.appendChild(advanced_choice)
@@ -357,7 +493,7 @@ if __name__ == "__main__" :
     ##########
     # Call main menu
     main_menu.menuAction()
-    
+
     print "---------------------------------------"
     print "======================================="
     print "### Ready To Work...                ###"
