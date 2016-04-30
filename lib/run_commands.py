@@ -47,11 +47,8 @@ class RunWith(object):
 
     @author: Roy Nielsen
     """
-    def __init__(self, logger=False):
-        if not isinstance(logger, (bool, CrazyLogger)):
-            self.logger = CrazyLogger()
-        else:
-            self.logger = logger
+    def __init__(self):
+        self.logger = CrazyLogger()
         self.command = None
         self.output = None
         self.error = None

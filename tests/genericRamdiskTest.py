@@ -9,6 +9,7 @@ import os
 import re
 import sys
 import tempfile
+import traceback
 import unittest
 import ctypes
 from datetime import datetime
@@ -61,7 +62,7 @@ class GenericRamdiskTest(unittest.TestCase, GenericTestUtilities):
         self.mnt_pnt_requested = False
 
         # get a ramdisk of appropriate size, with a secure random mountpoint
-        self.my_ramdisk = RamDisk(size=str(ramdisk_size), logger=self.logger)
+        self.my_ramdisk = RamDisk(size=str(ramdisk_size))
         (self.success, self.mountPoint, self.ramdiskDev) = self.my_ramdisk.getData()
 
         self.mount = self.mountPoint
@@ -215,16 +216,17 @@ class GenericRamdiskTest(unittest.TestCase, GenericTestUtilities):
         """
         """
         self.tearDownInstanceSpecifics()
-        if unmount(self.mount):
+        try:
+            unmount(self.mount)
             self.logger.log(lp.INFO, r"Successfully detached disk: " + \
                        str(self.my_ramdisk.mntPoint).strip())
-        else:
-            self.logger.log(lp.WARNING, r"Couldn't detach disk: " + \
+        except Exception:
+            message = r"Couldn't detach disk: " + \
                        str(self.my_ramdisk.myRamdiskDev).strip() + \
-                       " : mntpnt: " + str(self.my_ramdisk.mntPoint))
-            raise Exception(r"Cannot eject disk: " + \
-                            str(self.my_ramdisk.myRamdiskDev).strip() + \
-                            " : mntpnt: " + str(self.my_ramdisk.mntPoint))
+                       " : mntpnt: " + str(self.my_ramdisk.mntPoint)
+            ex_message = message + "\n" + traceback.format_exc()
+            raise Exception(ex_message)
+
         #####
         # capture end time
         test_end_time = datetime.now()

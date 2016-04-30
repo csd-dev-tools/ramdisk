@@ -34,7 +34,7 @@ elif sys.platform.startswith("linux"):
     # For Linux
     from linuxTmpfsRamdisk import RamDisk, unmount
 
-class test_unionOver(GenericRamdiskTest):
+class test_unionOver(unittest.TestCase):
     """
     Test unionfs functionality of ramdisks
 
@@ -42,7 +42,7 @@ class test_unionOver(GenericRamdiskTest):
     """
 
     @classmethod
-    def setUpClassInstanceSpecifics(self):
+    def setUpClass(self):
         """
         Initializer
         """
@@ -54,7 +54,7 @@ class test_unionOver(GenericRamdiskTest):
             raise unittest.SkipTest("This is not valid on this OS")
         self.getLibc()
      
-
+    ##################################
 
     def setUp(self):
         """

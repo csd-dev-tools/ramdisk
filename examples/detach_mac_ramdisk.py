@@ -31,7 +31,8 @@ elif opts.debug != 0:
 else:
     level=lp.WARNING
 
-if opts.device == 0:
+if not isinstance(opts.device, basestring) and \
+   re.match("^[A-Za-z0-9/]+$", opts.device):
     raise Exception("Cannot detach a device with no name..")
 else:
     device = opts.device
@@ -39,7 +40,7 @@ else:
 logger = CrazyLogger(level=level)
 logger.initializeLogs()
     
-if detach(device, logger):
+if detach(device):
     logger.log(lp.INFO, r"Successfully detached disk: " + str(device).strip())
 else:
     logger.log(lp.WARNING, r"Couldn't detach disk: " + str(device).strip())
