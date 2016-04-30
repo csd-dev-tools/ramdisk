@@ -56,7 +56,7 @@ mntpnt = opts.mntpnt
 logger = CrazyLogger()
 logger.initializeLogs()
 
-ramdisk = RamDisk(str(size), mntpnt, logger)
+ramdisk = RamDisk(str(size), mntpnt)
 ramdisk.logData()
 ramdisk.printData()
 

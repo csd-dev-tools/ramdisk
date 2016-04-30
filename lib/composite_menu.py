@@ -36,7 +36,7 @@ class NotASaneActionError(Exception):
     def __init__(self, *args, **kwargs):
         Exception.__init__(self, *args, **kwargs)
 
-logger = CrazyLogger(debug_mode=True)
+logger = CrazyLogger()
 
 class MenuComponent(object):
     """
