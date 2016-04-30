@@ -56,11 +56,11 @@ class RamDisk(RamDiskTemplate) :
 
     @author: Roy Nielsen
     """
-    def __init__(self, size=0, mountpoint="", logger=False) :
+    def __init__(self, size=0, mountpoint="") :
         """
         Constructor
         """
-        super(RamDisk, self).__init__(size, mountpoint, logger)
+        super(RamDisk, self).__init__(size, mountpoint)
 
         if not getOsFamily() == "darwin":
             raise NotValidForThisOS("This ramdisk is only viable for a MacOS.")
@@ -69,7 +69,7 @@ class RamDisk(RamDiskTemplate) :
 
         #####
         # Initialize the RunWith helper for executing shelled out commands.
-        self.runWith = RunWith(self.logger)
+        self.runWith = RunWith()
 
         #####
         # Calculating the size of ramdisk in 1Mb chunks
@@ -651,11 +651,11 @@ def unmount(device=" ", logger=False):
 
     @author: Roy Nielsen
     """
-    detach(device, logger)
+    detach(device)
 
 ###############################################################################
 
-def detach(device=" ", logger=False):
+def detach(device=" "):
     """
     Eject the ramdisk
     Detach (on the mac) is a better solution than unmount and eject
@@ -665,11 +665,8 @@ def detach(device=" ", logger=False):
     @author: Roy Nielsen
     """
     success = False
-    if not logger:
-        logger = CrazyLogger()
-    else:
-        logger = logger
-    myRunWith = RunWith(logger)
+    logger = CrazyLogger()
+    myRunWith = RunWith()
     if not re.match("^\s*$", device):
         cmd = ["/usr/bin/hdiutil", "detach", device]
         myRunWith.setCommand(cmd)

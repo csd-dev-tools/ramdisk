@@ -1,8 +1,6 @@
 #!/usr/bin/python -u
 """
-Test unionfs functionality. 
-
-as of 3/15/2016, only the Mac OS X platform is supported.
+CommonRamdiskTemplate test.
 
 @author: Roy Nielsen
 """
@@ -18,9 +16,10 @@ import ctypes as C
 from datetime import datetime
 
 #--- non-native python libraries in this source tree
-from tests.genericRamdiskTest import GenericRamdiskTest
+sys.path.append("..")
 from lib.loggers import CrazyLogger
 from lib.loggers import LogPriority as lp
+
 from lib.libHelperExceptions import NotValidForThisOS
 
 #####
@@ -28,67 +27,84 @@ from lib.libHelperExceptions import NotValidForThisOS
 if sys.platform.startswith("darwin"):
     #####
     # For Mac
-    from macRamdisk import RamDisk, unmount
+    from macos_users import MacOSUser
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
-    from linuxTmpfsRamdisk import RamDisk, unmount
+    sys.exit(1)
 
-class test_unionOver(unittest.TestCase):
+class test_addUserToGroup(unittest.TestCase):
     """
-    Test unionfs functionality of ramdisks
-
-    @author: Roy Nielsen
     """
 
     @classmethod
     def setUpClass(self):
         """
-        Initializer
+        Runs once before any tests start
         """
-        raise unittest.SkipTest("Needs appropriate tests written")
-
-        #####
-        # If we don't have a supported platform, skip this test.
-        if not sys.platform.startswith("darwin"):
-            raise unittest.SkipTest("This is not valid on this OS")
-        self.getLibc()
-     
+        # Start timer in miliseconds
+        self.test_start_time = datetime.now()
+        self.logger = CrazyLogger()
+        
+        self.manage_user = MacOSUser()
+        
     ##################################
 
     def setUp(self):
         """
-        This method runs before each test case.
+        This method runs before each test run.
 
         @author: Roy Nielsen
         """
         pass
-
 
 ###############################################################################
 ##### Method Tests
 
     ##################################
 
-    def test_unionOverFirstTest(self):
+    def test_init(self):
         """
         """
         pass
 
     ##################################
 
-    def test_unionOverSecondTest(self):
+    def test_get_data(self):
         """
         """
         pass
+
+
+###############################################################################
+##### Functional Tests
+
+    ##################################
+
 
 ###############################################################################
 ##### unittest Tear down
     @classmethod
-    def tearDownClassInstanceSpecifics(self):
+    def tearDownClass(self):
         """
-        disconnect ramdisk
+        Final cleanup actions...
         """
-        pass
+        self.logger = CrazyLogger()
+        #####
+        # capture end time
+        test_end_time = datetime.now()
+
+        #####
+        # Calculate and log how long it took...
+        test_time = (test_end_time - self.test_start_time)
+
+        self.logger.log(lp.INFO, self.__module__ + " took " + str(test_time) + " time to complete...")
 
 ###############################################################################
+
+
+if __name__ == "__main__":
+    #import sys;sys.argv = ['', 'Test.testName']
+    logger = CrazyLogger()
+    logger.initializeLogs()
+    unittest.main()

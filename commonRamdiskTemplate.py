@@ -15,7 +15,7 @@ from lib.loggers import CrazyLogger
 class RamDiskTemplate(object):
     """
     """
-    def __init__(self, size=0, mountpoint=False, logger=False):
+    def __init__(self, size=0, mountpoint=False):
         """
         """
         #####
@@ -23,12 +23,8 @@ class RamDiskTemplate(object):
         # <YYYY><MM><DD>.<HH><MM><SS>.<microseconds>
         # in UTC time
         self.module_version = '20160224.032043.009191'
-        if not logger:
-            self.logger = CrazyLogger()
-            self.logger.log(lp.INFO, "Logger: " + str(self.logger))
-        else:
-            self.logger = logger
-            self.logger.log(lp.INFO, "Logger: " + str(self.logger))
+        self.logger = CrazyLogger()
+        self.logger.log(lp.INFO, "Logger: " + str(self.logger))
         self.diskSize = size
         self.success = False
         self.myRamdiskDev = None

@@ -39,12 +39,12 @@ parser.add_option("-o", "--overlay-point", dest="mntpnt",
 parser.add_option("-d", "--debug", action="store_true", dest="debug",
                   default=0, help="Print debug messages")
 parser.add_option("-v", "--verbose", action="store_true",
-                  dest="verbose", default=0,
+                  dest="verbose", default=False,
                   help="Print status messages")
 
 (opts, args) = parser.parse_args()
 
-if opts.verbose != 0:
+if isinstance(opts.verbose != 0:
     level = Logger(level=lp.INFO)
 elif opts.debug != 0:
     level = Logger(level=lp.DEBUG)
@@ -67,7 +67,7 @@ if not os.path.exists(mntpnt):
 logger = CrazyLogger(level=level)
 logger.initializeLogs()
 
-ramdisk = RamDisk(size=size, logger=logger)
+ramdisk = RamDisk(size=size)
 ramdisk.logData()
 ramdisk.printData()
 

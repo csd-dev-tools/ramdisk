@@ -12,6 +12,7 @@ https://docs.python.org/2/library/multiprocessing.html?highlight=logging#logging
 
 @author: Roy Nielsen
 """
+#from __future__ import absolute_import
 import re
 import sys
 import time
@@ -22,7 +23,7 @@ import datetime
 import logging
 import logging.handlers
 from logging.handlers import RotatingFileHandler
-
+#sys.path.append("..")
 ###############################################################################
 # Exception setup
 
@@ -60,7 +61,14 @@ def singleton_decorator(cls):
 @singleton_decorator
 class CrazyLogger(object):
     """
+    Class to set up logging, with easy string referencing loggers and their
+    handlers.
+    
+    @author: Roy Nielsen
     """
+    
+    instanciatedLoggers = {}
+
     def __init__(self, environ=False, debug_mode=False, verbose_mode=False, level=30):
         """
         """
