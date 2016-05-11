@@ -12,12 +12,32 @@ import os
 import sys
 import shutil
 
-from .manage_user import ManageUser
-from .manage_user import BadUserInfoError
+from .parent_manage_user import ParentManageUser
+from .parent_manage_user import BadUserInfoError
 from lib.loggers import LogPriority as lp
-from __builtin__ import False, True
+from lib.run_commands import RunWith
 
-class MacOSUser(ManageUser):
+class DsclError(Exception):
+    """
+    Meant for being thrown when an action/class being run/instanciated is not
+    applicable for the running operating system.
+
+    @author: Roy Nielsen
+    """
+    def __init__(self, *args, **kwargs):
+        Exception.__init__(self, *args, **kwargs)
+
+class CreateHomeDirError(Exception):
+    """
+    Meant for being thrown when an action/class being run/instanciated is not
+    applicable for the running operating system.
+
+    @author: Roy Nielsen
+    """
+    def __init__(self, *args, **kwargs):
+        Exception.__init__(self, *args, **kwargs)
+
+class MacOSUser(ParentManageUser):
     """
     Class to manage users on Mac OS.
 
@@ -45,6 +65,7 @@ class MacOSUser(ManageUser):
                                          userHomeDir, logger)
         self.module_version = '20160225.125554.540679'
         self.dscl = "/usr/bin/dscl"
+        self.runWith = RunWith()
 
     #----------------------------------------------------------------------
 
@@ -81,6 +102,8 @@ class MacOSUser(ManageUser):
         @author: Roy Nielsen
         """
         success = False
+        reterr = ""
+        retval = ""
         if directory and action and object and property and value:
             cmd = [self.dscl, directory, action, object, property, value]
 
@@ -88,13 +111,11 @@ class MacOSUser(ManageUser):
             self.runWith.communicate()
             retval, reterr, retcode = self.runWith.getNlogReturns()
 
-            if reterr:
-                success = False
-                raise Exception("Error trying to set a value with dscl (" + \
-                                str(reterr).strip() + ")")
-            else:
+            if not reterr:
                 success = True
-
+            else:
+                raise DsclError("Error trying to set a value with dscl (" + \
+                                str(reterr).strip() + ")")
         return success
 
     #----------------------------------------------------------------------
@@ -106,6 +127,9 @@ class MacOSUser(ManageUser):
         @author: Roy Nielsen
         """
         success = False
+        reterr = ""
+        retval = ""
+
         #####
         # FIRST VALIDATE INPUT!!
         if isinstance(directory, basestring) and re.match("^[/\.][A-Za-z0-9/]*", directory):
@@ -136,9 +160,9 @@ class MacOSUser(ManageUser):
             if not reterr:
                 success = True
             else:
-                raise Exception("Error trying to get a value with dscl (" + \
+                raise DsclError("Error trying to get a value with dscl (" + \
                                 str(reterr).strip() + ")")
-        return retval
+        return ("\n").join(retval)
 
     #----------------------------------------------------------------------
 
@@ -204,6 +228,7 @@ class MacOSUser(ManageUser):
         @author: Roy Nielsen
         """
         success = False
+        reterr = ""
         if isinstance(userName, basestring)\
            and re.match("^[A-Za-z][A-Za-z0-9]*$", userName):
             cmd = [self.dscl, ".", "-create", "/Users/" + str(userName)]
@@ -211,9 +236,10 @@ class MacOSUser(ManageUser):
             self.runWith.communicate()
             retval, reterr, retcode = self.runWith.getNlogReturns()
 
-            if reterr:
-                success = False
-                raise Exception("Error trying to set a value with dscl (" + \
+            if not reterr:
+                success = True
+            else:
+                raise DsclError("Error trying to set a value with dscl (" + \
                                 str(reterr).strip() + ")")
         return success
             
@@ -226,9 +252,9 @@ class MacOSUser(ManageUser):
         @author: Roy Nielsen
         """
         success = False
-        if self.saneUserName(user) and self.saneUserShell(shell):
+        if self.isSaneUserName(user) and self.isSaneUserShell(shell):
             isSetDSL = self.setDscl(".", "-create", "/Users/" + str(user),
-                                   "UserShell", str(shell))
+                                    "UserShell", str(shell))
             if isSetDSL:
                 success = True
 
@@ -244,9 +270,9 @@ class MacOSUser(ManageUser):
         """
         success = False
 
-        if self.saneUserName(user) and comment:
+        if self.isSaneUserName(user) and comment:
             isSetDSL = self.setDscl(".", "-create", "/Users/" + str(user),
-                                   "RealName", str(comment))
+                                    "RealName", str(comment))
             if isSetDSL:
                 success = True
 
@@ -262,9 +288,9 @@ class MacOSUser(ManageUser):
         """
         success = False
 
-        if self.saneUserName(user) and uid:
+        if self.isSaneUserName(user) and uid:
             isSetDSL = self.setDscl(".", "-create", "/Users/" + str(user),
-                                   "UniqueID", str(uid))
+                                    "UniqueID", str(uid))
 
             if isSetDSL:
                 success = True
@@ -281,7 +307,7 @@ class MacOSUser(ManageUser):
         """
         success = False
 
-        if self.saneUserName(user) and priGid:
+        if self.isSaneUserName(user) and priGid:
             isSetDSL = self.setDscl(".", "-create", "/Users/" + str(user),
                                     "PrimaryGroupID", str(priGid))
 
@@ -308,12 +334,10 @@ class MacOSUser(ManageUser):
         #####
         # Creating a non-standard userHome is not currently permitted
         #if self.saneUserName(user) and self.saneUserHomeDir(userHome):
-        if self.saneUserName(user):
+        if self.isSaneUserName(user):
             isSetDSCL = self.setDscl(".", "-create", "/Users/" + str(user),
                                      "NFSHomeDirectory", str("/Users/" + str(user)))
-            if not isSetDSCL:
-                success = False
-            else:
+            if isSetDSCL:
                 success = True
 
         return success
@@ -323,27 +347,25 @@ class MacOSUser(ManageUser):
     def createHomeDirectory(self, user=""):
         """
         createhomedir -c -u luser
-        
+
         This should use the system "User Template" for standard system user
         settings.
 
         @author: Roy Nielsen
         """
         success = False
-
+        reterr = ""
         if user:
             cmd = ["/usr/sbin/createhomedir", "-c", " -u", + str(user)]
             self.runWith.setCommand(cmd)
             self.runWith.communicate()
             retval, reterr, retcode = self.runWith.getNlogReturns()
 
-            if reterr:
-                success = False
-                raise Exception("Error trying to create user home (" + \
-                                str(reterr).strip() + ")")
-            else:
+            if not reterr:
                 success = True
-
+            else:
+                raise CreateHomeDirError("Error trying to create user home (" + \
+                                         str(reterr).strip() + ")")
         return success
 
     #----------------------------------------------------------------------
@@ -356,12 +378,10 @@ class MacOSUser(ManageUser):
         """
         success = False
 
-        if self.saneUserName(user) and self.saneGroupName(group):
+        if self.isSaneUserName(user) and self.isSaneGroupName(group):
             isSetDSCL = self.setDscl(".", "-append", "/Groups/" + str(group),
                                      "GroupMembership", str(user))
-        if not isSetDSCL:
-            success = False
-        else:
+        if isSetDSCL:
             success = True
 
         return success
@@ -373,12 +393,10 @@ class MacOSUser(ManageUser):
         """
         success = False
 
-        if self.saneUserName(user) and self.saneGroupName(group):
+        if self.isSaneUserName(user) and self.isSaneGroupName(group):
             isSetDSCL = self.setDscl(".", "-delete", "/Groups/" + str(group),
                                      "GroupMembership", str(user))
-        if not isSetDSCL:
-            success = False
-        else:
+        if isSetDSCL:
             success = True
 
         return success
@@ -393,7 +411,7 @@ class MacOSUser(ManageUser):
         """
         success = False
 
-        if self.saneUserName(user) and isinstance(password, basestring):
+        if self.isSaneUserName(user) and isinstance(password, basestring):
             isSetDSCL = self.setDscl("."", -passwd", "/Users/" + str(user),
                                      password)
 
@@ -421,10 +439,13 @@ class MacOSUser(ManageUser):
 
         @author: Roy Nielsen
         """
+        pass
+        """
         self.sec = "/usr/bin/security"
         success = False
+        keychainpath = ""
 
-        if self.saneUserName(user) and isinstance(password, basestring):
+        if self.isSaneUserName(user) and isinstance(password, basestring):
             pass
 
         #####
@@ -435,11 +456,20 @@ class MacOSUser(ManageUser):
 
         #####
         # if it does not exist, create it
+        if not os.path.exists(keychainpath):
+            cmd = ["Create Keychain Command Here"]
+
+            if not reterr:
+                success = True
+            else:
+                self.logger.log(lp.INFO, "Unsuccessful attempt to create the " + \
+                                         "keychain...(" + str(reterr) + ")")
 
         #####
         # else set the login keychain password
 
         pass
+        """
 
     #----------------------------------------------------------------------
 
@@ -451,18 +481,17 @@ class MacOSUser(ManageUser):
         """
         success = False
 
-        if self.saneUserName(user):
+        if self.isSaneUserName(user):
             cmd = [self.dscl, ".", "-delete", "/Users/" + str(user)]
             self.runWith.setCommand(cmd)
             self.runWith.communicate()
             retval, reterr, retcode = self.runWith.getNlogReturns()
 
-            if reterr:
-                success = False
-                raise Exception("Error trying to create ramdisk(" + \
-                                str(reterr).strip() + ")")
-            else:
+            if not reterr:
                 success = True
+            else:
+                raise Exception("Error trying to remove a user (" + \
+                                str(reterr).strip() + ")")
 
             return success
 
@@ -473,12 +502,12 @@ class MacOSUser(ManageUser):
         Remove the user home... right now only default location, but should
         look up the user home in the directory service and remove that
         specifically.
-        
+
         @author: Roy Nielsen
         """
         success = False
-        if self.saneUserName(user):
-            
+        if self.isSaneUserName(user):
+
             #####
             #
             # ***** WARNING WILL ROBINSON *****
@@ -511,41 +540,41 @@ class MacOSUser(ManageUser):
         #####
         # Look up all user attributes and check that they are accurate.
         # Only check the "SANE" parameters passed in.
-        if self.saneUserName(userName):
+        if self.isSaneUserName(userName):
             self.userName = userName
             sane = True
         else:
             raise BadUserInfoError("Need a valid user name...")
 
-        if self.saneUserShell(userShell) and sane:
+        if self.isSaneUserShell(userShell) and sane:
             self.userShell = userShell
         elif not userShell:
             pass
         else:
             sane = False
 
-        if self.saneUserComment(userComment) and sane:
+        if self.isSaneUserComment(userComment) and sane:
             self.userComment = userComment
         elif not userComment:
             pass
         else:
             sane = False
 
-        if self.saneUserUid(str(userUid)) and sane:
+        if self.isSaneUserUid(str(userUid)) and sane:
             self.userUid = self.userUid
         elif not userUid:
             pass
         else:
             sane = False
 
-        if self.saneUserPriGid(str(userPriGid)) and sane:
+        if self.isSaneUserPriGid(str(userPriGid)) and sane:
             self.userUid = userUid
         elif not userPriGid:
             pass
         else:
             sane = False
 
-        if self.saneUserHomeDir(userHomeDir) and sane:
+        if self.isSaneUserHomeDir(userHomeDir) and sane:
             self.userHomeDir = userHomeDir
         elif not userHomeDir:
             pass
@@ -560,7 +589,7 @@ class MacOSUser(ManageUser):
         """
         """
         userInfo = False
-        if self.saneUserName(userName):
+        if self.isSaneUserName(userName):
             output = self.getDscl(".", "read", "/Users/" + str(userName), "RecordName")
             try:
                 userInfo = output.split()[1]
@@ -579,7 +608,7 @@ class MacOSUser(ManageUser):
         """
         """
         userShell = False
-        if self.saneUserName(userName):
+        if self.isSaneUserName(userName):
             output = self.getDscl(".", "read", "/Users/" + str(userName), "UserShell")
             try:
                 userShell = output.split()[1]
@@ -598,7 +627,7 @@ class MacOSUser(ManageUser):
         """
         """
         userComment = False
-        if self.saneUserName(userName):
+        if self.isSaneUserName(userName):
             #####
             # Need to process the output to get the right information due to a
             # spurrious "\n" in the output
@@ -620,7 +649,7 @@ class MacOSUser(ManageUser):
         """
         """
         userUid = False
-        if self.saneUserName(userName):
+        if self.isSaneUserName(userName):
             output = self.getDscl(".", "read", "/Users/" + str(userName), "UniqueID")
             #####
             # Process to get out the right information....
@@ -641,7 +670,7 @@ class MacOSUser(ManageUser):
         """
         """
         userPriGid = False
-        if self.saneUserName(userName):
+        if self.isSaneUserName(userName):
             output = self.getDscl(".", "read", "/Users/" + str(userName), "PrimaryGroupID")
             #####
             # Process to get out the right information....
@@ -662,7 +691,7 @@ class MacOSUser(ManageUser):
         """
         """
         userHomeDir = False
-        if self.saneUserName(userName):
+        if self.isSaneUserName(userName):
             output = self.getDscl(".", "read", "/Users/" + str(userName), "NFSHomeDirectory")
             #####
             # Process to get out the right information....
@@ -686,7 +715,7 @@ class MacOSUser(ManageUser):
         @author Roy Nielsen
         """
         success = False
-        if self.saneUserName(user):
+        if self.isSaneUserName(user):
             cmd = [self.dscl, ".", "-read", "/Users/" + str(user)]
             self.runWith.setCommand(cmd)
             self.runWith.communicate()
@@ -695,6 +724,22 @@ class MacOSUser(ManageUser):
             if not reterr:
                 success = True
 
+        return success
+
+    #----------------------------------------------------------------------
+
+    def isUserInGroup(self, userName="", groupName=""):
+        """
+        Check if this user is in this group
+        
+        @author: Roy Nielsen
+        """
+        success = False
+        if self.isSaneUserName(userName) and self.isSaneGroupName(groupName):
+            output = self.getDscl(".", "read", "/Groups/" + groupName, "users")
+            users = output.split()[:-1]
+            if userName in users:
+                success = True
         return success
 
     #----------------------------------------------------------------------
@@ -708,7 +753,7 @@ class MacOSUser(ManageUser):
         @author: Roy Nielsen
         """
         success = False
-        if self.saneUserName(userName):
+        if self.isSaneUserName(userName):
             #####
             # Acquire the user data based on the username first.
             try:
@@ -716,7 +761,8 @@ class MacOSUser(ManageUser):
                 userPriGid = self.getUserPriGid(userName)
                 userHomeDir = self.getUserHomeDir(userName)
             except BadUserInfoError, err:
-                self.logger.log(lp.INFO, "Exception trying to find: \"" + str(userName) + "\" user information")
+                self.logger.log(lp.INFO, "Exception trying to find: \"" + \
+                                         str(userName) + "\" user information")
                 self.logger.log(lp.INFO, "err: " + str(err))
             else:
                 success = True
