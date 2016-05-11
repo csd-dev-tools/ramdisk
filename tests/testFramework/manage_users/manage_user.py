@@ -1,39 +1,25 @@
 """
-Cross platform user creation and management
-
-Created for testing cross user testing for the ramdisk project, specifically
-unionfs functionality.
+Factory object that will instanciate the appropriate user management class for
+the appropriate environment/OS.
 
 @author: Roy Nielsen
 """
-#from __future__ import absolute_import
-import re
+import sys
 
-from lib.run_commands import RunWith
 from lib.loggers import CrazyLogger
 from lib.loggers import LogPriority as lp
-
-class BadUserInfoError(Exception):
-    """
-    Meant for being thrown when an action/class being run/instanciated is not
-    applicable for the running operating system.
-
-    @author: Roy Nielsen
-    """
-    def __init__(self, *args, **kwargs):
-        Exception.__init__(self, *args, **kwargs)
+from lib.libHelperExceptions import UnsupportedOSError
 
 class ManageUser(object):
     """
-    Class to manage user properties.
-
-    @author: Roy Nielsen
     """
-    def __init__(self, userName="", userShell="/bin/bash",
-                       userComment="", userUid=10000, userPriGid=20,
-                       userHomeDir="/tmp", logger=False):
-        self.module_version = '20160225.125554.540679'
 
+    #----------------------------------------------------------------------
+
+    def __init__(self, logger):
+        """
+        Class initialization method
+        """
         #####
         # Set up logging
         if not isinstance(logger, CrazyLogger):
@@ -46,146 +32,331 @@ class ManageUser(object):
             self.logger = logger
             self.logger.log(lp.INFO, "Logger: " + str(self.logger))
 
-        if self.saneUserName(userName):
-            self.userName = userName
+        if sys.platform.lower() == "darwin":
+            from .macos_user import MacOSUser
+            self.userMgr = MacOSUser()
         else:
-            raise BadUserInfoError("Need a valid user name...")
+            raise UnsupportedOSError("This operating system is not supported...")
 
-        if self.saneUserShell(userShell):
-            self.userShell = userShell
-        else:
-            raise BadUserInfoError("Need a valid user shell...")
+    #----------------------------------------------------------------------
+    # Getters
+    #----------------------------------------------------------------------
 
-        if self.saneUserComment(userComment):
-            self.userComment = userComment
-        else:
-            self.userComment=""
+    def findUniqueUid(self):
+        """
+        Find an unused uid (unique ID) for the user, this method will list all
+        the existing users, an unused number above 1000 is good.
 
-        if self.saneUserUid(str(userUid)):
-            self.userUid = self.userUid
-        else:
-            raise BadUserInfoError("Need a valid user UID...")
+        @author: Roy Nielsen
+        """
+        retval = False
+        retval = self.userMgr.findUniqueUid()
+        return retval
 
-        if self.saneUserPriGid(str(userPriGid)):
-            self.userUid = userUid
-        else:
-            raise BadUserInfoError("Need a valid user Primary GID...")
+    #----------------------------------------------------------------------
 
-        if self.saneUserHomeDir(userHomeDir):
-            self.userHomeDir = userHomeDir
-        else:
-            raise BadUserInfoError("Need a user Home Directory...")
+    def uidTaken(self, uid):
+        """
+        See if the UID requested has been taken.  Only approve uid's over 1k
 
-        #####
-        # Initialize the RunWith helper for executing shelled out commands.
-        self.runWith = RunWith(self.logger)
+        @author: Roy Nielsen
+        """
+        retval = False
+        retval = self.userMgr.uidTaken(uid)
+        return retval
 
-    def saneUserName(self, userName=""):
-        """
-        """
-        sane = False
-        if userName and isinstance(userName, basestring):
-            if re.match("^[A-Za-z][A-Za-z0-9]*", userName):
-                sane = True
-        return sane
+    #----------------------------------------------------------------------
+    # Setters
+    #----------------------------------------------------------------------
 
-    def saneGroupName(self, groupName=""):
+    def createStandardUser(self, userName, password):
         """
-        """
-        sane = False
-        if groupName and isinstance(groupName, basestring):
-            if re.match("^[A-Za-z][A-Za-z0-9]*", groupName):
-                sane = True
-        return sane
+        Creates a user that has the "next" uid in line to be used, then puts
+        in in a group of the same id.  Uses /bin/bash as the standard shell.
+        The userComment is left empty.  Primary use is managing a user
+        during test automation, when requiring a "user" context.
 
-    def saneUserShell(self, userShell=""):
-        """
-        """
-        sane = False
-        if userShell and isinstance(userShell, basestring):
-            if re.match("^[A-Za-z/][A-Za-z0-9/]*", userShell):
-                sane = True
-        return sane
+        It does not set a login keychain password as that is created on first
+        login to the GUI.
 
-    def saneUserComment(self, userComment=""):
+        @author: Roy Nielsen
         """
-        """
-        sane = False
-        if userComment and isinstance(userComment, basestring):
-            if re.match("^[A-Za-z][A-Za-z0-9]*", userComment):
-                sane = True
-        return sane
+        retval = False
+        retval = self.userMgr.createStandardUser(userName, password)
+        return retval
 
- 
-    def saneUserUid(self, userUid=""):
-        """
-        """
-        sane = False
-        if userUid and isinstance(userUid, [basestring, int]):
-            if re.match("^\d+", str(userUid)):
-                sane = True
-        return sane
+    #----------------------------------------------------------------------
 
-    def saneUserPriGid(self, userPriGid=1000):
+    def getUser(self, userName=""):
         """
+        Get information about the passed in user.
         """
-        sane = False
-        if userPriGid and isinstance(userPriGid, [basestring, int]):
-            if re.match("^\d+", str(userPriGid)):
-                sane = True
-        return sane
+        retval = False
+        retval = self.userMgr.getUser(userName)
+        return retval
 
-    def saneUserHomeDir(self, userHomeDir=""):
-        """
-        """
-        sane = False
-        if userHomeDir and isinstance(userHomeDir, basestring):
-            if re.match("^[A-Za-z/][A-Za-z0-9/]*", userHomeDir):
-                sane = True
-        return sane
+    #----------------------------------------------------------------------
 
+    def getUserShell(self, userName=""):
+        """
+        Retrieve the passed in user's shell.
+        """
+        retval = False
+        retval = self.userMgr.getUserShell(userName)
+        return retval
 
-    def setUserName(self, userName=""):
+    #----------------------------------------------------------------------
+
+    def getUserComment(self, userName=""):
         """
+        Retrieve the passed in user's "user comment", or real name.
         """
-        sane = False
-        if self.sanatizeUserName(userName):
-            sane = True
-            self.userName = userName
-        return sane
+        retval = False
+        retval = self.userMgr.getUserComment(userName)
+        return retval
+
+    #----------------------------------------------------------------------
+
+    def getUserUid(self, userName=""):
+        """
+        Retrieve the passed in user's UID.
+        """
+        retval = False
+        retval = self.userMgr.getUserUid(userName)
+        return retval
+
+    #----------------------------------------------------------------------
+
+    def getUserPriGid(self, userName=""):
+        """
+        Retrieve the passed in user's primary GID
+        """
+        retval = False
+        retval = self.userMgr.getUserPriGid(userName)
+        return retval
+
+    #----------------------------------------------------------------------
+
+    def getUserHomeDir(self, userName=""):
+        """
+        Retrieve the passed in user's home directory
+        """
+        retval = False
+        retval = self.userMgr.getUserHomeDir(userName)
+        return retval
+
+    #----------------------------------------------------------------------
+
+    def isUserInstalled(self, user=""):
+        """
+        Check if the user "user" is installed on the system.
+
+        @author Roy Nielsen
+        """
+        retval = False
+        retval = self.userMgr.isUserInstalled(user)
+        return retval
+
+    #----------------------------------------------------------------------
+
+    def isUserInGroup(self, userName="", groupName=""):
+        """
+        Check if this user is in this group
+
+        @author: Roy Nielsen
+        """
+        retval = False
+        retval = self.userMgr.isUserInGroup(userName, groupName)
+        return retval
+
+    #----------------------------------------------------------------------
+
+    def validateUser(self, userName=False, userShell=False, userComment=False,
+                     userUid=False, userPriGid=False, userHomeDir=False):
+        """
+        Future functionality... validate that the passed in parameters to the
+        class instanciation match.
+
+        @author:
+        """
+        retval = False
+        retval = self.userMgr.validateUser(userName, userShell, userComment,
+                                           userUid, userPriGid, userHomeDir)
+        return retval
+
+    #----------------------------------------------------------------------
+    # Setters
+    #----------------------------------------------------------------------
+    
+    def createBasicUser(self, userName=""):
+        """
+        Create a username with just a moniker.  Allow the system to take care of
+        the rest.
+
+        Only allow usernames with letters and numbers.
+        (see ParentManageUser regex for allowable characters)
+
+        @author: Roy Nielsen
+        """
+        retval = False
+        retval = self.userMgr.createBasicUser(userName)
+        return retval
+
+    #----------------------------------------------------------------------
 
     def setUserShell(self, user="", shell=""):
         """
+        Set a user's shell
+
+        (see ParentManageUser regex for allowable characters)
+
+        @author: Roy Nielsen
         """
-        pass
+        retval = False
+        retval = self.userMgr.setUserShell(user, shell)
+        return retval
+
+    #----------------------------------------------------------------------
 
     def setUserComment(self, user="", comment=""):
         """
+        Set the "user comment" field that normally holds the user's real name
+
+        (see ParentManageUser regex for allowable characters)
+
+        @author: Roy Nielsen
         """
-        pass
+        retval = False
+        retval = self.userMgr.setUserComment(user, comment)
+        return retval
+
+    #----------------------------------------------------------------------
 
     def setUserUid(self, user="", uid=""):
         """
+        Set the user UID on the system.
+
+        @author: Roy Nielsen
         """
-        pass
+        retval = False
+        retval = self.userMgr.setUserUid(user, uid)
+        return retval
+
+    #----------------------------------------------------------------------
 
     def setUserPriGid(self, user="", priGid=""):
         """
-        """
-        pass
+        Set the user's primary group ID on the system.
 
-    def setUserHomeDir(self, user="", userHome = ""):
+        @author: Roy Nielsen
         """
+        retval = False
+        retval = self.userMgr.setUserPriGid(user, priGid)
+        return retval
+
+    #----------------------------------------------------------------------
+
+    def setUserHomeDir(self, user="", userHome=""):
         """
-        pass
+        Create a "local" home directory.  This may or may not create the user's
+        home directory from the system's user template/skel for standard user
+        settings.
+
+        @author: Roy Nielsen
+        """
+        retval = False
+        retval = self.userMgr.setUserHomeDir(user, userHome)
+        return retval
+
+    #----------------------------------------------------------------------
+
+    def createHomeDirectory(self, user=""):
+        """
+        Create a "local" home directory.
+
+        This should use the system "User Template" or "/etc/skel" for standard
+        system user settings.
+
+        @author: Roy Nielsen
+        """
+        retval = False
+        retval = self.userMgr.createHomeDirectory(user)
+        return retval
+
+    #----------------------------------------------------------------------
 
     def addUserToGroup(self, user="", group=""):
         """
+        Add a user to a group, not their primary group.
+
+        @author: Roy Nielsen
         """
-        pass
+        retval = False
+        retval = self.userMgr.addUserToGroup(user, group)
+        return retval
+
+    #----------------------------------------------------------------------
 
     def setUserPassword(self, user="", password=""):
         """
-        """
-        pass
+        Set a user's password.
 
+        @author: Roy Nielsen
+        """
+        retval = False
+        retval = self.userMgr.setUserPassword(user, password)
+        return retval
+
+    #----------------------------------------------------------------------
+
+    def rmUser(self, user=""):
+        """
+        Remove a user from the system.
+
+        @author: Roy Nielsen
+        """
+        retval = False
+        retval = self.userMgr.rmUser(user)
+        return retval
+
+    #----------------------------------------------------------------------
+
+    def rmUserHome(self, user=""):
+        """
+        Remove the user home... right now only default location, but should
+        look up the user home in the directory service and remove that
+        specifically.
+
+        @author: Roy Nielsen
+        """
+        retval = False
+        retval = self.userMgr.rmUserHome(user)
+        return retval
+
+    #----------------------------------------------------------------------
+
+    def rmUserFromGroup(self, user="", group=""):
+        """
+        Remove a user from a group, not their primary group.
+
+        @author: Roy Nielsen
+        """
+        retval = False
+        retval = self.userMgr.rmUserFromGroup(user, group)
+        return retval
+
+    #----------------------------------------------------------------------
+
+    def fixUserHome(self, userName=""):
+        """
+        Get the user information from the local directory and fix the user
+        ownership and group of the user's home directory to reflect
+        what is in the local directory service.
+
+        @author: Roy Nielsen
+        """
+        retval = False
+        retval = self.userMgr.fixUserHome(userName)
+        return retval
+
+    #----------------------------------------------------------------------
