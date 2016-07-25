@@ -6,9 +6,10 @@ the appropriate environment/OS.
 """
 import sys
 
-from lib.loggers import CrazyLogger
+from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 from lib.libHelperExceptions import UnsupportedOSError
+
 
 class ManageUser(object):
     """
@@ -16,21 +17,14 @@ class ManageUser(object):
 
     #----------------------------------------------------------------------
 
-    def __init__(self, logger):
+    def __init__(self, logger=False):
         """
         Class initialization method
         """
         #####
         # Set up logging
-        if not isinstance(logger, CrazyLogger):
-            self.logger = CrazyLogger()
-            #####
-            # THIS IS A LIBRARY, SO LOGS SHOULD BE INITIALIZED ELSEWHERE...
-            # self.logger.initializeLogs()
-            self.logger.log(lp.INFO, "Logger: " + str(self.logger))
-        else:
-            self.logger = logger
-            self.logger.log(lp.INFO, "Logger: " + str(self.logger))
+        self.logger = logger
+        self.logger.log(lp.INFO, "Logger: " + str(self.logger))
 
         if sys.platform.lower() == "darwin":
             from .macos_user import MacOSUser
@@ -63,26 +57,6 @@ class ManageUser(object):
         """
         retval = False
         retval = self.userMgr.uidTaken(uid)
-        return retval
-
-    #----------------------------------------------------------------------
-    # Setters
-    #----------------------------------------------------------------------
-
-    def createStandardUser(self, userName, password):
-        """
-        Creates a user that has the "next" uid in line to be used, then puts
-        in in a group of the same id.  Uses /bin/bash as the standard shell.
-        The userComment is left empty.  Primary use is managing a user
-        during test automation, when requiring a "user" context.
-
-        It does not set a login keychain password as that is created on first
-        login to the GUI.
-
-        @author: Roy Nielsen
-        """
-        retval = False
-        retval = self.userMgr.createStandardUser(userName, password)
         return retval
 
     #----------------------------------------------------------------------
@@ -185,8 +159,40 @@ class ManageUser(object):
         return retval
 
     #----------------------------------------------------------------------
+
+    def isUserInSudoers(self, userName=""):
+        """
+        Check if user can sudo.
+
+        @author: Roy Nielsen
+        """
+        success = False
+        self.logger.log(lp.CRITICAL, "################################################################")
+        self.logger.log(lp.CRITICAL, "### Not yet implemented in ANY operating system              ###")
+        self.logger.log(lp.CRITICAL, "################################################################")
+        success = self.userMgr.isUserInSudoers(userName)
+        return success
+
+    #----------------------------------------------------------------------
     # Setters
     #----------------------------------------------------------------------
+
+    def createStandardUser(self, userName, password):
+        """
+        Creates a user that has the "next" uid in line to be used, then puts
+        in in a group of the same id.  Uses /bin/bash as the standard shell.
+        The userComment is left empty.  Primary use is managing a user
+        during test automation, when requiring a "user" context.
+
+        It does not set a login keychain password as that is created on first
+        login to the GUI.
+
+        @author: Roy Nielsen
+        """
+        retval = False
+        retval = self.userMgr.createStandardUser(userName, password)
+        return retval
+
     
     def createBasicUser(self, userName=""):
         """
@@ -360,3 +366,10 @@ class ManageUser(object):
         return retval
 
     #----------------------------------------------------------------------
+
+    def authenticate(self, user="", password=""):
+        """
+        """
+        retval = False
+        retval = self.userMgr.authenticate(user, password)
+        return retval

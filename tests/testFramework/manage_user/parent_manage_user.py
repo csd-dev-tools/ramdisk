@@ -10,8 +10,9 @@ unionfs functionality.
 import re
 
 from lib.run_commands import RunWith
-from lib.loggers import CrazyLogger
+from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
+
 
 class BadUserInfoError(Exception):
     """
@@ -23,29 +24,25 @@ class BadUserInfoError(Exception):
     def __init__(self, *args, **kwargs):
         Exception.__init__(self, *args, **kwargs)
 
+
 class ParentManageUser(object):
     """
     Class to manage user properties.
 
     @author: Roy Nielsen
     """
-    def __init__(self, userName="", userShell="/bin/bash",
+    def __init__(self, logger=False, userName="", userShell="/bin/bash",
                        userComment="", userUid=10000, userPriGid=20,
-                       userHomeDir="/tmp", logger=False):
+                       userHomeDir="/tmp"):
         self.module_version = '20160225.125554.540679'
 
         #####
         # Set up logging
-        if not isinstance(logger, CrazyLogger):
-            self.logger = CrazyLogger()
-            #####
-            # THIS IS A LIBRARY, SO LOGS SHOULD BE INITIALIZED ELSEWHERE...
-            # self.logger.initializeLogs()
-            self.logger.log(lp.INFO, "Logger: " + str(self.logger))
-        else:
-            self.logger = logger
-            self.logger.log(lp.INFO, "Logger: " + str(self.logger))
-
+        self.logger = logger
+        #####
+        # THIS IS A LIBRARY, SO LOGS SHOULD BE INITIALIZED ELSEWHERE...
+        # self.logger.initializeLogs()
+        self.logger.log(lp.INFO, "Logger: " + str(self.logger))
 
         #####
         # Initialize the RunWith helper for executing shelled out commands.
@@ -87,7 +84,6 @@ class ParentManageUser(object):
                 sane = True
         return sane
 
- 
     def isSaneUserUid(self, userUid=""):
         """
         """
@@ -114,7 +110,6 @@ class ParentManageUser(object):
             if re.match("^[A-Za-z/][A-Za-z0-9/]*", userHomeDir):
                 sane = True
         return sane
-
 
     def setUserName(self, userName=""):
         """
@@ -160,3 +155,7 @@ class ParentManageUser(object):
         """
         pass
 
+    def authenticate(self, user="", password=""):
+        """
+        """
+        pass
