@@ -4,9 +4,11 @@ the appropriate environment/OS.
 
 @author: Roy Nielsen
 """
+from __future__ import absolute_import
+import os
 import sys
+import inspect
 
-from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 from lib.libHelperExceptions import UnsupportedOSError
 
@@ -33,6 +35,39 @@ class ManageUser(object):
             raise UnsupportedOSError("This operating system is not supported...")
 
     #----------------------------------------------------------------------
+    # helper Methods
+    #----------------------------------------------------------------------
+    def getSpecificManager(self):
+        """
+        Getter to acqure the specific keychain manager
+        """
+        return self.userMgr
+
+    #----------------------------------------------------------------------
+
+    def __calledBy(self):
+        """
+        Log the caller of the method that calls this method
+        
+        @author: Roy Nielsen
+        """
+        try:
+            filename = inspect.stack()[2][1]
+            functionName = str(inspect.stack()[2][3])
+            lineNumber = str(inspect.stack()[2][2])
+        except Exception, err:
+            raise err
+        else:
+            self.logger.log(lp.DEBUG, "called by: " + \
+                                      filename + ": " + \
+                                      functionName + " (" + \
+                                      lineNumber + ")")
+
+    #----------------------------------------------------------------------
+    # Defined Interface methods
+    #----------------------------------------------------------------------
+
+    #----------------------------------------------------------------------
     # Getters
     #----------------------------------------------------------------------
 
@@ -43,9 +78,18 @@ class ManageUser(object):
 
         @author: Roy Nielsen
         """
-        retval = False
-        retval = self.userMgr.findUniqueUid()
-        return retval
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.findUniqueUid()
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
 
     #----------------------------------------------------------------------
 
@@ -55,9 +99,18 @@ class ManageUser(object):
 
         @author: Roy Nielsen
         """
-        retval = False
-        retval = self.userMgr.uidTaken(uid)
-        return retval
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.uidTaken(uid)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
 
     #----------------------------------------------------------------------
 
@@ -65,9 +118,18 @@ class ManageUser(object):
         """
         Get information about the passed in user.
         """
-        retval = False
-        retval = self.userMgr.getUser(userName)
-        return retval
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.getUser(userName)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
 
     #----------------------------------------------------------------------
 
@@ -75,9 +137,18 @@ class ManageUser(object):
         """
         Retrieve the passed in user's shell.
         """
-        retval = False
-        retval = self.userMgr.getUserShell(userName)
-        return retval
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.getUserShell(userName)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
 
     #----------------------------------------------------------------------
 
@@ -85,9 +156,18 @@ class ManageUser(object):
         """
         Retrieve the passed in user's "user comment", or real name.
         """
-        retval = False
-        retval = self.userMgr.getUserComment(userName)
-        return retval
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.getUserComment(userName)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
 
     #----------------------------------------------------------------------
 
@@ -95,9 +175,18 @@ class ManageUser(object):
         """
         Retrieve the passed in user's UID.
         """
-        retval = False
-        retval = self.userMgr.getUserUid(userName)
-        return retval
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.getUserUid(userName)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
 
     #----------------------------------------------------------------------
 
@@ -105,9 +194,18 @@ class ManageUser(object):
         """
         Retrieve the passed in user's primary GID
         """
-        retval = False
-        retval = self.userMgr.getUserPriGid(userName)
-        return retval
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.getUserPriGid(userName)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
 
     #----------------------------------------------------------------------
 
@@ -115,9 +213,18 @@ class ManageUser(object):
         """
         Retrieve the passed in user's home directory
         """
-        retval = False
-        retval = self.userMgr.getUserHomeDir(userName)
-        return retval
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.getUserHomeDir(userName)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
 
     #----------------------------------------------------------------------
 
@@ -127,9 +234,18 @@ class ManageUser(object):
 
         @author Roy Nielsen
         """
-        retval = False
-        retval = self.userMgr.isUserInstalled(user)
-        return retval
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.isUserInstalled(user)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
 
     #----------------------------------------------------------------------
 
@@ -139,9 +255,18 @@ class ManageUser(object):
 
         @author: Roy Nielsen
         """
-        retval = False
-        retval = self.userMgr.isUserInGroup(userName, groupName)
-        return retval
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.isUserInGroup(userName, groupName)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
 
     #----------------------------------------------------------------------
 
@@ -153,24 +278,18 @@ class ManageUser(object):
 
         @author:
         """
-        retval = False
-        retval = self.userMgr.validateUser(userName, userShell, userComment,
-                                           userUid, userPriGid, userHomeDir)
-        return retval
-
-    #----------------------------------------------------------------------
-
-    def isUserInSudoers(self, userName=""):
-        """
-        Check if user can sudo.
-
-        @author: Roy Nielsen
-        """
         success = False
-        self.logger.log(lp.CRITICAL, "################################################################")
-        self.logger.log(lp.CRITICAL, "### Not yet implemented in ANY operating system              ###")
-        self.logger.log(lp.CRITICAL, "################################################################")
-        success = self.userMgr.isUserInSudoers(userName)
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.validateUser(userName, userShell, userComment,
+                                           userUid, userPriGid, userHomeDir)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
         return success
 
     #----------------------------------------------------------------------
@@ -189,9 +308,18 @@ class ManageUser(object):
 
         @author: Roy Nielsen
         """
-        retval = False
-        retval = self.userMgr.createStandardUser(userName, password)
-        return retval
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.createStandardUser(userName, password)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
 
     
     def createBasicUser(self, userName=""):
@@ -204,9 +332,18 @@ class ManageUser(object):
 
         @author: Roy Nielsen
         """
-        retval = False
-        retval = self.userMgr.createBasicUser(userName)
-        return retval
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.createBasicUser(userName)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
 
     #----------------------------------------------------------------------
 
@@ -218,9 +355,18 @@ class ManageUser(object):
 
         @author: Roy Nielsen
         """
-        retval = False
-        retval = self.userMgr.setUserShell(user, shell)
-        return retval
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.setUserShell(user, shell)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
 
     #----------------------------------------------------------------------
 
@@ -232,9 +378,18 @@ class ManageUser(object):
 
         @author: Roy Nielsen
         """
-        retval = False
-        retval = self.userMgr.setUserComment(user, comment)
-        return retval
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.setUserComment(user, comment)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
 
     #----------------------------------------------------------------------
 
@@ -244,9 +399,18 @@ class ManageUser(object):
 
         @author: Roy Nielsen
         """
-        retval = False
-        retval = self.userMgr.setUserUid(user, uid)
-        return retval
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.setUserUid(user, uid)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
 
     #----------------------------------------------------------------------
 
@@ -256,9 +420,18 @@ class ManageUser(object):
 
         @author: Roy Nielsen
         """
-        retval = False
-        retval = self.userMgr.setUserPriGid(user, priGid)
-        return retval
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.setUserPriGid(user, priGid)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
 
     #----------------------------------------------------------------------
 
@@ -270,9 +443,18 @@ class ManageUser(object):
 
         @author: Roy Nielsen
         """
-        retval = False
-        retval = self.userMgr.setUserHomeDir(user, userHome)
-        return retval
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.setUserHomeDir(user, userHome)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
 
     #----------------------------------------------------------------------
 
@@ -285,9 +467,18 @@ class ManageUser(object):
 
         @author: Roy Nielsen
         """
-        retval = False
-        retval = self.userMgr.createHomeDirectory(user)
-        return retval
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.createHomeDirectory(user)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
 
     #----------------------------------------------------------------------
 
@@ -297,9 +488,18 @@ class ManageUser(object):
 
         @author: Roy Nielsen
         """
-        retval = False
-        retval = self.userMgr.addUserToGroup(user, group)
-        return retval
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.addUserToGroup(user, group)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
 
     #----------------------------------------------------------------------
 
@@ -309,9 +509,18 @@ class ManageUser(object):
 
         @author: Roy Nielsen
         """
-        retval = False
-        retval = self.userMgr.setUserPassword(user, password)
-        return retval
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.setUserPassword(user, password)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
 
     #----------------------------------------------------------------------
 
@@ -321,9 +530,18 @@ class ManageUser(object):
 
         @author: Roy Nielsen
         """
-        retval = False
-        retval = self.userMgr.rmUser(user)
-        return retval
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.rmUser(user)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
 
     #----------------------------------------------------------------------
 
@@ -335,9 +553,18 @@ class ManageUser(object):
 
         @author: Roy Nielsen
         """
-        retval = False
-        retval = self.userMgr.rmUserHome(user)
-        return retval
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.rmUserHome(user)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
 
     #----------------------------------------------------------------------
 
@@ -347,9 +574,18 @@ class ManageUser(object):
 
         @author: Roy Nielsen
         """
-        retval = False
-        retval = self.userMgr.rmUserFromGroup(user, group)
-        return retval
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.rmUserFromGroup(user, group)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
 
     #----------------------------------------------------------------------
 
@@ -361,15 +597,33 @@ class ManageUser(object):
 
         @author: Roy Nielsen
         """
-        retval = False
-        retval = self.userMgr.fixUserHome(userName)
-        return retval
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.fixUserHome(userName)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
 
     #----------------------------------------------------------------------
 
     def authenticate(self, user="", password=""):
         """
         """
-        retval = False
-        retval = self.userMgr.authenticate(user, password)
-        return retval
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.authenticate(user, password)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success

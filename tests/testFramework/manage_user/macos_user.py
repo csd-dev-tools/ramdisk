@@ -294,19 +294,6 @@ class MacOSUser(ParentManageUser):
 
     #----------------------------------------------------------------------
 
-    def isUserInSudoers(self, userName=""):
-        """
-        Check if user can sudo.
-
-        @author: Roy Nielsen
-        """
-        success = False
-        # Gather groups, see if user is in one of the groups
-        # Check if the user is in the sudoers file directory with elevation privs
-        return success
-
-    #----------------------------------------------------------------------
-
     def validateUser(self, userName=False, userShell=False, userComment=False,
                      userUid=False, userPriGid=False, userHomeDir=False):
         """
@@ -847,79 +834,3 @@ class MacOSUser(ParentManageUser):
         if self.isSaneUserName(userName):
             success = self.isUserInGroup(userName, "admin")
         return success
-
-    #----------------------------------------------------------------------
-
-    def deleteUserLoginKeychain(self, user=""):
-        '''
-        Delete the login keychain of the passed in user.  This is requried
-        when a user cannot remember their login keychain password.  Also may
-        be necessary if the user's login keychain password is out of sync with
-        the user's account login.
-        
-        @author: Roy Nielsen
-        '''
-        success = False
-        if self.isSaneUserName(user):
-            userHome = self.getUserHomeDir(user)
-            if self.isSaneUserHomeDir(userHome):
-                try:
-                    pathToKeychain = os.path.join(userHome, "Library/Keychains/login.keychain")
-                    self.logger.log(lp.DEBUG, pathToKeychain)
-                    os.unlink(pathToKeychain)
-                    success = True
-                except OSError: #, err:
-                    #self.logger.log(lp.WARNING, "Exception trying to remove " +\
-                    #                "login.keychain: " + str(err))
-                    success = True    
-        self.logger.log(lp.DEBUG, "Keychain removal: " + str(success))
-        return success
-
-    #----------------------------------------------------------------------
-
-    def setUserLoginKeychainPassword(self, user="", password=""):
-        """
-        Use the "security" command to set the login keychain.  If it has not
-        been created, create the login keychain.
-
-        Needs research.. Not sure if a sudo'd admin can use the security
-        command to change another user's keychain password...
-
-        possibly:
-        security set-keychain-password -o oldpassword -p newpassword file.keychain
-
-        where file.keychain is the default login.keychain of another user?
-
-        @author: Roy Nielsen
-        """
-        pass
-        """
-        self.sec = "/usr/bin/security"
-        success = False
-        keychainpath = ""
-
-        if self.isSaneUserName(user) and isinstance(password, basestring):
-            pass
-
-        #####
-        # Input validation
-
-        #####
-        # Check if login keychain exists
-
-        #####
-        # if it does not exist, create it
-        if not os.path.exists(keychainpath):
-            cmd = ["Create Keychain Command Here"]
-
-            if not reterr:
-                success = True
-            else:
-                self.logger.log(lp.INFO, "Unsuccessful attempt to create the " + \
-                                         "keychain...(" + str(reterr) + ")")
-
-        #####
-        # else set the login keychain password
-
-        pass
-        """
