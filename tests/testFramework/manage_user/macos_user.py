@@ -48,19 +48,35 @@ class MacOSUser(ParentManageUser):
     """
     Class to manage users on Mac OS.
 
+    #----- Getters
     @method findUniqueUid
+    @method uidTaken
+    @method getUser
+    @method getUserShell
+    @method getUserComment
+    @method getUserUid
+    @method getUserPriGid
+    @method getUserHomeDir
+    @method isUserInstalled
+    @method isUserInGroup
+    @method authenticate
+    #----- Setters
+    @method createStandardUser
+    @method createBasicUser
     @method setUserShell
     @method setUserComment
     @method setUserUid
     @method setUserPriGid
     @method setUserHomeDir
-    @method addUserToGroup
-    @method rmUserFromGroup
-    @method setUserPassword
-    @method setUserLoginKeychainPassword
     @method createHomeDirectory
+    @method addUserToGroup
+    @method setUserPassword
+    @method fixUserHome
+    #----- User removal
     @method rmUser
     @method rmUserHome
+    @method rmUserFromGroup
+
 
     @author: Roy Nielsen
     """
