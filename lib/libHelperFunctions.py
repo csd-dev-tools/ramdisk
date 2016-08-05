@@ -11,7 +11,7 @@ import ctypes
 from subprocess import Popen, STDOUT, PIPE
 
 #--- non-native python libraries in this source tree
-from lib.loggers import CrazyLogger
+from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 
 def getOsFamily():

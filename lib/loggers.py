@@ -59,7 +59,7 @@ def singleton_decorator(cls):
 # Main class
 
 @singleton_decorator
-class CrazyLogger(object):
+class CyLogger(object):
     """
     Class to set up logging, with easy string referencing loggers and their
     handlers.

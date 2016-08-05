@@ -33,7 +33,7 @@ from subprocess import Popen, PIPE
 #--- non-native python libraries in this source tree
 from commonRamdiskTemplate import RamDiskTemplate
 from lib.run_commands import RunWith
-from lib.loggers import CrazyLogger
+from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 from lib.libHelperFunctions import getOsFamily
 from lib.libHelperExceptions import NotValidForThisOS
@@ -665,7 +665,7 @@ def detach(device=" "):
     @author: Roy Nielsen
     """
     success = False
-    logger = CrazyLogger()
+    logger = CyLogger()
     myRunWith = RunWith()
     if not re.match("^\s*$", device):
         cmd = ["/usr/bin/hdiutil", "detach", device]

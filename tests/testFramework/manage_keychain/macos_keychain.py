@@ -10,6 +10,7 @@ import os
 ########## 
 # local app libraries
 from lib.run_commands import RunWith
+from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 from lib.manage_user.macos_user import MacOSUser
 
@@ -27,15 +28,17 @@ class UnsupportedSecuritySubcommand(Exception):
 class MacOSKeychain(MacOSUser):
     """
     """
-    def __init__(self, conf):
+    def __init__(self, logger=False):
         """
         Initialization Method
         
         @author: Roy Nielsen
         """
         self.mgr = "/usr/bin/security"
-        self.conf = conf
-        self.logger = self.conf.get_logger()
+        if not logger:
+            self.logger = CyLogger()
+        else:
+            self.logger = logger
         self.runWith = RunWith(self.logger)
 
     #----------------------------------------------------------------------
@@ -59,11 +62,12 @@ class MacOSKeychain(MacOSUser):
         @author: Roy Nielsen
         """
         success = False
+        subcmd = []
         if not isinstance(command, dict):
             self.logger.log(lp.ERROR, "Command must be a dictionary...")
         else:
             commands = 0
-            for subCommand, args in command:
+            for subCommand, args in command.iteritems():
                 commands += 1
                 #####
                 # Check to make sure only one command is in the dictionary
@@ -116,6 +120,9 @@ class MacOSKeychain(MacOSUser):
         @author: Roy Nielsen
         """
         success = False
+        output = ""
+        error = ""
+        returncode = ""
         #####
         # Make sure the command dictionary was properly formed, as well as
         # returning the formatted subcommand list
@@ -245,7 +252,7 @@ class MacOSKeychain(MacOSUser):
         success = False
         #####
         # Input validation for the file keychain.
-        if self.isSaneFilePath(keychain):
+        if self.isSaneFilePath(keychain) and os.path.exists(keychain):
             #####
             # Command setup - note that the keychain deliberately has quotes
             # around it - there could be spaces in the path to the keychain,

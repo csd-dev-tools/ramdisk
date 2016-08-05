@@ -4,7 +4,7 @@ import sys
 import ctypes
 
 #--- non-native python libraries in this source tree
-from lib.loggers import CrazyLogger
+from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 
 ##############################################################################
@@ -17,7 +17,7 @@ def getLibc(logger=False):
     @author: Roy Nielsen
     """
     if not logger:
-        logger = CrazyLogger()
+        logger = CyLogger()
     osFamily = sys.platform.lower().strip()
     #print "---==## OS Family: " + str(osFamily) + " #==---"
 

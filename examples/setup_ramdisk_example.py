@@ -9,7 +9,7 @@ import sys
 from optparse import OptionParser, SUPPRESS_HELP
 sys.path.append("..")
 #--- non-native python libraries in this source tree
-from lib.loggers import CrazyLogger
+from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 
 #####
@@ -43,9 +43,9 @@ parser.add_option("-v", "--verbose", action="store_true",
 (opts, args) = parser.parse_args()
 
 if opts.verbose != 0:
-    level = Logger(level=lp.INFO)
+    level = CyLogger(level=lp.INFO)
 elif opts.debug != 0:
-    level = Logger(level=lp.DEBUG)
+    level = CyLogger(level=lp.DEBUG)
 else:
     level=lp.WARNING
 
@@ -53,7 +53,7 @@ if opts.size:
     size = int(opts.size)  # in Megabytes
 mntpnt = opts.mntpnt
 
-logger = CrazyLogger()
+logger = CyLogger()
 logger.initializeLogs()
 
 ramdisk = RamDisk(str(size), mntpnt)

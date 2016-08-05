@@ -8,7 +8,7 @@ from tempfile import mkdtemp
 
 #--- non-native python libraries in this source tree
 from lib.loggers import LogPriority as lp
-from lib.loggers import CrazyLogger
+from lib.loggers import CyLogger
 
 ###############################################################################
 
@@ -23,7 +23,7 @@ class RamDiskTemplate(object):
         # <YYYY><MM><DD>.<HH><MM><SS>.<microseconds>
         # in UTC time
         self.module_version = '20160224.032043.009191'
-        self.logger = CrazyLogger()
+        self.logger = CyLogger()
         self.logger.log(lp.INFO, "Logger: " + str(self.logger))
         self.diskSize = size
         self.success = False

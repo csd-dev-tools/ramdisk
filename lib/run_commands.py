@@ -18,7 +18,7 @@ import termios
 import threading
 from subprocess import Popen, PIPE
 sys.path.append("..")
-from lib.loggers import CrazyLogger
+from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 from lib.get_libc import getLibc
 
@@ -48,7 +48,7 @@ class RunWith(object):
     @author: Roy Nielsen
     """
     def __init__(self):
-        self.logger = CrazyLogger()
+        self.logger = CyLogger()
         self.command = None
         self.output = None
         self.error = None
@@ -541,8 +541,8 @@ class RunThread(threading.Thread) :
         if isinstance(self.command, types.StringTypes) :
             self.shell = False
             self.printcmd = self.command
-        if not isinstance(logger, (bool, CrazyLogger)):
-            self.logger = CrazyLogger()
+        if not isinstance(logger, (bool, CyLogger)):
+            self.logger = CyLogger()
         else:
             self.logger = logger
 
