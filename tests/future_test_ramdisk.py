@@ -17,7 +17,7 @@ from datetime import datetime
 sys.path.append("../")
 
 #--- non-native python libraries in this source tree
-from lib.loggers import CrazyLogger
+from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 from lib.libHelperExceptions import NotValidForThisOS
 from tests.genericRamdiskTest import GenericRamdiskTest
@@ -67,7 +67,7 @@ class test_ramdisk(GenericRamdiskTest):
         ramdisk_size = size = size_in_mb
         self.mnt_pnt_requested = ""
 
-        self.logger = CrazyLogger()
+        self.logger = CyLogger()
 
         self.success = False
         self.mountPoint = False

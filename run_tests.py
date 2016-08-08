@@ -14,7 +14,7 @@ from optparse import OptionParser, SUPPRESS_HELP, OptionValueError, Option
 
 testdir = "./tests"
 
-from lib.loggers import CrazyLogger
+from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 
 ###############################################################################
@@ -27,7 +27,7 @@ class BuildAndRunSuite(object):
         if logger:
             self.logger = logger
         else:
-            self.logger = CrazyLogger()
+            self.logger = CyLogger()
         self.module_version = '20160224.032043.009191'
         self.prefix=[]
 
@@ -199,7 +199,7 @@ if __name__ == "__main__":
     # ... processing logging options...
     verbose = options.verbose
     debug = options.debug
-    logger = CrazyLogger(debug_mode=options.debug, verbose_mode=options.verbose)
+    logger = CyLogger(debug_mode=options.debug, verbose_mode=options.verbose)
     logger.initializeLogs(syslog=options.skip_syslog)
 
     logger.log(lp.DEBUG, "Modules: " + str(modules))

@@ -18,7 +18,7 @@ from commonRamdiskTemplate import RamDiskTemplate
 
 ###############################################################################
 
-class RamDisk(RamDiskTemplate):
+class TmpfsRamDisk(RamDiskTemplate):
     """
     http://www.cyberciti.biz/tips/what-is-devshm-and-its-practical-usage.html
 
@@ -303,7 +303,7 @@ def detach(mnt_point="", logger=False):
 
 ###############################################################################
 
-def unmount(mnt_point="", logger=False):
+def umount(mnt_point="", logger=False):
     """
     Unmount the ramdisk
 
