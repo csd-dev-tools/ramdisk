@@ -7,6 +7,7 @@ unionfs functionality.
 @author: Roy Nielsen
 """
 from __future__ import absolute_import
+
 import re
 import os
 import pty
@@ -19,6 +20,7 @@ from subprocess import Popen
 from .parent_manage_user import ParentManageUser
 from .parent_manage_user import BadUserInfoError
 from lib.run_commands import RunWith
+from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 
 
@@ -87,7 +89,10 @@ class MacOSUser(ParentManageUser):
                                          userComment, userUid, userPriGid,
                                          userHomeDir)
         self.module_version = '20160225.125554.540679'
-        self.logger = logger
+        if not logger:
+            self.logger = CyLogger()
+        else:
+            self.logger = logger
         self.dscl = "/usr/bin/dscl"
         self.runWith = RunWith(self.logger)
 
@@ -294,8 +299,8 @@ class MacOSUser(ParentManageUser):
         
         @author: Roy Nielsen
         """
-        self.logger.log(lp.CRITICAL, "U: " + str(userName))
-        self.logger.log(lp.CRITICAL, "G: " + str(groupName))
+        self.logger.log(lp.DEBUG, "U: " + str(userName))
+        self.logger.log(lp.DEBUG, "G: " + str(groupName))
         
         
         success = False

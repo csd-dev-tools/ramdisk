@@ -12,7 +12,10 @@ import re
 import inspect
 
 from lib.run_commands import RunWith
+from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
+from lib.CheckApplicable import CheckApplicable
+from lib.environment import Environment
 
 
 class BadUserInfoError(Exception):
@@ -60,7 +63,14 @@ class ParentManageUser(object):
 
         #####
         # Set up logging
-        self.logger = logger
+        if not logger:
+            self.logger = CyLogger()
+        else:
+            self.logger = logger
+        #####
+        # Acqure the environment
+        self.environ = Environment()
+
         #####
         # THIS IS A LIBRARY, SO LOGS SHOULD BE INITIALIZED ELSEWHERE...
         # self.logger.initializeLogs()
@@ -385,6 +395,47 @@ class ParentManageUser(object):
                     break
         return success
 
+    def isQualifiedLiftAttendant(self, userName=""):
+        """
+        Will return true if the user running the script is in a default
+        operating system group that can elevate privilege.  Traditionally 
+        'wheel' on Linux and 'admin' on Mac.
+        
+        A 'lift attendant' is an elevator operator in fancy hotels.
+        
+        @author: Roy Nielsen
+        """
+        success = False
+
+        if self.isSaneUserName(userName):
+    
+            checkApplicable = CheckApplicable(self.environ)
+            #####
+            # Set the isapplicable parameters for checking if the current OS
+            # is applicable to this code.
+            macApplicable = {'type': 'white',
+                             'family': ['darwin'],
+                             'os': {'Mac OS X': ['10.9', 'r', '10.11.10']}}
+            #####
+            # Set the isapplicable parameters for checking if the current OS
+            # is applicable to this code.
+            linuxApplicable = {'type': 'white',
+                               'family': ['linux']}
+            #####
+            # perform the isapplicable check
+            if checkApplicable.isapplicable(macApplicable):
+                #####
+                # If in the correct group, success = True
+                if self.isUserInGroup(userName="", groupName="admin"):
+                    success = True
+            elif checkApplicable.isapplicable(linuxApplicable):
+                #####
+                # If in the correct group, success = True
+                if self.isUserInGroup(userName="", groupName="wheel"):
+                    success = True
+
+        return success
+
     #----------------------------------------------------------------------
     # Getters
     #----------------------------------------------------------------------
@@ -549,6 +600,18 @@ class ParentManageUser(object):
         pass
 
     #----------------------------------------------------------------------
+
+    def fixUserHome(self, userName=""):
+        """
+        Get the user information from the local directory and fix the user
+        ownership and group of the user's home directory to reflect
+        what is in the local directory service.
+
+        @author: Roy Nielsen
+        """
+        pass
+
+    #----------------------------------------------------------------------
     # User Property Removal
     #----------------------------------------------------------------------
 
@@ -560,13 +623,6 @@ class ParentManageUser(object):
     #----------------------------------------------------------------------
 
     def rmUserHome(self, user=""):
-        """
-        """
-        pass
-
-    #----------------------------------------------------------------------
-
-    def fixUserHome(self, userName=""):
         """
         Get the user information from the local directory and fix the user
         ownership and group of the user's home directory to reflect

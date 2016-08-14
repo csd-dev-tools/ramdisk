@@ -270,6 +270,27 @@ class ManageUser(object):
 
     #----------------------------------------------------------------------
 
+    def isUserInSudoers(self, userName=""):
+        """
+        Check if this user is in the sudoers file - requires root access to run.
+
+        @author: Roy Nielsen
+        """
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.isUserInSudoers(userName)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
+
+    #----------------------------------------------------------------------
+
     def validateUser(self, userName=False, userShell=False, userComment=False,
                      userUid=False, userPriGid=False, userHomeDir=False):
         """
