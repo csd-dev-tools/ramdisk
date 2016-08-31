@@ -56,17 +56,54 @@ class ParentManageUser(object):
 
     @author: Roy Nielsen
     """
-    def __init__(self, logger=False, userName="", userShell="/bin/bash",
-                       userComment="", userUid=10000, userPriGid=20,
-                       userHomeDir="/tmp"):
+    def __init__(self, **kwargs):
+        """
+        Variables that can be passed in:
+        logger
+        userName
+        userShell
+        userComment
+        userUid
+        userPriGid
+        userHomeDir
+        """
+        if 'logDispatcher' not in kwargs:
+            raise ValueError("Variable 'logDispatcher' a required parameter for " + str(self.__class__.__name__))
+        else:
+            self.logger = kwargs.get('logDispatcher')
+
+        if 'userName' not in kwargs:
+            self.userName = ""
+        else:
+            self.userName = kwargs.get('userName')
+
+        if 'userShell' not in kwargs:
+            self.userShell = "/bin/bash"
+        else:
+            userShell = kwargs.get('userShell')
+
+        if 'userComment' not in kwargs:
+            self.userComment = ""
+        else:
+            self.userComment = kwargs.get('userComment')
+
+        if 'userUid' not in kwargs:
+            self.userUid = 10000
+        else:
+            self.userUid = kwargs.get('userUid')
+
+        if 'userPriGid' not in kwargs:
+            self.userPriGid = 20
+        else:
+            self.userPriGid = kwargs.get('userPriGid')
+
+        if 'userHomeDir' not in kwargs:
+            self.userHomeDir = ""
+        else:
+            self.userHomeDir = kwargs.get('userHomeDir')
+
         self.module_version = '20160225.125554.540679'
 
-        #####
-        # Set up logging
-        if not logger:
-            self.logger = CyLogger()
-        else:
-            self.logger = logger
         #####
         # Acqure the environment
         self.environ = Environment()
@@ -409,7 +446,7 @@ class ParentManageUser(object):
 
         if self.isSaneUserName(userName):
     
-            checkApplicable = CheckApplicable(self.environ)
+            checkApplicable = CheckApplicable(self.environ, self.logger)
             #####
             # Set the isapplicable parameters for checking if the current OS
             # is applicable to this code.

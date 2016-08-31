@@ -17,11 +17,12 @@ from subprocess import Popen
 
 ########## 
 # local app libraries
-from .parent_manage_user import ParentManageUser
-from .parent_manage_user import BadUserInfoError
+from lib.manage_user.parent_manage_user import ParentManageUser
+from lib.manage_user.parent_manage_user import BadUserInfoError
 from lib.run_commands import RunWith
 from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
+from lib.logdispatcher_lite import LogDispatcher
 
 
 class DsclError(Exception):
@@ -76,23 +77,28 @@ class MacOSUser(ParentManageUser):
     @method fixUserHome
     #----- User removal
     @method rmUser
-    @method rmUserHome
     @method rmUserFromGroup
-
+    @method rmUserHome
 
     @author: Roy Nielsen
     """
-    def __init__(self, logger=False, userName="", userShell="/bin/bash",
-                 userComment="", userUid=1000, userPriGid=20,
-                 userHomeDir="/tmp"):
-        super(MacOSUser, self).__init__(logger, userName, userShell,
-                                         userComment, userUid, userPriGid,
-                                         userHomeDir)
+    def __init__(self, **kwargs):
+        """
+        Variables that can be passed in:
+        logger
+        userName
+        userShell
+        userComment
+        userUid
+        userPriGid
+        userHomeDir
+        """
+        if 'logDispatcher' not in kwargs:
+            raise ValueError("Variable 'logDispatcher' a required parameter for " + str(self.__class__.__name__))
+        super(MacOSUser, self).__init__(**kwargs)
+
         self.module_version = '20160225.125554.540679'
-        if not logger:
-            self.logger = CyLogger()
-        else:
-            self.logger = logger
+
         self.dscl = "/usr/bin/dscl"
         self.runWith = RunWith(self.logger)
 
@@ -632,41 +638,72 @@ class MacOSUser(ParentManageUser):
 
     #----------------------------------------------------------------------
 
-    def rmUserFromGroup(self, user="", group=""):
-        """
-        """
-        success = False
-
-        if self.isSaneUserName(user) and self.isSaneGroupName(group):
-            isSetDSCL = self.setDscl(".", "-delete", "/Groups/" + str(group),
-                                     "GroupMembership", str(user))
-        if isSetDSCL:
-            success = True
-
-        return success
-
-    #----------------------------------------------------------------------
-
-    def setUserPassword(self, user="", password=""):
+    def setUserPassword(self, user="", password="", oldPassword=""):
         """
         dscl . -passwd /Users/luser password
+        -- or --
+        dscl . -passwd /Users/luser oldPassword password
 
         @author: Roy Nielsen
         """
         success = False
 
         if self.isSaneUserName(user):
-            isSetDSCL = self.setDscl(".", "-passwd", "/Users/" + str(user),
-                                     '%s'%password)
-            self.logger.log(lp.ERROR, "isSetDSCL: " + str(isSetDSCL))
+            if oldPassword:
+                isSetDSCL = self.setDscl(".", "-passwd", "/Users/" + str(user),
+                                         '%s'%oldPassword, '%s'%password)
+            else:
+                isSetDSCL = self.setDscl(".", "-passwd", "/Users/" + str(user),
+                                         '%s'%password)
+            self.logger.log(lp.DEBUG, "isSetDSCL: " + str(isSetDSCL))
         else:
-            self.logger.log(lp.ERROR, "Rat in the bulkhead Jim!")
+            self.logger.log(lp.DEBUG, "Tribbles in the bulkhead Jim!")
 
         if not isSetDSCL:
             success = False
         else:
             success = True
 
+        return success
+
+    #----------------------------------------------------------------------
+
+    def fixUserHome(self, userName=""):
+        """
+        Get the user information from the local directory and fix the user
+        ownership and group of the user's home directory to reflect
+        what is in the local directory service.
+
+        @author: Roy Nielsen
+        """
+        success = False
+        if self.isSaneUserName(userName):
+            #####
+            # Acquire the user data based on the username first.
+            try:
+                userUid = self.getUserUid(userName)
+                userPriGid = self.getUserPriGid(userName)
+                userHomeDir = self.getUserHomeDir(userName)
+            except BadUserInfoError, err:
+                self.logger.log(lp.INFO, "Exception trying to find: \"" + \
+                                         str(userName) + "\" user information")
+                self.logger.log(lp.INFO, "err: " + str(err))
+            else:
+                success = True
+
+        if success:
+            try:
+                for root, dirs, files in os.walk(userHomeDir):
+                    for d in dirs:
+                        os.chown(os.path.join(root, d), userUid, userPriGid)
+                    for f in files:
+                        os.chown(os.path.join(root, d, f), userUid, userPriGid)
+            except:
+                success = False
+                self.logger.log(lp.INFO, "Exception attempting to chown...")
+                raise err
+            else:
+                success = True
         return success
 
     #----------------------------------------------------------------------
@@ -728,42 +765,17 @@ class MacOSUser(ParentManageUser):
 
     #----------------------------------------------------------------------
 
-    def fixUserHome(self, userName=""):
+    def rmUserFromGroup(self, user="", group=""):
         """
-        Get the user information from the local directory and fix the user
-        ownership and group of the user's home directory to reflect
-        what is in the local directory service.
-
-        @author: Roy Nielsen
         """
         success = False
-        if self.isSaneUserName(userName):
-            #####
-            # Acquire the user data based on the username first.
-            try:
-                userUid = self.getUserUid(userName)
-                userPriGid = self.getUserPriGid(userName)
-                userHomeDir = self.getUserHomeDir(userName)
-            except BadUserInfoError, err:
-                self.logger.log(lp.INFO, "Exception trying to find: \"" + \
-                                         str(userName) + "\" user information")
-                self.logger.log(lp.INFO, "err: " + str(err))
-            else:
-                success = True
 
-        if success:
-            try:
-                for root, dirs, files in os.walk(userHomeDir):
-                    for d in dirs:
-                        os.chown(os.path.join(root, d), userUid, userPriGid)
-                    for f in files:
-                        os.chown(os.path.join(root, d, f), userUid, userPriGid)
-            except:
-                success = False
-                self.logger.log(lp.INFO, "Exception attempting to chown...")
-                raise err
-            else:
-                success = True
+        if self.isSaneUserName(user) and self.isSaneGroupName(group):
+            isSetDSCL = self.setDscl(".", "-delete", "/Groups/" + str(group),
+                                     "GroupMembership", str(user))
+        if isSetDSCL:
+            success = True
+
         return success
 
     #----------------------------------------------------------------------
@@ -779,6 +791,9 @@ class MacOSUser(ParentManageUser):
         success = False
         reterr = ""
         retval = ""
+        #####
+        # If elevated, use the liftDown runWith method to run the command as
+        # a regular user.
         if directory and action and object and property:
             if directory and action and object and property and value:
                 cmd = [self.dscl, directory, action, object, property, value]
@@ -786,14 +801,25 @@ class MacOSUser(ParentManageUser):
                 cmd = [self.dscl, directory, action, object, property]
 
             self.runWith.setCommand(cmd)
-            self.runWith.communicate()
+            if re.match("^%0$", str(os.getuid()).strip()):
+                #####
+                # Run the command, lift down...
+                self.logger.log(lp.DEBUG, "dscl-cmd: " + str(cmd))
+                self.runWith.liftDown(self.userName)
+                self.logger.log(lp.INFO, "Took the lift down...")
+                retval, reterr, retcode = self.runWith.getNlogReturns()
+                if not reterr:
+                    success = True
+            else:
+                #####
+                # Run the command
+                retval, reterr, retcode = self.runWith.communicate()
+
+                if not reterr:
+                    success = True
+
             retval, reterr, retcode = self.runWith.getNlogReturns()
 
-            if not reterr:
-                success = True
-            else:
-                raise DsclError("Error trying to set a value with dscl (" + \
-                                str(reterr).strip() + ")")
         return success
 
     #----------------------------------------------------------------------
@@ -855,3 +881,14 @@ class MacOSUser(ParentManageUser):
         if self.isSaneUserName(userName):
             success = self.isUserInGroup(userName, "admin")
         return success
+
+    #----------------------------------------------------------------------
+
+    def acquireUserData(self):
+        """
+        Acquire user data for local user lookup information.
+        
+        @author: Roy Nielsen
+        """
+        pass
+        

@@ -17,7 +17,7 @@ import select
 import termios
 import threading
 from subprocess import Popen, PIPE
-sys.path.append("..")
+
 from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 from lib.get_libc import getLibc
@@ -169,16 +169,18 @@ class RunWith(object):
                 self.logger.log(lp.WARNING, "stderr: " + str(self.error))
                 raise err
             else :
-                self.logger.log(lp.DEBUG, self.printcmd + " Returned with error/returncode: " + str(proc.returncode))
+                #self.logger.log(lp.DEBUG, self.printcmd + " Returned with error/returncode: " + str(proc.returncode))
                 proc.stdout.close()
             finally:
-                self.logger.log(lp.DEBUG, "Done with command: " + self.printcmd)
+                #self.logger.log(lp.DEBUG, "Done with command: " + self.printcmd)
                 self.returncode = str(proc.returncode)
         else :
             self.logger.log(lp.WARNING, "Cannot run a command that is empty...")
             self.output = None
             self.error = None
             self.returncode = None
+
+        return self.output, self.error, self.returncode
 
     ############################################################################
 
@@ -209,8 +211,8 @@ class RunWith(object):
                 proc.stdout.close()
             finally:
                 self.logger.log(lp.DEBUG, "Done with command: " + self.printcmd)
-                self.output = proc.stdout
-                self.error = proc.stderr
+                self.output = str(proc.stdout)
+                self.error = str(proc.stderr)
                 self.returncode = str(proc.returncode)
         else :
             self.logger.log(lp.WARNING, "Cannot run a command that is empty...")
@@ -353,6 +355,62 @@ class RunWith(object):
 
     ############################################################################
 
+    def liftDown(self, user="") :
+        """
+        Use the lift (elevator) to execute a command from privileged mode
+        to a user's context with that user's uid.  Does not require a password.
+
+        Required parameters: user
+
+        @author: Roy Nielsen
+        """
+        success = False
+        self.output = ""
+        self.error = ""
+        self.returncode = 999
+        
+        user = user.strip()
+
+        if os.getuid() != 0:
+            self.logger.log("This can only run if running in privileged mode.")
+            return(256)
+        if re.match("^\s*$", user) or not self.command:
+            self.logger.log(lp.WARNING, "Cannot pass in empty parameters...")
+            self.logger.log(lp.WARNING, "user = \"" + str(user) + "\"")
+            self.logger.log(lp.WARNING, "command = \"" + str(self.command) + "\"")
+            return(255)
+        else :
+            output = ""
+            internal_command = ["/usr/bin/su", "-", str(user), "-c"]
+
+            if isinstance(self.command, list) :
+                cmd = []
+                for i in range(len(self.command)):
+                    try:
+                        cmd.append(str(self.command[i].decode('utf-8')))
+                    except UnicodeDecodeError :
+                        cmd.append(str(self.command[i]))
+
+                internal_command.append(str(" ".join(cmd)))
+                #self.logger.log(lp.ERROR, "cmd: " + str(internal_command))
+            elif isinstance(self.command, basestring) :
+                internal_command.append(self.command)
+                #self.logger.log(lp.ERROR, "cmd: " + str(internal_command))
+
+        self.setCommand(internal_command)
+        output, error, returncode = self.communicate()
+
+        if not error:
+            success = True
+
+        self.logger.log(lp.DEBUG, "out: " + str(output))
+        self.logger.log(lp.DEBUG, "err: " + str(error))
+        self.logger.log(lp.DEBUG, "out: " + str(returncode))
+
+        return output, error, returncode
+
+    ############################################################################
+
     def getecho (self, fileDescriptor):
         """This returns the terminal echo mode. This returns True if echo is
         on or False if echo is off. Child applications that are expecting you
@@ -429,16 +487,16 @@ class RunWith(object):
                     except UnicodeDecodeError :
                         cmd.append(str(self.command[i]))
 
-                internal_command.append(str("/usr/bin/sudo -E -S -s '" + \
+                internal_command.append(str("/usr/bin/sudo -S -s '" + \
                                             " ".join(cmd) + "'"))
             elif isinstance(self.command, basestring):
                 try:
-                    internal_command.append(str("/usr/bin/sudo -E -S -s " + \
+                    internal_command.append(str("/usr/bin/sudo -S -s " + \
                                                 "'" + \
                                                 str(self.command.decode('utf-8')) + \
                                                 "'"))
                 except UnicodeDecodeError:
-                    internal_command.append(str("/usr/bin/sudo -E -S -s " + \
+                    internal_command.append(str("/usr/bin/sudo -S -s " + \
                                                 "'" + \
                                                 str(self.command) + "'"))
 
@@ -541,7 +599,7 @@ class RunWith(object):
             return(255)
         else :
             output = ""
-            cmd = ["/usr/bin/sudo", "-E", "-S", "-s"]
+            cmd = ["/usr/bin/sudo", "-S", "-s"]
 
             if isinstance(self.command, list) :
                 cmd = cmd + [" ".join(self.command)]

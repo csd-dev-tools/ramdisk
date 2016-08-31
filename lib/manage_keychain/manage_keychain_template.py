@@ -11,7 +11,7 @@ http://lmgtfy.com/?q=python+*args+**kwargs
 class ManageKeychainTemplate(object):
     """
     """
-    def __init__(self):
+    def __init__(self, **kwargs):
         """
         Initialization Method
         
@@ -19,6 +19,14 @@ class ManageKeychainTemplate(object):
         """
         pass
     
+    def lockKeychain(self, *args, **kwargs):
+        """
+        Unlock the defined keychain
+        
+        @author: Roy Nielsen
+        """
+        pass
+
     def unlockKeychain(self, *args, **kwargs):
         """
         Unlock the defined keychain

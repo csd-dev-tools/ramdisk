@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 #--- Native python libraries
 import os
 import sys
@@ -13,6 +15,9 @@ def getLibc(logger=False):
     """
     Acquire a reference to the system libc, initially to access the
     filesystem "sync" function.
+
+    @returns: python reference to the C libc object, or False, if it can't
+              find libc on the system.
 
     @author: Roy Nielsen
     """

@@ -29,8 +29,9 @@ class ManageUser(object):
         self.logger.log(lp.INFO, "Logger: " + str(self.logger))
 
         if sys.platform.lower() == "darwin":
-            from .macos_user import MacOSUser
-            self.userMgr = MacOSUser()
+            from lib.manage_user import macos_user 
+            # import lib.manage_user.macos_user
+            self.userMgr = macos_user.MacOSUser(logDispatcher=self.logger)
         else:
             raise UnsupportedOSError("This operating system is not supported...")
 
@@ -313,6 +314,28 @@ class ManageUser(object):
         self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
         return success
 
+
+    #----------------------------------------------------------------------
+
+    def isQualifiedLiftAttendant(self, userName=""):
+        """
+        Check if this user is in the sudoers file - requires root access to run.
+
+        @author: Roy Nielsen
+        """
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.userMgr.isQualifiedLiftAttendant(userName)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
+
     #----------------------------------------------------------------------
     # Setters
     #----------------------------------------------------------------------
@@ -364,6 +387,19 @@ class ManageUser(object):
         #####
         # Postprocess logging
         self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
+
+    #----------------------------------------------------------------------
+
+    def setUserName(self, user):
+        """
+        Setter for the class variable userName
+        
+        @author: Roy Nielsen
+        """
+        success = False
+        if self.userMgr.isSaneUserName(user):
+            success = self.userMgr.setUserName(user)
         return success
 
     #----------------------------------------------------------------------
@@ -524,7 +560,7 @@ class ManageUser(object):
 
     #----------------------------------------------------------------------
 
-    def setUserPassword(self, user="", password=""):
+    def setUserPassword(self, user="", password="", oldPassword=""):
         """
         Set a user's password.
 
@@ -537,7 +573,7 @@ class ManageUser(object):
         self.__calledBy()
         #####
         # Call factory created object's mirror method
-        success = self.userMgr.setUserPassword(user, password)
+        success = self.userMgr.setUserPassword(user, password, oldPassword)
         #####
         # Postprocess logging
         self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))

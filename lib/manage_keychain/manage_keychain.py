@@ -41,8 +41,9 @@ class ManageKeychain(object):
         self.logger.log(lp.INFO, "Logger: " + str(self.logger))
 
         if sys.platform.lower() == "darwin":
+            self.logger.log(lp.DEBUG, "Loading Mac keychain manager...")
             from lib.manage_keychain.macos_keychain import MacOSKeychain
-            self.keychainMgr = MacOSKeychain()
+            self.keychainMgr = MacOSKeychain(logDispatcher=self.logger)
         else:
             raise UnsupportedOSError("This operating system is not supported...")
 
@@ -76,7 +77,49 @@ class ManageKeychain(object):
                                       lineNumber + ")")
 
     #----------------------------------------------------------------------
+
+    def setUser(self, *args, **kwargs):
+        """
+        Setter for the user property of the concrete class.
+        
+        @author: Roy Nielsen
+        """
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.keychainMgr.setUser(*args, **kwargs)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success        
+
+    #----------------------------------------------------------------------
     # Defined Interface methods
+    #----------------------------------------------------------------------
+
+    def lockKeychain(self, *args, **kwargs):
+        """
+        Unlock the defined keychain
+        
+        @author: Roy Nielsen
+        """
+        success = False
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success = self.keychainMgr.unlockKeychain(*args, **kwargs)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success
+
     #----------------------------------------------------------------------
 
     def unlockKeychain(self, *args, **kwargs):

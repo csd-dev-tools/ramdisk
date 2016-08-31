@@ -29,7 +29,7 @@ Created on Aug 24, 2010
 '''
 
 from distutils.version import LooseVersion
-from logdispatcher import LogPriority
+from loggers import LogPriority
 import re
 
 
