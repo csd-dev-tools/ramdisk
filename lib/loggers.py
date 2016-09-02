@@ -111,7 +111,6 @@ class CyLogger(object):
             self.validateLevel(self.lvl)
         else:
             self.lvl = 30
-        self.lvl = 5
 
         self.filename = ""
         self.syslog = False

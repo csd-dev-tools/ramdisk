@@ -25,6 +25,7 @@ if sys.platform.startswith("darwin"):
     # For Mac
     from macRamdisk import MacRamDisk as RamDisk
     from macRamdisk import detach
+    from macRamdisk import umount
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
@@ -102,7 +103,7 @@ class GenericRamdiskTest(unittest.TestCase, GenericTestUtilities):
     def _unloadRamdisk(self):
         """
         """
-        if self.my_ramdisk.unmount():
+        if self.my_ramdisk.umount():
             self.logger.log(lp.INFO, r"Successfully detached disk: " + \
                        str(self.my_ramdisk.mntPoint).strip())
         else:
@@ -220,7 +221,7 @@ class GenericRamdiskTest(unittest.TestCase, GenericTestUtilities):
         """
         self.tearDownInstanceSpecifics()
         try:
-            unmount(self.mount)
+            umount(self.mount)
             self.logger.log(lp.INFO, r"Successfully detached disk: " + \
                        str(self.my_ramdisk.mntPoint).strip())
         except Exception:
