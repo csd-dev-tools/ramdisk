@@ -162,8 +162,8 @@ class CyLogger(object):
 
     #############################################
 
-    def initializeLogs(self,  logdir = "/tmp", 
-                       filename = "",
+    def initializeLogs(self,  logdir="/tmp", 
+                       filename="",
                        extension_type="inc",
                        logCount=10,
                        size=10000000,

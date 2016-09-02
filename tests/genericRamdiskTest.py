@@ -31,7 +31,8 @@ elif sys.platform.startswith("linux"):
     # For Linux
     from linuxTmpfsRamdisk import TmpfsRamDisk as RamDisk
     from linuxTmpfsRamdisk import umount
-
+else:
+    raise Exception("Damn it Jim!!! What OS is this???")
 
 class GenericRamdiskTest(unittest.TestCase, GenericTestUtilities):
     """
@@ -48,7 +49,7 @@ class GenericRamdiskTest(unittest.TestCase, GenericTestUtilities):
         """
         #self.getLibc()
         self.subdirs = ["two", "three" "one/four"]
-        self.logger = CyLogger()
+        self.logger = CyLogger(level=5)
         self.logger.log(lp.CRITICAL, "Logger initialized............................")
 
         """
@@ -61,14 +62,14 @@ class GenericRamdiskTest(unittest.TestCase, GenericTestUtilities):
         self.mnt_pnt_requested = ""
 
         self.success = False
-        self.mountPoint = False
+        self.mountPoint = ""
         self.ramdiskDev = False
         self.mnt_pnt_requested = False
 
         # get a ramdisk of appropriate size, with a secure random mountpoint
-        self.my_ramdisk = RamDisk(size=str(ramdisk_size))
+        self.my_ramdisk = RamDisk(size=str(ramdisk_size), logger=self.logger)
         (self.success, self.mountPoint, self.ramdiskDev) = self.my_ramdisk.getData()
-
+        self.logger.log(lp.WARNING, str(self.success) + " : " + str(self.mountPoint) + " : " + str(self.ramdiskDev))
         self.mount = self.mountPoint
 
         self.logger.log(lp.INFO, "::::::::Ramdisk Mount Point: " + str(self.mountPoint))

@@ -82,7 +82,7 @@ class TmpfsRamDisk(RamDiskTemplate):
                  fstype="tmpfs", nr_inodes=None, nr_blocks=None):
         """
         """
-        super(RamDisk, self).__init__(size, mountpoint, logger)
+        super(TmpfsRamDisk, self).__init__(size, mountpoint, logger)
         #####
         # The passed in size of ramdisk should be in 1Mb chunks
         self.module_version = '20160224.032043.009191'
@@ -123,13 +123,12 @@ class TmpfsRamDisk(RamDiskTemplate):
         else:
             self.nr_blocks = None
 
-        self.printData()
-
         #####
         # Initialize the RunWith helper for executing shelled out commands.
         self.runWith = RunWith(self.logger)
-        self.runWith.getNlogReturns()
+        #self.runWith.getNlogReturns()
         self.success = self._mount()
+        self.logger.log(lp.DEBUG, "Finishing linux ramdisk init...")
 
 
     ###########################################################################
@@ -144,7 +143,7 @@ class TmpfsRamDisk(RamDiskTemplate):
         """
         command=None
         if self.fstype == "ramfs":
-            command = ["/bin/mount", "-t", "ramfs"]
+            command = ["/usr/bin/mount", "-t", "ramfs"]
         elif self.fstype == "tmpfs":
             options = ["size=" + str(self.diskSize) + "m"]
             options.append("uid=" + str(self.uid))
@@ -161,8 +160,9 @@ class TmpfsRamDisk(RamDiskTemplate):
                 pass
             """
 
-            command = ["/bin/mount", "-t", "tmpfs", "-o",
+            command = ["/usr/bin/mount", "-t", "tmpfs", "-o",
                        ",".join(options), "tmpfs", self.mntPoint]
+            self.logger.log(lp.DEBUG, "command: " + str(command))
             #/bin/mount -t tmpfs  -o size=500m,uid=0,gid=0,mode=700 /tmp/tmp0gnLNt
         return command
 
@@ -176,13 +176,21 @@ class TmpfsRamDisk(RamDiskTemplate):
         """
         success = False
         command = self.buildCommand()
-        self.runWith.setCommand(command)
-        self.runWith.communicate()
-        retval, reterr, retcode = self.runWith.getNlogReturns()
-        if not reterr:
+        self.logger.log(lp.WARNING, "Command: " + str(command))
+        if self.runWith.setCommand(command):
+            self.logger.log(lp.DEBUG, "All is Stars, Rainbows and Unicorns...")
+            output, error, returncode = self.runWith.communicate()
+            self.logger.log(lp.DEBUG, "All is Stars, Rainbows and Unicorns...")
+        else:
+            raise Exception("Cannot Grok Command.................................")
+        self.logger.log(lp.DEBUG, "output    : " + str(output))
+        self.logger.log(lp.DEBUG, "error     : " + str(error))
+        self.logger.log(lp.DEBUG, "returncode: " + str(returncode))
+
+        if not error:
             success = True
-        self.printData()
-        self.runWith.getNlogReturns()
+            self.logger.log(lp.DEBUG, "Damn it Jim! The Damn Thing worked!!!")
+        self.getNlogData()
         return success
 
     def remount(self, size=0, mountpoint="", mode=700, uid=None, gid=None,

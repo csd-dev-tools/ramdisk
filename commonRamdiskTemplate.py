@@ -39,7 +39,7 @@ class BadRamdiskArguments(Exception):
 class RamDiskTemplate(object):
     """
     """
-    def __init__(self, size=0, mountpoint=False):
+    def __init__(self, size=0, mountpoint=False, logger=False):
         """
         """
         #####
@@ -47,7 +47,10 @@ class RamDiskTemplate(object):
         # <YYYY><MM><DD>.<HH><MM><SS>.<microseconds>
         # in UTC time
         self.module_version = '20160224.032043.009191'
-        self.logger = CyLogger()
+        if not logger:
+            self.logger = CyLogger()
+        else:
+            self.logger = logger
         self.logger.log(lp.INFO, "Logger: " + str(self.logger))
         self.diskSize = size
         self.success = False
@@ -108,6 +111,7 @@ class RamDiskTemplate(object):
         @author: Roy Nielsen
         """
         success = False
+        self.mntPoint = ""
         try :
             self.mntPoint = mkdtemp()
         except Exception, err :
@@ -116,6 +120,7 @@ class RamDiskTemplate(object):
         else :
             success = True
             self.logger.log(lp.WARNING, "Success: " + str(success) + " in get_randomizedMountpoint: " + str(self.mntPoint))
+        self.logger.log(lp.WARNING, "Randomized mount point: \"" + str(self.mntPoint) + "\"")
         return success
 
     ###########################################################################
