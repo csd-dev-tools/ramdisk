@@ -15,7 +15,7 @@ import ctypes
 from datetime import datetime
 #sys.path.append("../")
 #--- non-native python libraries in this source tree
-from lib.loggers import CrazyLogger
+from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 from tests.genericTestUtilities import GenericTestUtilities
 #####
@@ -23,11 +23,15 @@ from tests.genericTestUtilities import GenericTestUtilities
 if sys.platform.startswith("darwin"):
     #####
     # For Mac
-    from macRamdisk import RamDisk, unmount
+    from macRamdisk import MacRamDisk as RamDisk
+    from macRamdisk import detach
+    from macRamdisk import umount
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
-    from linuxTmpfsRamdisk import RamDisk, unmount
+    from linuxTmpfsRamdisk import TmpfsRamDisk as RamDisk
+    from linuxTmpfsRamdisk import umount
+
 
 class GenericRamdiskTest(unittest.TestCase, GenericTestUtilities):
     """
@@ -44,7 +48,7 @@ class GenericRamdiskTest(unittest.TestCase, GenericTestUtilities):
         """
         #self.getLibc()
         self.subdirs = ["two", "three" "one/four"]
-        self.logger = CrazyLogger()
+        self.logger = CyLogger()
         self.logger.log(lp.CRITICAL, "Logger initialized............................")
 
         """
@@ -99,7 +103,7 @@ class GenericRamdiskTest(unittest.TestCase, GenericTestUtilities):
     def _unloadRamdisk(self):
         """
         """
-        if self.my_ramdisk.unmount():
+        if self.my_ramdisk.umount():
             self.logger.log(lp.INFO, r"Successfully detached disk: " + \
                        str(self.my_ramdisk.mntPoint).strip())
         else:
@@ -217,7 +221,7 @@ class GenericRamdiskTest(unittest.TestCase, GenericTestUtilities):
         """
         self.tearDownInstanceSpecifics()
         try:
-            unmount(self.mount)
+            umount(self.mount)
             self.logger.log(lp.INFO, r"Successfully detached disk: " + \
                        str(self.my_ramdisk.mntPoint).strip())
         except Exception:

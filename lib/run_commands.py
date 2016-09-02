@@ -17,8 +17,8 @@ import select
 import termios
 import threading
 from subprocess import Popen, PIPE
-sys.path.append("..")
-from lib.loggers import CrazyLogger
+
+from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 from lib.get_libc import getLibc
 
@@ -47,8 +47,8 @@ class RunWith(object):
 
     @author: Roy Nielsen
     """
-    def __init__(self):
-        self.logger = CrazyLogger()
+    def __init__(self, logger=False, dbmode=lp.INFO):
+        self.logger = CyLogger(debug_mode=dbmode)
         self.command = None
         self.output = None
         self.error = None
@@ -70,11 +70,12 @@ class RunWith(object):
             self.command = command
         #####
         # Handle Popen's shell, or "myshell"...
-        if isinstance(self.command, types.ListType) :
-            self.printcmd = " ".join(self.command)
-        if isinstance(self.command, types.StringTypes) :
-            self.printcmd = self.command
-
+        if isinstance(command, list):
+            self.printcmd = " ".join(command)
+            self.command = command
+        if isinstance(command, basestring) :
+            self.command = command
+            self.printcommand = command
         self.myshell = myshell
 
     ############################################################################
@@ -106,6 +107,16 @@ class RunWith(object):
         @author: Roy Nielsen
         """
         return self.returncode
+
+    ############################################################################
+
+    def getReturns(self):
+        """
+        Getter for the retval, reterr & retcode of the last command.
+
+        @author: Roy Nielsen
+        """
+        return self.output, self.error, self.returncode
 
     ############################################################################
 
@@ -158,16 +169,18 @@ class RunWith(object):
                 self.logger.log(lp.WARNING, "stderr: " + str(self.error))
                 raise err
             else :
-                self.logger.log(lp.DEBUG, self.printcmd + " Returned with error/returncode: " + str(proc.returncode))
+                #self.logger.log(lp.DEBUG, self.printcmd + " Returned with error/returncode: " + str(proc.returncode))
                 proc.stdout.close()
             finally:
-                self.logger.log(lp.DEBUG, "Done with command: " + self.printcmd)
+                #self.logger.log(lp.DEBUG, "Done with command: " + self.printcmd)
                 self.returncode = str(proc.returncode)
         else :
             self.logger.log(lp.WARNING, "Cannot run a command that is empty...")
             self.output = None
             self.error = None
             self.returncode = None
+
+        return self.output, self.error, self.returncode
 
     ############################################################################
 
@@ -180,7 +193,8 @@ class RunWith(object):
         """
         if self.command :
             try:
-                proc = Popen(self.command, stdout=PIPE, stderr=PIPE, shell=self.myshell)
+                proc = Popen(self.command,
+                             stdout=PIPE, stderr=PIPE, shell=self.myshell)
                 proc.wait()
                 for line in proc.stdout.readline():
                     self.output = self.output + line
@@ -197,8 +211,8 @@ class RunWith(object):
                 proc.stdout.close()
             finally:
                 self.logger.log(lp.DEBUG, "Done with command: " + self.printcmd)
-                self.output = proc.stdout
-                self.error = proc.stderr
+                self.output = str(proc.stdout)
+                self.error = str(proc.stderr)
                 self.returncode = str(proc.returncode)
         else :
             self.logger.log(lp.WARNING, "Cannot run a command that is empty...")
@@ -326,18 +340,74 @@ class RunWith(object):
                 os.close(master)
                 os.close(slave)
                 proc.wait()
-                self.stdout = proc.stdout
-                self.stderr = proc.stderr
+                self.output = proc.stdout
+                self.error = proc.stderr
                 self.returncode = proc.returncode
             else:
-                self.stdout = None
-                self.stderr = None
+                self.output = None
+                self.error = None
                 self.returncode = None
             #print output.strip()
             output = output.strip()
             #log_message("Leaving runAs with: \"" + str(output) + "\"",
             #            "debug", message_level)
             return output
+
+    ############################################################################
+
+    def liftDown(self, user="") :
+        """
+        Use the lift (elevator) to execute a command from privileged mode
+        to a user's context with that user's uid.  Does not require a password.
+
+        Required parameters: user
+
+        @author: Roy Nielsen
+        """
+        success = False
+        self.output = ""
+        self.error = ""
+        self.returncode = 999
+        
+        user = user.strip()
+
+        if os.getuid() != 0:
+            self.logger.log("This can only run if running in privileged mode.")
+            return(256)
+        if re.match("^\s*$", user) or not self.command:
+            self.logger.log(lp.WARNING, "Cannot pass in empty parameters...")
+            self.logger.log(lp.WARNING, "user = \"" + str(user) + "\"")
+            self.logger.log(lp.WARNING, "command = \"" + str(self.command) + "\"")
+            return(255)
+        else :
+            output = ""
+            internal_command = ["/usr/bin/su", "-", str(user), "-c"]
+
+            if isinstance(self.command, list) :
+                cmd = []
+                for i in range(len(self.command)):
+                    try:
+                        cmd.append(str(self.command[i].decode('utf-8')))
+                    except UnicodeDecodeError :
+                        cmd.append(str(self.command[i]))
+
+                internal_command.append(str(" ".join(cmd)))
+                #self.logger.log(lp.ERROR, "cmd: " + str(internal_command))
+            elif isinstance(self.command, basestring) :
+                internal_command.append(self.command)
+                #self.logger.log(lp.ERROR, "cmd: " + str(internal_command))
+
+        self.setCommand(internal_command)
+        output, error, returncode = self.communicate()
+
+        if not error:
+            success = True
+
+        self.logger.log(lp.DEBUG, "out: " + str(output))
+        self.logger.log(lp.DEBUG, "err: " + str(error))
+        self.logger.log(lp.DEBUG, "out: " + str(returncode))
+
+        return output, error, returncode
 
     ############################################################################
 
@@ -417,21 +487,19 @@ class RunWith(object):
                     except UnicodeDecodeError :
                         cmd.append(str(self.command[i]))
 
-                internal_command.append(str("/usr/bin/sudo -E -S -s '" + \
+                internal_command.append(str("/usr/bin/sudo -S -s '" + \
                                             " ".join(cmd) + "'"))
-                #log_message("Trying to execute: \"" + \
-                #            " ".join(internal_command) + "\"", \
-                #            "verbose", message_level)
-                #print "Trying to execute: \"" + " ".join(internal_command) + \
-                #       "\""
-            elif isinstance(self.command, basestring) :
-                internal_command.append(str("/usr/bin/sudo -E -S -s " + \
-                                            "'" + \
-                                            str(self.command.decode('utf-8'))+ \
-                                            "'"))
-                #log_message("Trying to execute: \"" + str(internal_command) + \
-                #            "\"", "verbose", message_level)
-                #print "Trying to execute: \"" + str(internal_command) + "\""
+            elif isinstance(self.command, basestring):
+                try:
+                    internal_command.append(str("/usr/bin/sudo -S -s " + \
+                                                "'" + \
+                                                str(self.command.decode('utf-8')) + \
+                                                "'"))
+                except UnicodeDecodeError:
+                    internal_command.append(str("/usr/bin/sudo -S -s " + \
+                                                "'" + \
+                                                str(self.command) + "'"))
+
             try:
                 (master, slave) = pty.openpty()
             except Exception, err:
@@ -498,16 +566,106 @@ class RunWith(object):
                     os.close(master)
                     os.close(slave)
                     proc.wait()
-                    self.stdout = proc.stdout
-                    self.stderr = proc.stderr
+                    self.output = proc.stdout
+                    self.error = proc.stderr
                     self.returncode = proc.returncode
                     #print output.strip()
             #output = output.strip()
             #####
             # UNCOMMENT ONLY WHEN IN DEVELOPMENT AND DEBUGGING OR YOU MAY REVEAL
             # MORE THAN YOU WANT TO IN THE LOGS!!!
-            #log_message("\n\nLeaving runAs with Sudo: \"" + str(output) + \
-            #            "\"\n\n", "debug", message_level)
+            self.logger.log(lp.DEBUG, "\n\nLeaving runAs with Sudo: \"" + \
+                            str(self.output) + "\"\n\n")
+            #print "\n\nLeaving runAs with Sudo: \"" + str(output) + "\"\n\n"
+            return output
+
+    ############################################################################
+
+    def runWithSudo(self, password="") :
+        """
+        Use pty method to run "sudo" to run a command with elevated privilege.
+
+        Required parameters: user, password, command
+
+        @author: Roy Nielsen
+        """
+        self.logger.log(lp.DEBUG, "Starting runWithSudo: ")
+        self.logger.log(lp.DEBUG, "\tcmd : \"" + str(self.command) + "\"")
+        if re.match("^\s+$", password) or not password or \
+           not self.command :
+            self.logger.log(lp.WARNING, "Cannot pass in empty parameters...")
+            self.logger.log(lp.WARNING, "check password...")
+            self.logger.log(lp.WARNING, "command = \"" + str(self.command) + "\"")
+            return(255)
+        else :
+            output = ""
+            cmd = ["/usr/bin/sudo", "-S", "-s"]
+
+            if isinstance(self.command, list) :
+                cmd = cmd + [" ".join(self.command)]
+
+            elif isinstance(self.command, basestring) :
+                cmd = cmd + [self.command]
+
+            try:
+                (master, slave) = pty.openpty()
+            except Exception, err:
+                self.logger.log(lp.WARNING, "Error trying to open pty: " + str(err))
+                raise err
+            else:
+                try:
+                    proc = Popen(cmd, stdin=slave, stdout=slave, stderr=slave,
+                                 close_fds=True)
+                except Exception, err:
+                    self.logger.log(lp.WARNING, "Error opening process to pty: " + \
+                                str(err))
+                    raise err
+                else:
+                    #####
+                    # Catch the sudo password prompt
+                    # prompt = os.read(master, 512)
+                    self.waitnoecho(master, 3)
+                    prompt = os.read(master, 512)
+
+                    #####
+                    # Enter the sudo password
+                    os.write(master, password + "\n")
+
+                    #####
+                    # Catch the password
+                    os.read(master, 512)
+
+                    #output = tmp + output
+                    while True :
+                        #####
+                        # timeout of 0 means "poll"
+                        r,w,e = select.select([master], [], [], 0)
+                        if r :
+                            line = os.read(master, 512)
+                            #####
+                            # Warning, uncomment at your own risk - several
+                            # programs print empty lines that will cause this
+                            # to break and the output will be all goofed up.
+                            #if not line :
+                            #    break
+                            #print output.rstrip()
+                            output = output + line
+                        elif proc.poll() is not None :
+                            break
+                        #print output.strip()
+                    os.close(master)
+                    os.close(slave)
+                    proc.wait()
+                    self.output = output
+                    self.error = proc.stderr
+                    self.returncode = proc.returncode
+                    #print output.strip()
+            #output = output.strip()
+            #####
+            # UNCOMMENT ONLY WHEN IN DEVELOPMENT AND DEBUGGING OR YOU MAY REVEAL
+            # MORE THAN YOU WANT TO IN THE LOGS!!!
+            #self.logger.log(lp.DEBUG, "\n\nLeaving runAs with Sudo: \"" + \
+            #                str(output) + "\"\n" + str(self.output) + "\n")
             #print "\n\nLeaving runAs with Sudo: \"" + str(output) + "\"\n\n"
             return output
 
@@ -531,6 +689,7 @@ class RunThread(threading.Thread) :
         Initialization method
         """
         self.command = command
+        self.logger = logger
         self.retout = None
         self.reterr = None
         threading.Thread.__init__(self)
@@ -541,10 +700,13 @@ class RunThread(threading.Thread) :
         if isinstance(self.command, types.StringTypes) :
             self.shell = False
             self.printcmd = self.command
-        if not isinstance(logger, (bool, CrazyLogger)):
-            self.logger = CrazyLogger()
+
+        if not isinstance(logger, (bool, CyLogger)):
+            self.logger = CyLogger()
         else:
             self.logger = logger
+
+        self.logger.log(lp.INFO, "Initialized runThread...")
 
     ##########################################################################
 

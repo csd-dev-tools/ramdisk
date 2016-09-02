@@ -12,13 +12,13 @@ from tempfile import mkdtemp
 
 #--- non-native python libraries in this source tree
 from lib.run_commands import RunWith
-from lib.loggers import CrazyLogger
+from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 from commonRamdiskTemplate import RamDiskTemplate
 
 ###############################################################################
 
-class RamDisk(RamDiskTemplate):
+class TmpfsRamDisk(RamDiskTemplate):
     """
     http://www.cyberciti.biz/tips/what-is-devshm-and-its-practical-usage.html
 
@@ -303,7 +303,7 @@ def detach(mnt_point="", logger=False):
 
 ###############################################################################
 
-def unmount(mnt_point="", logger=False):
+def umount(mnt_point="", logger=False):
     """
     Unmount the ramdisk
 

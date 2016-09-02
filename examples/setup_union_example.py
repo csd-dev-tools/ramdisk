@@ -10,7 +10,7 @@ import sys
 from optparse import OptionParser, SUPPRESS_HELP
 sys.path.append("..")
 #--- non-native python libraries in this source tree
-from lib.loggers import CrazyLogger
+from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 
 #####
@@ -18,13 +18,13 @@ from lib.loggers import LogPriority as lp
 if sys.platform.startswith("darwin"):
     #####
     # For Mac
-    from macRamdisk import RamDisk, unmount
+    from macRamdisk import MacRamDisk as RamDisk
+    from macRamdisk import detach
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
-    from linuxTmpfsRamdisk import RamDisk, unmount
-else:
-    print "'" + str(sys.platform) + "' platform not supported..."
+    from linuxTmpfsRamdisk import TmpfsRamDisk as RamDisk
+    from linuxTmpfsRamdisk import umount
 
 parser = OptionParser(usage="\n\n%prog [options]\n\n", version="0.7.2")
 
@@ -44,10 +44,10 @@ parser.add_option("-v", "--verbose", action="store_true",
 
 (opts, args) = parser.parse_args()
 
-if isinstance(opts.verbose != 0:
-    level = Logger(level=lp.INFO)
-elif opts.debug != 0:
-    level = Logger(level=lp.DEBUG)
+if opts.verbose:
+    level = CyLogger(level=lp.INFO)
+elif opts.debug:
+    level = CyLogger(level=lp.DEBUG)
 else:
     level=lp.WARNING
 
@@ -64,7 +64,7 @@ else:
 if not os.path.exists(mntpnt):
     os.makedirs(mntpnt)
 
-logger = CrazyLogger(level=level)
+logger = CyLogger(level=level)
 logger.initializeLogs()
 
 ramdisk = RamDisk(size=size)
@@ -82,5 +82,5 @@ print ramdisk.getDevice()
 
 
 
-# print "\n\n"
-# print ramdisk.get_data()
+print "\n\n"
+print ramdisk.getData()

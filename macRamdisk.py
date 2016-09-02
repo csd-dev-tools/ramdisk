@@ -33,14 +33,14 @@ from subprocess import Popen, PIPE
 #--- non-native python libraries in this source tree
 from commonRamdiskTemplate import RamDiskTemplate
 from lib.run_commands import RunWith
-from lib.loggers import CrazyLogger
+from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 from lib.libHelperFunctions import getOsFamily
 from lib.libHelperExceptions import NotValidForThisOS
 
 ###############################################################################
 
-class RamDisk(RamDiskTemplate) :
+class MacRamDisk(RamDiskTemplate) :
     """
     Class to manage a ramdisk
 
@@ -60,7 +60,7 @@ class RamDisk(RamDiskTemplate) :
         """
         Constructor
         """
-        super(RamDisk, self).__init__(size, mountpoint)
+        super(MacRamDisk, self).__init__(size, mountpoint)
 
         if not getOsFamily() == "darwin":
             raise NotValidForThisOS("This ramdisk is only viable for a MacOS.")
@@ -188,44 +188,6 @@ class RamDisk(RamDiskTemplate) :
             success = True
         self.logger.log(lp.DEBUG, "Success: " + str(success) + " in __create")
         return success
-
-    ###########################################################################
-
-    def getData(self):
-        """
-        Getter for mount data, and if the mounting of a ramdisk was successful
-
-        Does not print or log the data.
-
-        @author: Roy Nielsen
-        """
-        return (self.success, str(self.mntPoint), str(self.myRamdiskDev))
-
-    ###########################################################################
-
-    def getNlogData(self):
-        """
-        Getter for mount data, and if the mounting of a ramdisk was successful
-
-        Also logs the data.
-
-        @author: Roy Nielsen
-        """
-        self.logger.log(lp.INFO, "Success: " + str(self.success))
-        self.logger.log(lp.INFO, "Mount point: " + str(self.mntPoint))
-        self.logger.log(lp.INFO, "Device: " + str(self.myRamdiskDev))
-        return (self.success, str(self.mntPoint), str(self.myRamdiskDev))
-
-    ###########################################################################
-
-    def getNprintData(self):
-        """
-        Getter for mount data, and if the mounting of a ramdisk was successful
-        """
-        print "Success: " + str(self.success)
-        print "Mount point: " + str(self.mntPoint)
-        print "Device: " + str(self.myRamdiskDev)
-        return (self.success, str(self.mntPoint), str(self.myRamdiskDev))
 
     ###########################################################################
 
@@ -387,7 +349,7 @@ class RamDisk(RamDiskTemplate) :
 
     ###########################################################################
 
-    def unmount(self) :
+    def umount(self) :
         """
         Unmount the disk - same functionality as __eject on the mac
 
@@ -609,43 +571,9 @@ class RamDisk(RamDiskTemplate) :
         print str(success)
         return success
 
-    ###########################################################################
-
-    def getDevice(self):
-        """
-        Getter for the device name the ramdisk is using
-
-        @author: Roy Nielsen
-        """
-        return self.myRamdiskDev
-
-    ###########################################################################
-
-    def setDevice(self, device=None):
-        """
-        Setter for the device so it can be ejected.
-
-        @author: Roy Nielsen
-        """
-        if device:
-            self.myRamdiskDev = device
-        else:
-            raise Exception("Problem trying to set the device..")
-
-    ###########################################################################
-
-    def getVersion(self):
-        """
-        Getter for the version of the ramdisk
-
-        @author: Roy Nielsen
-        """
-        return self.module_version
-
-
 ###############################################################################
 
-def unmount(device=" ", logger=False):
+def umount(device=" ", logger=False):
     """
     On the Mac, call detach.
 
@@ -665,7 +593,7 @@ def detach(device=" "):
     @author: Roy Nielsen
     """
     success = False
-    logger = CrazyLogger()
+    logger = CyLogger()
     myRunWith = RunWith()
     if not re.match("^\s*$", device):
         cmd = ["/usr/bin/hdiutil", "detach", device]

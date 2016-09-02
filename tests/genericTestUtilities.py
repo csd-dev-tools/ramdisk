@@ -14,7 +14,7 @@ import ctypes
 from datetime import datetime
 #sys.path.append("../")
 #--- non-native python libraries in this source tree
-from lib.loggers import CrazyLogger
+from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 
 class GenericTestUtilities(object):
@@ -27,7 +27,7 @@ class GenericTestUtilities(object):
         """
         Initialization Method...
         """
-        self.logger = CrazyLogger()
+        self.logger = CyLogger()
         
         self.getLibc()
     ################################################

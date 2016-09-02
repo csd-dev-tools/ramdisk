@@ -12,7 +12,7 @@ import tty
 import termios
 
 sys.path.append("..")
-from lib.loggers import CrazyLogger
+from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 from lib.run_commands import RunWith, runMyThreadCommand
 
@@ -36,7 +36,7 @@ class NotASaneActionError(Exception):
     def __init__(self, *args, **kwargs):
         Exception.__init__(self, *args, **kwargs)
 
-logger = CrazyLogger()
+logger = CyLogger()
 
 class MenuComponent(object):
     """
@@ -62,7 +62,7 @@ class MenuComponent(object):
             self.action = action
 
         self.runner = RunWith()
-        self.logger = CrazyLogger(debug_mode=True)
+        self.logger = CyLogger(debug_mode=True)
         self.logger.initializeLogs()
         
         #####

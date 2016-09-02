@@ -16,7 +16,7 @@ import ctypes as C
 from datetime import datetime
 
 #--- non-native python libraries in this source tree
-from lib.loggers import CrazyLogger
+from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 from lib.libHelperExceptions import NotValidForThisOS
 from tests.genericTestUtilities import GenericTestUtilities
@@ -26,11 +26,14 @@ from tests.genericTestUtilities import GenericTestUtilities
 if sys.platform.startswith("darwin"):
     #####
     # For Mac
-    from macRamdisk import RamDisk, unmount
+    from macRamdisk import MacRamDisk as RamDisk
+    from macRamdisk import detach
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
-    from linuxTmpfsRamdisk import RamDisk, unmount
+    from linuxTmpfsRamdisk import TmpfsRamDisk as RamDisk
+    from linuxTmpfsRamdisk import umount
+
 
 class test_ramdiskFactory(unittest.TestCase, GenericTestUtilities):
     """
@@ -45,7 +48,7 @@ class test_ramdiskFactory(unittest.TestCase, GenericTestUtilities):
         # Start timer in miliseconds
         self.test_start_time = datetime.now()
 
-        self.logger = CrazyLogger()
+        self.logger = CyLogger()
 
         self.libcPath = None # initial initialization
 
@@ -91,7 +94,7 @@ class test_ramdiskFactory(unittest.TestCase, GenericTestUtilities):
         """
         disconnect ramdisk
         """
-        self.logger = CrazyLogger()
+        self.logger = CyLogger()
         #####
         # capture end time
         test_end_time = datetime.now()

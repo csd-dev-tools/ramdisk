@@ -9,7 +9,7 @@ from optparse import OptionParser, SUPPRESS_HELP
 sys.path.append("..")
 #--- non-native python libraries in this source tree
 from macRamdisk import detach
-from lib.loggers import CrazyLogger
+from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 
 parser = OptionParser(usage="\n\n%prog [options]\n\n", version="0.7.2")
@@ -25,9 +25,9 @@ parser.add_option("-v", "--verbose", action="store_true",
 (opts, args) = parser.parse_args()
 
 if opts.verbose != 0:
-    level = CrazyLogger(level=lp.INFO)
+    level = CyLogger(level=lp.INFO)
 elif opts.debug != 0:
-    level = CrazyLogger(level=lp.DEBUG)
+    level = CyLogger(level=lp.DEBUG)
 else:
     level=lp.WARNING
 
@@ -37,7 +37,7 @@ if not isinstance(opts.device, basestring) and \
 else:
     device = opts.device
     
-logger = CrazyLogger(level=level)
+logger = CyLogger(level=level)
 logger.initializeLogs()
     
 if detach(device):

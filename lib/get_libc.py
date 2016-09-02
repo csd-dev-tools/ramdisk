@@ -1,10 +1,12 @@
+from __future__ import absolute_import
+
 #--- Native python libraries
 import os
 import sys
 import ctypes
 
 #--- non-native python libraries in this source tree
-from lib.loggers import CrazyLogger
+from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 
 ##############################################################################
@@ -14,10 +16,13 @@ def getLibc(logger=False):
     Acquire a reference to the system libc, initially to access the
     filesystem "sync" function.
 
+    @returns: python reference to the C libc object, or False, if it can't
+              find libc on the system.
+
     @author: Roy Nielsen
     """
     if not logger:
-        logger = CrazyLogger()
+        logger = CyLogger()
     osFamily = sys.platform.lower().strip()
     #print "---==## OS Family: " + str(osFamily) + " #==---"
 
