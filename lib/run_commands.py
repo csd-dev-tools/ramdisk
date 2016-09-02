@@ -47,8 +47,8 @@ class RunWith(object):
 
     @author: Roy Nielsen
     """
-    def __init__(self, logger=False):
-        self.logger = logger
+    def __init__(self, logger=False, dbmode=lp.INFO):
+        self.logger = CyLogger(debug_mode=dbmode)
         self.command = None
         self.output = None
         self.error = None
