@@ -50,7 +50,7 @@ class RootAccessRequired(Exception):
         Exception.__init__(self, *args, **kwargs)
 
 
-class ParentManageUser(object):
+class ManageUserTemplate(object):
     """
     Class to manage user properties.
 
@@ -103,6 +103,17 @@ class ParentManageUser(object):
             self.userHomeDir = kwargs.get('userHomeDir')
 
         self.module_version = '20160225.125554.540679'
+
+
+        #####
+        # Template for data to acquire for a user. Cross-platform data.
+        userData = {'userName' : "",
+                    'userShell' : "",
+                    'userComment' : "",
+                    'userUid' : "",
+                    'userPriGid' : "",
+                    'userGroups' : "",
+                    'userHomeDir' : ""}
 
         #####
         # Acqure the environment

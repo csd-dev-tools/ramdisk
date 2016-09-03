@@ -17,8 +17,8 @@ from subprocess import Popen
 
 ########## 
 # local app libraries
-from lib.manage_user.parent_manage_user import ParentManageUser
-from lib.manage_user.parent_manage_user import BadUserInfoError
+from lib.manage_user.manage_user_template import ManageUserTemplate
+from lib.manage_user.manage_user_template import BadUserInfoError
 from lib.run_commands import RunWith
 from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
@@ -47,7 +47,7 @@ class CreateHomeDirError(Exception):
         Exception.__init__(self, *args, **kwargs)
 
 
-class MacOSUser(ParentManageUser):
+class MacOSUser(ManageUserTemplate):
     """
     Class to manage users on Mac OS.
 
@@ -173,6 +173,58 @@ class MacOSUser(ParentManageUser):
 
         return userInfo
 
+    #----------------------------------------------------------------------
+
+    def getUserProperties(self, userName=""):
+        """
+        """
+        success = False
+        properties = {}
+        userInfo = False
+        if self.isSaneUserName(userName):
+            success, output , error, returncode = self.runDsclCommand({"read" : [".", "/Users/" + str(userName)]})
+            if not error:
+                jpegPhotoFound = False
+                propertyAttribute = False
+                propertyName = False
+                print output
+                for line in output.split("\n"):
+                    if re.search(':', line):
+                        jpegPhotoFound = False
+                        if propertyName and propertyAttribute:
+                            #####
+                            # Found a new attribute, put the previous information
+                            # into the dictionary
+                            properties[propertyName] = propertyAttribute
+                        
+                        property = line.split(':')
+                        propertyName = property[0].strip()
+                        if re.search("JPEGPhoto", propertyName):
+                            jpegPhotoFound = True
+                            continue
+                        try:
+                            propertyAttribute = property[1].strip()
+                        except:
+                            pass
+                    else:
+                        if line and not jpegPhotoFound:
+                            if not propertyAttribute:
+                                propertyAttribute = line
+                            else:
+                                propertyAttribute = propertyAttribute + ", " + line
+        return success, {userName : properties }
+    '''
+            try:
+                userInfo = output.split()[1]
+            except (KeyError, IndexError), err:
+                self.logger.log(lp.INFO, "Error attempting to find user" + \
+                                         str(userName) + " in the " + \
+                                         "directory service.")
+        else:
+            raise BadUserInfoError("Need a valid user name...")
+
+        return userInfo
+    '''
     #----------------------------------------------------------------------
 
     def getUserShell(self, userName=""):
@@ -780,6 +832,156 @@ class MacOSUser(ParentManageUser):
 
     #----------------------------------------------------------------------
     # Mac OS Specific Methods
+    #----------------------------------------------------------------------
+
+    def validateDsclCommand(self, command={}):
+        """
+        Validate that we have a properly formatted command, and the subcommand
+        is valid.
+        
+        @param: the commandDict should be in the format below:
+        
+        cmd = { "set-keychain-password" : [oldPass, newPass, "'" + keychain + "'"] }
+        
+        where the key is the security 'subcommand' and the list is an ordered
+        list of the arguments to give the subcommand.
+        
+        @returns: success - whether the command was successfull or not.
+        
+        @author: Roy Nielsen
+        """
+        success = False
+        subcmd = []
+        if not isinstance(command, dict):
+            self.logger.log(lp.ERROR, "Command must be a dictionary...")
+        else:
+            #self.logger.log(lp.DEBUG, "cmd: " + str(command))
+            commands = 0
+            for subCommand, args in command.iteritems():
+                commands += 1
+                #####
+                # Check to make sure only one command is in the dictionary
+                if commands > 1:
+                    self.logger.log(lp.ERROR, "Damn it Jim! One command at a time!!")
+                    success = False
+                    break
+                #####
+                # Check if the subcommand is a valid subcommand...
+                validSubcommands = ["read",
+                                    "passwd",
+                                    "list",
+                                    "readall",
+                                    "readpl",
+                                    "search",
+                                    "create",
+                                    "delete",
+                                    "change",
+                                    "append",
+                                    "diff"]
+                if subCommand not in validSubcommands:
+                    success = False
+                    self.logger.log(lp.DEBUG, "subCommand: " + str(subCommand))
+                    break
+                #####
+                # Check to make sure the key or subCommand is a string, and the value is
+                # alist and args are
+                if not isinstance(subCommand, basestring) or not isinstance(args, list):
+                    self.logger.log(lp.ERROR, "subcommand needs to be a string, and args needs to be a list of strings")
+                    success = False
+                else:
+                    #####
+                    # Check the arguments to make sure they are all strings
+                    success = True
+                    for arg in args:
+                        if not isinstance(arg, basestring):
+                            self.logger.log(lp.ERROR, "Arg '" + str(arg) + "'needs to be a string...")
+                            success = False
+                            break
+                    if success:
+                        datasource = args[0]
+                        command = subCommand
+                        args = args[1:]
+                        subcmd = [datasource] + ["-" + command] + args
+        return success, subcmd
+
+    #-------------------------------------------------------------------------
+
+    def runDsclCommand(self, commandDict={}):
+        """
+        Use the passed in dictionary to create a MacOS 'security' command
+        and execute it.
+        
+        @param: the commandDict should be in the format below:
+        
+        cmd = { command : [datasource, arg1, arg2, arg3] }
+        
+        where the command is the dscl 'subcommand' and the list is an ordered
+        list.  The first item in the list is the datasource, or directory to
+        search for the information.  The rest are an ordered list of the 
+        arguments to give the subcommand.  The structured command below:
+        
+        cmd = { "read" : ['.', '/users/<user>', 'PrimaryGroupID'] }
+
+        will yield a dscl command that looks like:
+
+        dscl '.' read /Users/<user> 'PrimaryGroupID'
+        
+        @returns: success - whether the command was successfull or not.
+                  output  - output of the resulting command.  Definitely
+                                useful for getters, not necessarily for setters.
+                  error   - stderr output
+                  returncode - return code that the command returns
+        
+        @author: Roy Nielsen
+        """
+        success = False
+        output = ""
+        error = ""
+        returncode = ""
+        uid = os.getuid()
+        #####
+        # Make sure the command dictionary was properly formed, as well as
+        # returning the formatted subcommand list
+        validationSuccess, subCmd = self.validateDsclCommand(commandDict)
+        #self.logger.log(lp.DEBUG, "validationSuccess: " + str(validationSuccess))
+        #self.logger.log(lp.DEBUG, "subCmd: " + str(subCmd))
+        if validationSuccess:
+            #self.logger.log(lp.DEBUG, "cmdDict: " + str(commandDict))
+            #####
+            # Command setup - note that the keychain deliberately has quotes
+            # around it - there could be spaces in the path to the keychain,
+            # so the quotes are required to fully resolve the file path.  
+            # Note: this is done in the build of the command, rather than 
+            # the build of the variable.
+            cmd = [self.dscl] + subCmd
+            #####
+            # set up the command
+            self.runWith.setCommand(cmd)
+            
+            if re.match("^0$", str(uid)):
+                #####
+                # If the running process is running as an admin, lower to the
+                # user context to run dscl as the user.  The user proerty
+                # should be set with the setUser method. Lift = elevator...
+                output, error, retcode = self.runWith.liftDown(self.userName)
+                self.logger.log(lp.ERROR, "Took the lift down...")
+                if not str(error).strip():
+                    success = True
+            else:
+                #####
+                # Run the command
+                output, error, retcode = self.runWith.communicate()
+                self.logger.log(lp.INFO, "DSCL cmd ran in current context..")
+
+                if not str(error).strip():
+                    success = True
+
+            #self.logger.log(lp.DEBUG, "Output: " + str(output))
+            #self.logger.log(lp.DEBUG, "Error: " + str(error))
+            #self.logger.log(lp.DEBUG, "Return code: " + str(returncode))
+
+        return success, output, error, returncode
+
     #----------------------------------------------------------------------
 
     def setDscl(self, directory=".", action="", object="", property="", value=""):
