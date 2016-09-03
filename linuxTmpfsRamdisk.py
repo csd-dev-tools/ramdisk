@@ -15,6 +15,7 @@ from lib.run_commands import RunWith
 from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 from commonRamdiskTemplate import RamDiskTemplate
+from lib.libHelperExceptions import SystemToolNotAvailable
 
 ###############################################################################
 
@@ -82,7 +83,7 @@ class TmpfsRamDisk(RamDiskTemplate):
                  fstype="tmpfs", nr_inodes=None, nr_blocks=None):
         """
         """
-        super(RamDisk, self).__init__(size, mountpoint, logger)
+        super(TmpfsRamDisk, self).__init__(size, mountpoint, logger)
         #####
         # The passed in size of ramdisk should be in 1Mb chunks
         self.module_version = '20160224.032043.009191'
@@ -123,14 +124,61 @@ class TmpfsRamDisk(RamDiskTemplate):
         else:
             self.nr_blocks = None
 
-        self.printData()
+        #####
+        # Initialize the mount and umount command paths...
+        self.mountPath = ""
+        self.umountPath = ""
+        self.getCmds()
 
         #####
         # Initialize the RunWith helper for executing shelled out commands.
         self.runWith = RunWith(self.logger)
-        self.runWith.getNlogReturns()
+        #self.runWith.getNlogReturns()
         self.success = self._mount()
+        self.logger.log(lp.DEBUG, "Finishing linux ramdisk init...")
 
+
+    ###########################################################################
+
+    def getCmds(self):
+        """
+        Acquire the paths for mount and umount on the system...
+
+        @author: Roy Nielsen
+        """
+        success = False
+        paths = ["/bin", "/usr/bin", "/sbin", "/usr/sbin", "/usr/local/bin", "/user/local/sbin"]
+
+        #####
+        # Look for the mount command
+        mountFound = False
+        for path in paths:
+            possibleFullPath = os.path.join(path, "mount")
+            if os.path.exists(possibleFullPath):
+                self.mountPath = possibleFullPath
+                mountFound = True
+                
+        if not mountFound:
+            raise SystemToolNotFound("Cannot find mount command...") 
+
+        #####
+        # Look for the umount command
+        umountFound = False
+        for path in paths:
+            possibleFullPath = os.path.join(path, "umount")
+            if os.path.exists(possibleFullPath):
+                self.umountPath = possibleFullPath
+                umountFound = True
+                
+        if not umountFound:
+            raise SystemToolNotFound("Cannot find umount command...")
+
+        #####
+        # Figure out if this method was successfull or not.
+        if mountFound and umountFound:
+            success = True
+
+        return success
 
     ###########################################################################
 
@@ -144,7 +192,7 @@ class TmpfsRamDisk(RamDiskTemplate):
         """
         command=None
         if self.fstype == "ramfs":
-            command = ["/bin/mount", "-t", "ramfs"]
+            command = [self.mountPath, "-t", "ramfs"]
         elif self.fstype == "tmpfs":
             options = ["size=" + str(self.diskSize) + "m"]
             options.append("uid=" + str(self.uid))
@@ -161,10 +209,27 @@ class TmpfsRamDisk(RamDiskTemplate):
                 pass
             """
 
-            command = ["/bin/mount", "-t", "tmpfs", "-o",
+            command = [self.mountPath, "-t", "tmpfs", "-o",
                        ",".join(options), "tmpfs", self.mntPoint]
+            self.logger.log(lp.DEBUG, "command: " + str(command))
             #/bin/mount -t tmpfs  -o size=500m,uid=0,gid=0,mode=700 /tmp/tmp0gnLNt
         return command
+
+    ###########################################################################
+
+    def _format(self) :
+        """
+        One can't really format a tmpfs disk, so this will mimic a format 
+        by unmounting an recreating the disk.
+
+        @author: Roy Nielsen
+        """
+        success = False
+        successOne = self.umount()
+        successTwo = self._mount()
+        if successOne and successTwo:
+            success = True
+        return success
 
     ###########################################################################
 
@@ -176,14 +241,24 @@ class TmpfsRamDisk(RamDiskTemplate):
         """
         success = False
         command = self.buildCommand()
-        self.runWith.setCommand(command)
-        self.runWith.communicate()
-        retval, reterr, retcode = self.runWith.getNlogReturns()
-        if not reterr:
+        self.logger.log(lp.WARNING, "Command: " + str(command))
+        if self.runWith.setCommand(command):
+            self.logger.log(lp.DEBUG, "All is Stars, Rainbows and Unicorns...")
+            output, error, returncode = self.runWith.communicate()
+            self.logger.log(lp.DEBUG, "All is Stars, Rainbows and Unicorns...")
+        else:
+            raise Exception("Cannot Grok Command.................................")
+        self.logger.log(lp.DEBUG, "output    : " + str(output))
+        self.logger.log(lp.DEBUG, "error     : " + str(error))
+        self.logger.log(lp.DEBUG, "returncode: " + str(returncode))
+
+        if not error:
             success = True
-        self.printData()
-        self.runWith.getNlogReturns()
+            self.logger.log(lp.DEBUG, "Damn it Jim! The Damn Thing worked!!!")
+        self.getNlogData()
         return success
+
+    ###########################################################################
 
     def remount(self, size=0, mountpoint="", mode=700, uid=None, gid=None,
                 nr_inodes=None, nr_blocks=None):
@@ -223,10 +298,6 @@ class TmpfsRamDisk(RamDiskTemplate):
         if nr_blocks and isinstance(nr_blocks, (int, long)):
             self.nr_blocks = nr_blocks
 
-        #####
-        # Initialize the RunWith helper for executing shelled out commands.
-        self.runWith = RunWith(self.logger)
-
         self.buildCommand()
         self._mount()
 
@@ -240,7 +311,7 @@ class TmpfsRamDisk(RamDiskTemplate):
         """
         success = False
 
-        command = ["/bin/umount", self.mntPoint]
+        command = [self.umountPath, self.mntPoint]
         self.runWith.setCommand(command)
         self.runWith.communicate()
         retval, reterr, retcode = self.runWith.getNlogReturns()
@@ -259,7 +330,7 @@ class TmpfsRamDisk(RamDiskTemplate):
         """
         success = False
 
-        success = self.unmount()
+        success = self.umount()
 
         return success
 
@@ -298,7 +369,7 @@ def detach(mnt_point="", logger=False):
 
     @author: Roy Nielsen
     """
-    success = unmount(mnt_point, logger)
+    success = umount(mnt_point, logger)
     return success
 
 ###############################################################################
@@ -311,8 +382,26 @@ def umount(mnt_point="", logger=False):
     """
     success = False
     if mnt_point:
+
+        paths = ["/bin", "/usr/bin", "/sbin", "/usr/sbin", "/usr/local/bin", "/user/local/sbin"]
+
+        #####
+        # Look for the umount command
+        umountFound = False
+        umountPath = ""
+        for path in paths:
+            possibleFullPath = os.path.join(path, "umount")
+            if os.path.exists(possibleFullPath):
+                umountPath = possibleFullPath
+                umountFound = True
+                
+        if not umountFound:
+            raise SystemToolNotFound("Cannot find umount command...")
+
+        #####
+        # Run the umount command...
         runWith = RunWith(logger)
-        command = ["/bin/umount", mnt_point]
+        command = [umountPath, mnt_point]
         runWith.setCommand(command)
         runWith.communicate()
         retval, reterr, retcode = runWith.getNlogReturns()

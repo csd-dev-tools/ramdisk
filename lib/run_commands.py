@@ -66,17 +66,23 @@ class RunWith(object):
 
         @author: Roy Nielsen
         """
-        if command:
-            self.command = command
+        success = False
         #####
         # Handle Popen's shell, or "myshell"...
         if isinstance(command, list):
             self.printcmd = " ".join(command)
             self.command = command
-        if isinstance(command, basestring) :
+            success = True
+        elif isinstance(command, basestring) :
             self.command = command
-            self.printcommand = command
+            self.printcmd = command
+            success = True
+        else:
+            self.logger.log(lp.INFO, "Damn it Jim! I can't obey a command I can't Grok!!")
+        #####
+        # Handle Popen's shell, or "myshell"...
         self.myshell = myshell
+        return success
 
     ############################################################################
 
@@ -157,12 +163,14 @@ class RunWith(object):
 
         @author: Roy Nielsen
         """
+        self.logger.log(lp.DEBUG, "mycmd = " + str(self.command) + ".......................................................")
         if self.command:
             try:
                 proc = Popen(self.command, stdout=PIPE, stderr=PIPE, shell=self.myshell)
                 self.libc.sync()
                 self.output, self.error = proc.communicate()
                 self.libc.sync()
+                self.logger.log(lp.DEBUG, "..... hmmm... command executed??")
             except Exception, err :
                 self.logger.log(lp.WARNING, "- Unexpected Exception: "  + \
                            str(err)  + " command: " + self.printcmd)
@@ -172,7 +180,7 @@ class RunWith(object):
                 #self.logger.log(lp.DEBUG, self.printcmd + " Returned with error/returncode: " + str(proc.returncode))
                 proc.stdout.close()
             finally:
-                #self.logger.log(lp.DEBUG, "Done with command: " + self.printcmd)
+                self.logger.log(lp.DEBUG, "Done with command: " + self.printcmd)
                 self.returncode = str(proc.returncode)
         else :
             self.logger.log(lp.WARNING, "Cannot run a command that is empty...")

@@ -17,6 +17,7 @@ from datetime import datetime
 #--- non-native python libraries in this source tree
 from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
+from lib.get_libc import getLibc
 from tests.genericTestUtilities import GenericTestUtilities
 #####
 # Load OS specific Ramdisks
@@ -31,7 +32,8 @@ elif sys.platform.startswith("linux"):
     # For Linux
     from linuxTmpfsRamdisk import TmpfsRamDisk as RamDisk
     from linuxTmpfsRamdisk import umount
-
+else:
+    raise Exception("Damn it Jim!!! What OS is this???")
 
 class GenericRamdiskTest(unittest.TestCase, GenericTestUtilities):
     """
@@ -46,7 +48,7 @@ class GenericRamdiskTest(unittest.TestCase, GenericTestUtilities):
     def setUpClass(self):
         """
         """
-        #self.getLibc()
+        self.getLibc()
         self.subdirs = ["two", "three" "one/four"]
         self.logger = CyLogger()
         self.logger.log(lp.CRITICAL, "Logger initialized............................")
@@ -61,14 +63,14 @@ class GenericRamdiskTest(unittest.TestCase, GenericTestUtilities):
         self.mnt_pnt_requested = ""
 
         self.success = False
-        self.mountPoint = False
+        self.mountPoint = ""
         self.ramdiskDev = False
         self.mnt_pnt_requested = False
 
         # get a ramdisk of appropriate size, with a secure random mountpoint
-        self.my_ramdisk = RamDisk(size=str(ramdisk_size))
+        self.my_ramdisk = RamDisk(size=str(ramdisk_size), logger=self.logger)
         (self.success, self.mountPoint, self.ramdiskDev) = self.my_ramdisk.getData()
-
+        self.logger.log(lp.WARNING, str(self.success) + " : " + str(self.mountPoint) + " : " + str(self.ramdiskDev))
         self.mount = self.mountPoint
 
         self.logger.log(lp.INFO, "::::::::Ramdisk Mount Point: " + str(self.mountPoint))
@@ -150,16 +152,16 @@ class GenericRamdiskTest(unittest.TestCase, GenericTestUtilities):
         # 100Mb file size
         oneHundred = 100
         #####
-        # 100Mb file size
-        twoHundred = 200
-        #####
         # 500Mb file size
         fiveHundred = 500
+        #####
+        # 800Mb file size
+        eightHundred = 800
         #####
         # 1Gb file size
         oneGig = 1000
 
-        my_fs_array = [oneHundred, twoHundred, fiveHundred, oneGig]
+        my_fs_array = [oneHundred, fiveHundred, eightHundred, oneGig]
 
         for file_size in my_fs_array:
             self.logger.log(lp.INFO, "testfile size: " + str(file_size))
@@ -176,7 +178,11 @@ class GenericRamdiskTest(unittest.TestCase, GenericTestUtilities):
             speed = fs_time - ram_time
             self.logger.log(lp.INFO, "ramdisk: " + str(speed) + " faster...")
 
-            self.assertTrue((fs_time - ram_time).days > -1, "Problem with ramdisk...")
+            assert_message = "Problem with " + str(file_size) + "mb ramdisk..."
+            self.logger.log(lp.DEBUG, assert_message)
+            self.logger.log(lp.INFO, "Smaller file sizes will fail this test on systems with SSD's...")
+
+            self.assertTrue((ram_time - fs_time).days > -1, assert_message)
 
     ##################################
 
@@ -202,7 +208,7 @@ class GenericRamdiskTest(unittest.TestCase, GenericTestUtilities):
 
         fstime = fsdisk_endtime - fs_starttime
 
-        self.assertTrue((fstime - rtime).days > -1, "Problem with ramdisk...")
+        self.assertTrue((rtime - fstime).days > -1, "Problem with ramdisk...")
 
     ##################################
 

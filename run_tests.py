@@ -200,7 +200,7 @@ if __name__ == "__main__":
     verbose = options.verbose
     debug = options.debug
     logger = CyLogger(debug_mode=options.debug, verbose_mode=options.verbose)
-    logger.initializeLogs(syslog=options.skip_syslog)
+    logger.initializeLogs(filename="ramdiskTestLog")
 
     logger.log(lp.DEBUG, "Modules: " + str(modules))
 
