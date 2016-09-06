@@ -182,7 +182,7 @@ class GenericRamdiskTest(unittest.TestCase, GenericTestUtilities):
             self.logger.log(lp.DEBUG, assert_message)
             self.logger.log(lp.INFO, "Smaller file sizes will fail this test on systems with SSD's...")
 
-            self.assertTrue((ram_time - fs_time).days > -1, assert_message)
+            self.assertTrue((fs_time - ram_time).days > -1, assert_message)
 
     ##################################
 
@@ -208,7 +208,7 @@ class GenericRamdiskTest(unittest.TestCase, GenericTestUtilities):
 
         fstime = fsdisk_endtime - fs_starttime
 
-        self.assertTrue((rtime - fstime).days > -1, "Problem with ramdisk...")
+        self.assertTrue((fstime - rtime).days > -1, "Problem with ramdisk...")
 
     ##################################
 
