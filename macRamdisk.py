@@ -56,11 +56,11 @@ class MacRamDisk(RamDiskTemplate) :
 
     @author: Roy Nielsen
     """
-    def __init__(self, size=0, mountpoint="") :
+    def __init__(self, size=0, mountpoint="", logger=False) :
         """
         Constructor
         """
-        super(MacRamDisk, self).__init__(size, mountpoint)
+        super(MacRamDisk, self).__init__(size, mountpoint, logger)
 
         if not getOsFamily() == "darwin":
             raise NotValidForThisOS("This ramdisk is only viable for a MacOS.")
