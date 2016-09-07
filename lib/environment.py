@@ -49,7 +49,7 @@ import types
 import platform
 import pwd
 import time
-from localize import CORPORATENETWORKSERVERS, STONIXVERSION
+#from localize import CORPORATENETWORKSERVERS, STONIXVERSION
 if os.geteuid() == 0:
     try:
         import dmidecode
@@ -78,7 +78,7 @@ class Environment:
         self.macaddress = ''
         self.osversion = ''
         self.numrules = 0
-        self.stonixversion = STONIXVERSION
+        self.stonixversion = 0
         self.euid = os.geteuid()
         currpwd = pwd.getpwuid(self.euid)
         try:

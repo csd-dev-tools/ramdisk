@@ -134,6 +134,26 @@ class ManageUser(object):
 
     #----------------------------------------------------------------------
 
+    def getUserProperties(self, userName=""):
+        """
+        Get information about the passed in user.
+        """
+        success = False
+        properties = {}
+        #####
+        # Preprocess logging
+        self.logger.log(lp.DEBUG, "processing:" + "")
+        self.__calledBy()
+        #####
+        # Call factory created object's mirror method
+        success, properties = self.userMgr.getUserProperties(userName)
+        #####
+        # Postprocess logging
+        self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
+        return success, properties
+
+    #----------------------------------------------------------------------
+
     def getUserShell(self, userName=""):
         """
         Retrieve the passed in user's shell.

@@ -16,13 +16,13 @@ from subprocess import Popen
 
 ########## 
 # local app libraries
-from .parent_manage_user import ParentManageUser
-from .parent_manage_user import BadUserInfoError
+from .manage_user_template import ManageUserTemplate
+from .manage_user_template import BadUserInfoError
 from lib.run_commands import RunWith
 from lib.loggers import LogPriority as lp
 
 
-class MacOSUser(ParentManageUser):
+class MacOSUser(ManageUserTemplate):
     """
     Class to manage users on Mac OS.
 
