@@ -67,6 +67,8 @@ class RunWith(object):
         @author: Roy Nielsen
         """
         success = False
+        if command:
+            self.command = command
         #####
         # Handle Popen's shell, or "myshell"...
         if isinstance(command, list):
@@ -82,6 +84,7 @@ class RunWith(object):
         #####
         # Handle Popen's shell, or "myshell"...
         self.myshell = myshell
+        self.environ = env
         return success
 
     ############################################################################

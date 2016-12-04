@@ -445,48 +445,17 @@ class MacOSUser(ManageUserTemplate):
             self.logger.log(lp.INFO, "user = \"" + str(user) + "\"")
             self.logger.log(lp.INFO, "check password...")
         else:
-            output = ""
-            internal_command = ["/usr/bin/su", "-", str(user), "-c", "/bin/echo hello world"]
-            command = " ".join(internal_command)
-
-            self.logger.log(lp.INFO, "command: " + str(command))
-
-            (master, slave) = pty.openpty()            
-            process = Popen(internal_command, stdin=slave, stdout=slave, stderr=slave, shell=False)
-
-            #####
-            # Read password prompt
-            prompt = os.read(master, 512)
-
-            #####
-            # send the password
-            os.write(master, password + "\n")
-
-            #####
-            # catch the password
-            prompt = os.read(master, 512)
-
-            #####
-            # catch the output
-            output = os.read(master, 512)
-
-            os.close(master)
-            os.close(slave)
-            process.wait()
-
-            output = output.strip()
-
-            #####
-            # Check if valid or not...
-            if re.match("^su: Sorry", str(output)):
-                authenticated = False
-            elif re.match("^hello world", str(output)):
+            
+            self.runWith.setCommand(['/bin/echo', 'hello world'])
+            
+            output, error, retcode = self.runWith.communicate()
+            
+            self.logger.log(lp.DEBUG, "Output: " + str(output.strip()))
+            
+            if re.match("^hello world$", output.strip()):
                 authenticated = True
-            else:
-                authenticated = False
-            self.logger.log(lp.INFO, "Leaving authenticate method with " + \
-                                     "output of: \"" + str(output) + "\"")
-            return authenticated
+
+        return authenticated
 
     #----------------------------------------------------------------------
     # Setters
@@ -1004,9 +973,17 @@ class MacOSUser(ManageUserTemplate):
 
             self.runWith.setCommand(cmd)
             if re.match("^%0$", str(os.getuid()).strip()):
+                passfound = False
+                for arg in cmd:
+                    if re.match('password', arg):
+                        passfound = True
+                        break
+    
+                if not '-P' in cmd and not passfound:
+                    self.logger.log(lp.DEBUG, "dscl-cmd: " + str(cmd))
+
                 #####
                 # Run the command, lift down...
-                self.logger.log(lp.DEBUG, "dscl-cmd: " + str(cmd))
                 self.runWith.liftDown(self.userName)
                 self.logger.log(lp.INFO, "Took the lift down...")
                 retval, reterr, retcode = self.runWith.getNlogReturns()

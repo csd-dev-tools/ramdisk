@@ -436,6 +436,8 @@ class MacOSKeychain(MacOSUser, ManageKeychainTemplate):
             success, output, error, retcode = self.runSecurityCommand(cmd)
 
             self.logger.log(lp.DEBUG, "Output: " + str(output))
+            self.logger.log(lp.DEBUG, "Error: " + str(error))
+            self.logger.log(lp.DEBUG, "Return code: " + str(retcode))
         return success, output
 
     #-------------------------------------------------------------------------
