@@ -25,7 +25,11 @@ class ManageKeychain(object):
     
     @note: If the generic interface doesn't have enough functionality, the
            factory has a method to return the specific keychain manager.
-    
+
+    @note: Methods may return a bool, list or dictionary depending on the 
+           concrete implementation of the keychain manager for a specific
+           OS or application.
+
     @author: Roy Nielsen
     """
 
@@ -117,12 +121,12 @@ class ManageKeychain(object):
 
         #####
         # Call factory created object's mirror method
-        success = self.keychainMgr.listKeychain(*args, **kwargs)
+        success, output = self.keychainMgr.listKeychain(*args, **kwargs)
 
         #####
         # Postprocess logging
         self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
-        return success
+        return success, output
 
     #----------------------------------------------------------------------
 
@@ -141,12 +145,12 @@ class ManageKeychain(object):
 
         #####
         # Call factory created object's mirror method
-        success = self.keychainMgr.defaultKeychain(*args, **kwargs)
+        success, output = self.keychainMgr.defaultKeychain(*args, **kwargs)
 
         #####
         # Postprocess logging
         self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
-        return success
+        return success, output
 
     #----------------------------------------------------------------------
 
@@ -165,12 +169,12 @@ class ManageKeychain(object):
 
         #####
         # Call factory created object's mirror method
-        success = self.keychainMgr.loginKeychain(*args, **kwargs)
+        success, output = self.keychainMgr.loginKeychain(*args, **kwargs)
 
         #####
         # Postprocess logging
         self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
-        return success
+        return success, output
 
     #----------------------------------------------------------------------
 
@@ -187,11 +191,11 @@ class ManageKeychain(object):
         self.logger.log(lp.DEBUG, "called by: " + inspect.stack()[1][1] + ": " + str(inspect.stack()[1][3]) + " (" + str(inspect.stack()[1][2]) + ")")
         #####
         # Call factory created object's mirror method
-        success = self.keychainMgr.createKeychain(*args, **kwargs)
+        success, output = self.keychainMgr.createKeychain(*args, **kwargs)
         #####
         # Postprocess logging
         self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
-        return success
+        return success, output
 
     #----------------------------------------------------------------------
 
@@ -208,11 +212,11 @@ class ManageKeychain(object):
         self.__calledBy()
         #####
         # Call factory created object's mirror method
-        success = self.keychainMgr.deleteKeychain(*args, **kwargs)
+        success, output = self.keychainMgr.deleteKeychain(*args, **kwargs)
         #####
         # Postprocess logging
         self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
-        return success
+        return success, output
 
     def lockKeychain(self, *args, **kwargs):
         """
@@ -227,11 +231,11 @@ class ManageKeychain(object):
         self.__calledBy()
         #####
         # Call factory created object's mirror method
-        success = self.keychainMgr.unlockKeychain(*args, **kwargs)
+        success, output = self.keychainMgr.unlockKeychain(*args, **kwargs)
         #####
         # Postprocess logging
         self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
-        return success
+        return success, output
 
     #----------------------------------------------------------------------
 
@@ -248,11 +252,11 @@ class ManageKeychain(object):
         self.__calledBy()
         #####
         # Call factory created object's mirror method
-        success = self.keychainMgr.unlockKeychain(*args, **kwargs)
+        success, output = self.keychainMgr.unlockKeychain(*args, **kwargs)
         #####
         # Postprocess logging
         self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
-        return success
+        return success, output
 
     #----------------------------------------------------------------------
 
@@ -269,11 +273,11 @@ class ManageKeychain(object):
         self.__calledBy()
         #####
         # Call factory created object's mirror method
-        success = self.keychainMgr.changeKeychainPassword(*args, **kwargs)
+        success, output = self.keychainMgr.changeKeychainPassword(*args, **kwargs)
         #####
         # Postprocess logging
         self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
-        return success
+        return success, output
 
     #----------------------------------------------------------------------
 
@@ -290,12 +294,11 @@ class ManageKeychain(object):
         self.__calledBy()
         #####
         # Call factory created object's mirror method
-        success = self.keychainMgr.showKeychainInfo(*args, **kwargs)
+        success, output = self.keychainMgr.showKeychainInfo(*args, **kwargs)
         #####
         # Postprocess logging
         self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
-        return success
-
+        return success, output
 
     #----------------------------------------------------------------------
 
@@ -312,12 +315,11 @@ class ManageKeychain(object):
         self.__calledBy()
         #####
         # Call factory created object's mirror method
-        success = self.keychainMgr.dumpKeychain(*args, **kwargs)
+        success, output = self.keychainMgr.dumpKeychain(*args, **kwargs)
         #####
         # Postprocess logging
         self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
-        return success
-
+        return success, output
 
     #----------------------------------------------------------------------
 
@@ -334,12 +336,11 @@ class ManageKeychain(object):
         self.__calledBy()
         #####
         # Call factory created object's mirror method
-        success = self.keychainMgr.findCertificate(*args, **kwargs)
+        success, output = self.keychainMgr.findCertificate(*args, **kwargs)
         #####
         # Postprocess logging
         self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
-        return success
-
+        return success, output
 
     #----------------------------------------------------------------------
 
@@ -356,12 +357,11 @@ class ManageKeychain(object):
         self.__calledBy()
         #####
         # Call factory created object's mirror method
-        success = self.keychainMgr.findIdentity(*args, **kwargs)
+        success, output = self.keychainMgr.findIdentity(*args, **kwargs)
         #####
         # Postprocess logging
         self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
-        return success
-
+        return success, output
 
     #----------------------------------------------------------------------
 
@@ -378,8 +378,8 @@ class ManageKeychain(object):
         self.__calledBy()
         #####
         # Call factory created object's mirror method
-        success = self.keychainMgr.error(*args, **kwargs)
+        success, output = self.keychainMgr.error(*args, **kwargs)
         #####
         # Postprocess logging
         self.logger.log(lp.DEBUG, "processing complete with success: " + str(success))
-        return success
+        return success, output

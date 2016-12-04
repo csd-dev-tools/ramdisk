@@ -60,7 +60,7 @@ class RunWith(object):
         # setting up to call ctypes to do a filesystem sync
         self.libc = getLibc()
 
-    def setCommand(self, command, myshell=False):
+    def setCommand(self, command, env=False, myshell=False):
         """
         initialize a command to run
 
@@ -163,14 +163,15 @@ class RunWith(object):
 
         @author: Roy Nielsen
         """
-        self.logger.log(lp.DEBUG, "mycmd = " + str(self.command) + ".......................................................")
+        self.output = ''
+        self.error = ''
+        self.returncode = 999
         if self.command:
             try:
                 proc = Popen(self.command, stdout=PIPE, stderr=PIPE, shell=self.myshell)
                 self.libc.sync()
                 self.output, self.error = proc.communicate()
                 self.libc.sync()
-                self.logger.log(lp.DEBUG, "..... hmmm... command executed??")
             except Exception, err :
                 self.logger.log(lp.WARNING, "- Unexpected Exception: "  + \
                            str(err)  + " command: " + self.printcmd)
@@ -210,10 +211,10 @@ class RunWith(object):
                     self.error = self.error + line
             except Exception, err:
                 self.logger.log(lp.WARNING, "system_call_retval - Unexpected Exception: "  + \
-                           str(err)  + " command: " + self.printcmd)
+                                str(err)  + " command: " + str(self.printcmd))
                 raise err
             else :
-                self.logger.log(lp.DEBUG, self.printcmd + \
+                self.logger.log(lp.DEBUG, str(self.printcmd) + \
                             " Returned with error/returncode: " + \
                             str(proc.returncode))
                 proc.stdout.close()
@@ -363,12 +364,13 @@ class RunWith(object):
 
     ############################################################################
 
-    def liftDown(self, user="") :
+    def liftDown(self, user="", target_dir="") :
         """
         Use the lift (elevator) to execute a command from privileged mode
         to a user's context with that user's uid.  Does not require a password.
 
-        Required parameters: user
+        @param: user - name of user to run as
+        @param: target_dir - directory to run the command from
 
         @author: Roy Nielsen
         """
@@ -376,7 +378,10 @@ class RunWith(object):
         self.output = ""
         self.error = ""
         self.returncode = 999
-        
+        if target_dir:
+            return_dir = os.getcwd()
+            os.chdir(target_dir)
+
         user = user.strip()
 
         if os.getuid() != 0:
@@ -410,10 +415,14 @@ class RunWith(object):
 
         if not error:
             success = True
-
-        self.logger.log(lp.DEBUG, "out: " + str(output))
-        self.logger.log(lp.DEBUG, "err: " + str(error))
+        for line in output.split('\n'):
+            self.logger.log(lp.DEBUG, "out: " + str(line))
+        for line in error.split('\n'):
+            self.logger.log(lp.DEBUG, "err: " + str(line))
         self.logger.log(lp.DEBUG, "out: " + str(returncode))
+
+        if target_dir:
+            os.chdir(return_dir)
 
         return output, error, returncode
 
@@ -484,7 +493,7 @@ class RunWith(object):
         else :
             output = ""
 
-            internal_command = ["/usr/bin/su", str("-"),
+            internal_command = ["/usr/bin/su", str("-m"),
                                 str(user).strip(), str("-c")]
 
             if isinstance(self.command, list) :
@@ -499,12 +508,12 @@ class RunWith(object):
                                             " ".join(cmd) + "'"))
             elif isinstance(self.command, basestring):
                 try:
-                    internal_command.append(str("/usr/bin/sudo -S -s " + \
+                    internal_command.append(str("/usr/bin/sudo -E -S -s " + \
                                                 "'" + \
                                                 str(self.command.decode('utf-8')) + \
                                                 "'"))
                 except UnicodeDecodeError:
-                    internal_command.append(str("/usr/bin/sudo -S -s " + \
+                    internal_command.append(str("/usr/bin/sudo -E -S -s " + \
                                                 "'" + \
                                                 str(self.command) + "'"))
 
