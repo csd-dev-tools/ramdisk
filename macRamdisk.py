@@ -104,7 +104,7 @@ class MacRamDisk(RamDiskTemplate) :
         # Checking to see if memory is availalbe...
         if not self.__isMemoryAvailable() :
             self.logger.log(lp.DEBUG, "Physical memory not available to create ramdisk.")
-            success = False
+            raise NotEnoughMemoryError("Physical memory not available to create ramdisk.")
         else:
             success = True
 

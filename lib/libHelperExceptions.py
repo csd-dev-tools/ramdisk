@@ -36,3 +36,12 @@ class SystemToolNotAvailable(Exception):
     def __init__(self, *args, **kwargs):
         Exception.__init__(self, *args, **kwargs)
 
+class NotEnoughMemoryError(Exception):
+    """
+    Thrown when there is not enough memory for this operation.
+
+    @author: Roy Nielsen
+    """
+    def __init__(self, *args, **kwargs):
+        Exception.__init__(self, *args, **kwargs)
+
