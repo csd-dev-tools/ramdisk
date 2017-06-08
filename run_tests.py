@@ -118,7 +118,10 @@ class BuildAndRunSuite(object):
         Run the Suite.
         """
         runner = unittest.TextTestRunner()
-        runner.run(self.test_suite)
+        testResults  = runner.run(self.test_suite)
+        
+        if testResults.errors:
+            raise str(testResults.error)
 
 ###############################################################################
 
