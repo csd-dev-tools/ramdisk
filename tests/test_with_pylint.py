@@ -49,7 +49,7 @@ class test_with_pylint(unittest.TestCase):
         """
         for root, dirs, files in os.walk(self.dirPkgRoot):
             for myfile in files:
-                if re.search(".+\.py$", myfile) and not re.match("^%s$"%__file__, myfile):
+                if re.search(".+\.py$", myfile): # and not re.match("^%s$"%__file__, myfile):
                     self.rw.setCommand([self.pylint, os.path.join(root, myfile)])
                     output, error, retcode = self.rw.communicate()
                     for line in output.split("\n"):
