@@ -12,7 +12,7 @@ from lib.loggers import CyLogger
 
 ###########################################################################
 
-classNotValidForThisOS(Exception):
+class NotValidForThisOS(Exception):
     """
     Meant for being thrown when an action/class being run/instanciated is not
     applicable for the running operating system.
@@ -121,6 +121,19 @@ class RamDiskTemplate(object):
             success = True
             self.logger.log(lp.WARNING, "Success: " + str(success) + " in get_randomizedMountpoint: " + str(self.mntPoint))
         self.logger.log(lp.WARNING, "Randomized mount point: \"" + str(self.mntPoint) + "\"")
+        return success
+
+    ###########################################################################
+
+    def umount(self) :
+        """
+        Unmount the disk - same functionality as __eject on the mac
+
+        Must be over-ridden to provide OS/Method specific functionality
+
+        @author: Roy Nielsen
+        """
+        success = False
         return success
 
     ###########################################################################
