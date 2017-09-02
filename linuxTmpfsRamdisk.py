@@ -14,7 +14,7 @@ from tempfile import mkdtemp
 from lib.run_commands import RunWith
 from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
-from commonRamdiskTemplate import RamDiskTemplate
+from commonRamdiskTemplate import RamDiskTemplate, NotValidForThisOS, BadRamdiskArguments
 from lib.libHelperExceptions import SystemToolNotAvailable
 
 ###############################################################################
@@ -89,14 +89,14 @@ class TmpfsRamDisk(RamDiskTemplate):
         self.module_version = '20160224.032043.009191'
         self.logger = logger
         if not sys.platform.startswith("linux"):
-            raise self.NotValidForThisOS("This ramdisk is only viable for a Linux.")
+            raise NotValidForThisOS("This ramdisk is only viable for a Linux.")
 
         if fstype in ["tmpfs", "ramfs"]:
             self.fstype = fstype
             if fstype == "tmpfs":
                 self.myRamdiskDev = "/dev/tmpfs"
         else:
-            raise self.BadRamdiskArguments("Not a valid argument for " + \
+            raise BadRamdiskArguments("Not a valid argument for " + \
                                            "'fstype'...")
 
         if isinstance(mode, int):
@@ -159,7 +159,7 @@ class TmpfsRamDisk(RamDiskTemplate):
                 mountFound = True
                 
         if not mountFound:
-            raise SystemToolNotFound("Cannot find mount command...") 
+            raise SystemToolNotAvailable("Cannot find mount command...") 
 
         #####
         # Look for the umount command
@@ -171,7 +171,7 @@ class TmpfsRamDisk(RamDiskTemplate):
                 umountFound = True
                 
         if not umountFound:
-            raise SystemToolNotFound("Cannot find umount command...")
+            raise SystemToolNotAvailable("Cannot find umount command...")
 
         #####
         # Figure out if this method was successfull or not.
@@ -275,7 +275,7 @@ class TmpfsRamDisk(RamDiskTemplate):
         # tmpfs is the only viable ramdisk that handles remounting ok.
         # this includes mouting tmpfs with msdos, ext2,3,4, etc.
         if not self.fstype == "tmpfs":
-            raise self.BadRamdiskArguments("Can only use 'remount' with " + \
+            raise BadRamdiskArguments("Can only use 'remount' with " + \
                                            "tmpfs...")
         if size and isinstance(size, int):
             self.diskSize = size
@@ -396,7 +396,7 @@ def umount(mnt_point="", logger=False):
                 umountFound = True
                 
         if not umountFound:
-            raise SystemToolNotFound("Cannot find umount command...")
+            raise SystemToolNotAvailable("Cannot find umount command...")
 
         #####
         # Run the umount command...
