@@ -22,7 +22,7 @@ from subprocess import Popen, PIPE
 from .loggers import LogPriority as lp
 from .get_libc import getLibc
 
-def OSNotValidForRunWith(Exception):
+def OSNotValidForRunWith(BaseException):
     """
     Custom Exception
     """
