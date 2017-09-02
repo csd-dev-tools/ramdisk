@@ -28,7 +28,7 @@ from lib.libHelperExceptions import NotValidForThisOS
 if sys.platform.startswith("darwin"):
     #####
     # For Mac
-    from macRamdisk import MacRamDisk as RamDisk
+    from macRamdisk import RamDisk as RamDisk
     from macRamdisk import detach
 elif sys.platform.startswith("linux"):
     #####

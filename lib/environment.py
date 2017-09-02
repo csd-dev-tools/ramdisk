@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 ###############################################################################
 #                                                                             #
 # Copyright 2015.  Los Alamos National Security, LLC. This material was       #
@@ -39,29 +38,34 @@ Created on Aug 24, 2010
 
 @author: dkennel
 @change: 2014/05/29 - ekkehard j. koch - pep8 and comment updates
+@change: 2017/03/07 - dkennel - added fisma risk level support
+@change: 2017.09/01 - rsn - taking out stonix specifics
 '''
 import os
 import re
+import platform
+import pwd
 import sys
 import socket
 import subprocess
-import types
-import platform
-import pwd
 import time
-#from localize import CORPORATENETWORKSERVERS, STONIXVERSION
+
+VERSION = '0.0.1'
+
+# must be one of ['high', 'medium', 'low']
+FISMACAT = 'low'
+
 if os.geteuid() == 0:
     try:
         import dmidecode
         DMI = True
-    except(ImportError):
+    except ImportError:
         DMI = False
 else:
     DMI = False
 
 
-class Environment:
-
+class Environment(object):
     """
     The Environment class collects commonly used information about the
     execution platform and makes it available to the rules.
@@ -78,44 +82,27 @@ class Environment:
         self.macaddress = ''
         self.osversion = ''
         self.numrules = 0
-        self.stonixversion = 0
+        self.version = VERSION
         self.euid = os.geteuid()
         currpwd = pwd.getpwuid(self.euid)
+        self.test_mode = ""
+        self.script_path = ""
+        self.resources_path = ""
+        self.rules_path = ""
+        self.log_path = ""
+        self.icon_path = ""
+        self.conf_path = ""
         try:
             self.homedir = currpwd[5]
-        except(IndexError):
+        except IndexError:
             self.homedir = '/dev/null'
         self.installmode = False
         self.verbosemode = False
         self.debugmode = False
         self.runtime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        self.systemfismacat = 'low'
+        self.determinefismacat()
         self.collectinfo()
-
-    def setinstallmode(self, installmode):
-        """
-        Set the install mode bool value. Should be true if the prog should run
-        in install mode.
-
-        @param bool: installmode
-        @return: void
-        @author: D. Kennel
-        """
-        try:
-            if type(installmode) is types.BooleanType:
-                self.installmode = installmode
-        except (NameError):
-            # installmode was undefined
-            pass
-
-    def getinstallmode(self):
-        """
-        Return the current value of the install mode bool. Should be true if
-        the program is to run in install mode.
-
-        @return: bool : installmode
-        @author: D. Kennel
-        """
-        return self.installmode
 
     def setverbosemode(self, verbosemode):
         """
@@ -127,9 +114,9 @@ class Environment:
         @author: D. Kennel
         """
         try:
-            if type(verbosemode) is types.BooleanType:
+            if isinstance(verbosemode, bool):
                 self.verbosemode = verbosemode
-        except (NameError):
+        except NameError:
             # verbosemode was undefined
             pass
 
@@ -153,9 +140,9 @@ class Environment:
         @author: D. Kennel
         """
         try:
-            if type(debugmode) is types.BooleanType:
+            if isinstance(bool, debugmode):
                 self.debugmode = debugmode
-        except (NameError):
+        except NameError:
             # debugmode was undefined
             pass
 
@@ -249,14 +236,14 @@ class Environment:
         """
         return self.homedir
 
-    def getstonixversion(self):
+    def getversion(self):
         """
-        Returns the version of the stonix program.
+        Returns the version of the this program.
 
         @return: string
         @author: D. Kennel
         """
-        return self.stonixversion
+        return self.version
 
     def collectinfo(self):
         """
@@ -272,6 +259,7 @@ class Environment:
         # print 'Environment running guessnetwork'
         self.guessnetwork()
         self.collectpaths()
+        self.determinefismacat()
 
     def discoveros(self):
         """
@@ -391,14 +379,14 @@ class Environment:
             iplist = ipdata[2]
             try:
                 iplist.remove('127.0.0.1')
-            except (ValueError):
+            except ValueError:
                 # tried to remove loopback when it's not present, continue
                 pass
             if len(iplist) >= 1:
                 ipaddress = iplist[0]
             else:
                 ipaddress = '127.0.0.1'
-        except(socket.gaierror):
+        except socket.gaierror:
             # If we're here it's because socket.getfqdn did not in fact return
             # a valid hostname and gethostbyname errored.
             ipaddress = self.getdefaultip()
@@ -445,14 +433,14 @@ class Environment:
                                             stdout=subprocess.PIPE,
                                             close_fds=True)
                 routedata = routecmd.stdout.readlines()
-            except(OSError):
+            except OSError:
                 return ipaddr
             for line in routedata:
                 if re.search('^default', line):
                     line = line.split()
                     try:
                         gateway = line[1]
-                    except(IndexError):
+                    except IndexError:
                         return ipaddr
         else:
             try:
@@ -464,14 +452,14 @@ class Environment:
                                             stdout=subprocess.PIPE,
                                             close_fds=True)
                 routedata = routecmd.stdout.readlines()
-            except(OSError):
+            except OSError:
                 return ipaddr
             for line in routedata:
                 if re.search('gateway:', line):
                     line = line.split()
                     try:
                         gateway = line[1]
-                    except(IndexError):
+                    except IndexError:
                         return ipaddr
         if gateway:
             iplist = self.getallips()
@@ -526,7 +514,7 @@ class Environment:
                                          stdout=subprocess.PIPE,
                                          close_fds=True)
                 ifdata = ifcmd.stdout.readlines()
-            except(OSError):
+            except OSError:
                 return iplist
             for line in ifdata:
                 if re.search('inet addr:', line):
@@ -536,7 +524,7 @@ class Environment:
                         addr = addr.split(':')
                         addr = addr[1]
                         iplist.append(addr)
-                    except(IndexError):
+                    except IndexError:
                         continue
         else:
             try:
@@ -548,7 +536,7 @@ class Environment:
                                          stdout=subprocess.PIPE,
                                          close_fds=True)
                 ifdata = ifcmd.stdout.readlines()
-            except(OSError):
+            except OSError:
                 return iplist
             for line in ifdata:
                 if re.search('inet ', line):
@@ -556,44 +544,9 @@ class Environment:
                         line = line.split()
                         addr = line[1]
                         iplist.append(addr)
-                    except(IndexError):
+                    except IndexError:
                         continue
         return iplist
-
-    def get_property_number(self):
-        """
-        Find and return the
-        Property number of the local machine
-        @author: scmcleni
-        @author: D. Kennel
-        @return: int
-        """
-        propnum = 0
-        try:
-            if os.path.exists('/etc/property-number'):
-                propertynumberfile = open('/etc/property-number', 'r')
-                propnum = propertynumberfile.readline()
-                propnum = propnum.strip()
-                propertynumberfile.close()
-            elif DMI and self.euid == 0:
-                chassis = dmidecode.chassis()
-                for key in chassis:
-                    propnum = chassis[key]['data']['Asset Tag']
-            if platform.system() == 'Darwin':
-                pnfetch = '/usr/sbin/nvram asset_id 2>/dev/null'
-                cmd = subprocess.Popen(pnfetch, shell=True,
-                                       stdout=subprocess.PIPE,
-                                       close_fds=True)
-                cmdout = cmd.stdout.readline()
-                cmdout = cmdout.split()
-                try:
-                    propnum = cmdout[1]
-                except(IndexError, KeyError):
-                    propnum = 0
-        except:
-            pass
-            # Failed to obtain property number
-        return propnum
 
     def get_system_serial_number(self):
         """
@@ -809,24 +762,6 @@ class Environment:
                     break
         return issnitchactive
 
-    def oncorporatenetwork(self):
-        """
-        Determine if we are running on the corporate network
-        @author: ekkehard j. koch
-        """
-        amoncorporatenetwork = False
-        listOfServers = CORPORATENETWORKSERVERS
-        for server in listOfServers:
-            try:
-                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                sock.connect((server, 80))
-                sock.close()
-                amoncorporatenetwork = True
-                return amoncorporatenetwork
-            except (socket.gaierror, socket.timeout, socket.error):
-                amoncorporatenetwork = False
-        return amoncorporatenetwork
-
     def collectpaths(self):
         """
         Determine how stonix is run and return appropriate paths for:
@@ -838,10 +773,14 @@ class Environment:
 
         @author: Roy Nielsen
         """
-        script_path_zero = os.path.realpath(sys.argv[0])
+        try:
+            script_path_zero = sys._MEIPASS
+        except AttributeError:
+            script_path_zero = os.path.realpath(sys.argv[0])
+
         try:
             script_path_one = os.path.realpath(sys.argv[1])
-        except:
+        except ValueError:
             script_path_one = ""
 
         self.test_mode = False
@@ -858,7 +797,8 @@ class Environment:
             # the "stonix" binary blob created by pyinstaller, so don't include
             # here.
             #print "DEBUG: Environment.collectpaths: unexpected argv[0]: " + str(sys.argv[0])
-            if re.search("stonix.py$", script_path_one) or re.search("stonixtest.py$", script_path_one):
+            if re.search("stonix.py$", script_path_one) or \
+               re.search("stonixtest.py$", script_path_one):
                 script = script_path_one.split("/")[-1]
                 script_path = "/".join(script_path_one.split("/")[:-1])
 
@@ -872,29 +812,21 @@ class Environment:
                     print "ERROR: Cannot run using this method"
             else:
                 #print "DEBUG: Cannot find appropriate path, building paths for current directory"
-                self.script_path = os.getcwd()
+                try:
+                    self.script_path = sys._MEIPASS
+                except AttributeError:
+                    self.script_path = os.path.dirname(os.path.realpath(sys.argv[0]))
 
         #####
         # Set the rules & stonix_resources paths
-        if re.search("stonix.app/Contents/MacOS$", self.script_path):
-            #####
-            # Find the stonix.conf file in the stonix.app/Contents/Resources
-            # directory
-            macospath = self.script_path
-            self.resources_path = os.path.join(self.script_path,
-                                               "stonix_resources")
-            self.rules_path = os.path.join(self.resources_path,
-                                           "rules")
-        else:
-            # ##
-            # create the self.resources_path
-            self.resources_path = os.path.join(self.script_path,
-                                               "stonix_resources")
-            # ##
-            # create the self.rules_path
-            self.rules_path = os.path.join(self.script_path,
-                                           "stonix_resources",
-                                           "rules")
+        # ##
+        # create the self.resources_path
+        self.resources_path = os.path.abspath(os.path.dirname(__file__))
+
+        #####
+        # create the self.rules_path
+        self.rules_path = self.resources_path + "/rules"
+
         #####
         # Set the log file path
         if self.geteuid() == 0:
@@ -911,26 +843,22 @@ class Environment:
 
         #####
         # Set the configuration file path
-        if re.search("stonix.app/Contents/MacOS/stonix$", os.path.realpath(sys.argv[0])):
-            #####
-            # Find the stonix.conf file in the stonix.app/Contents/Resources
-            # directory
-            macospath = self.script_path
-            parents = macospath.split("/")
-            parents.pop()
-            parents.append("Resources")
-            resources_dir = "/".join(parents)
-            self.conf_path = os.path.join(resources_dir, "stonix.conf")
-        elif os.path.exists(os.path.join(self.script_path, "etc", "stonix.conf")):
-            self.conf_path = os.path.join(self.script_path, "etc", "stonix.conf")
-        elif re.search('pydev', script_path_zero) and re.search('stonix_resources', script_path_one):
-            print "INFO: Called by unit test"
-            srcpath = script_path_one.split('/')[:-2]
-            srcpath = '/'.join(srcpath)
-            self.conf_path = os.path.join(srcpath, 'etc', 'stonix.conf')
-            print self.conf_path
+        self.conf_path = "/etc/stonix.conf"
+
+    def determinefismacat(self):
+        '''
+        This method pulls the fimsa categorization from the localize.py
+        localization file. This allows a site to prepare special packages for
+        use on higher risk systems rather than letting the system administrator
+        self select the higher level.
+
+        @return: string - low, med, high
+        @author: dkennel
+        '''
+        if FISMACAT not in ['high', 'med', 'low']:
+            raise ValueError('FISMACAT invalid: valid values are low, med, high')
         else:
-            self.conf_path = "/etc/stonix.conf"
+            return FISMACAT
 
     def get_test_mode(self):
         """
@@ -1000,11 +928,11 @@ class Environment:
         '''
         Set the number of rules that apply to the system. This information is
         used by the log dispatcher in the run metadata.
-        
+
         @param num: int - number of rules that apply to this host
         @author: dkennel
         '''
-        if type(num) is not int:
+        if isinstance(int, num):
             raise TypeError('Number of rules must be an integer')
         elif num < 0:
             raise ValueError('Number of rules must be a positive integer')
@@ -1014,9 +942,35 @@ class Environment:
     def getnumrules(self):
         '''
         Return the number of rules that apply to this host.
-        
+
         @author: dkennel
         '''
         return self.numrules
 
-    
+    def getsystemfismacat(self):
+        '''
+        Return the system FISMA risk categorization.
+
+        @return: string - low, med, high
+        @author: dkennel
+        '''
+        return self.systemfismacat
+
+    def setsystemfismacat(self, category):
+        '''
+        Set the systems FISMA risk categorization. The risk categorization
+        cannot be set lower than the default risk level set in FISMACAT in
+        localize.py
+
+        @param category: string - low, med, high
+        @author: dkennel
+        '''
+
+        if category not in ['high', 'med', 'low']:
+            raise ValueError('SystemFismaCat invalid: valid values are low, med, high')
+        elif self.systemfismacat == 'high':
+            self.systemfismacat = 'high'
+        elif self.systemfismacat == 'med' and category == 'high':
+            self.systemfismacat = 'high'
+        elif self.systemfismacat == 'low' and category == 'high':
+            self.systemfismacat = category

@@ -16,7 +16,6 @@ from lib.run_commands import RunWith
 from lib.loggers import CrazyLogger
 from lib.loggers import LogPriority as lp
 from commonRamdiskTemplate import RamDiskTemplate
-from commonRamdiskTemplate import RamDiskTemplate
 
 ###############################################################################
 

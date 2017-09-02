@@ -18,9 +18,9 @@ import termios
 import threading
 from subprocess import Popen, PIPE
 
-from lib.loggers import CyLogger
-from lib.loggers import LogPriority as lp
-from lib.get_libc import getLibc
+#from loggers import CyLogger
+from .loggers import LogPriority as lp
+from .get_libc import getLibc
 
 def OSNotValidForRunWith(Exception):
     """
@@ -48,7 +48,7 @@ class RunWith(object):
     @author: Roy Nielsen
     """
     def __init__(self, logger=False, dbmode=lp.INFO):
-        self.logger = CyLogger(debug_mode=dbmode)
+        self.logger = logger
         self.command = None
         self.output = None
         self.error = None
@@ -58,7 +58,7 @@ class RunWith(object):
         self.myshell = None
         #####
         # setting up to call ctypes to do a filesystem sync
-        self.libc = getLibc()
+        self.libc = getLibc(self.logger)
 
     def setCommand(self, command, env=False, myshell=False):
         """
@@ -721,10 +721,7 @@ class RunThread(threading.Thread) :
             self.shell = False
             self.printcmd = self.command
 
-        if not isinstance(logger, (bool, CyLogger)):
-            self.logger = CyLogger()
-        else:
-            self.logger = logger
+        self.logger = logger
 
         self.logger.log(lp.INFO, "Initialized runThread...")
 

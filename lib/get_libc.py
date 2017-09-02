@@ -5,10 +5,6 @@ import os
 import sys
 import ctypes
 
-#--- non-native python libraries in this source tree
-from lib.loggers import CyLogger
-from lib.loggers import LogPriority as lp
-
 ##############################################################################
 
 def getLibc(logger=False):
@@ -21,8 +17,6 @@ def getLibc(logger=False):
 
     @author: Roy Nielsen
     """
-    if not logger:
-        logger = CyLogger()
     osFamily = sys.platform.lower().strip()
     #print "---==## OS Family: " + str(osFamily) + " #==---"
 
@@ -33,8 +27,7 @@ def getLibc(logger=False):
             libc = ctypes.CDLL("/usr/lib/libc.dylib")
         except:
             raise Exception("DAMN IT JIM!!!")
-        else:
-            print "Loading Mac dylib......................................"
+
     elif osFamily and  osFamily.startswith("linux"):
         #####
         # For Linux

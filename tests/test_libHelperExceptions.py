@@ -25,7 +25,7 @@ from lib.libHelperExceptions import NotValidForThisOS
 if sys.platform.startswith("darwin"):
     #####
     # For Mac
-    from macRamdisk import MacRamDisk as RamDisk
+    from macRamdisk import RamDisk
     from macRamdisk import detach
 elif sys.platform.startswith("linux"):
     #####
@@ -50,7 +50,6 @@ class test_libHelperExceptions(unittest.TestCase):
 
         self.libcPath = None # initial initialization
 
-
     def setUp(self):
         """
         This method runs before each test run.
@@ -71,8 +70,6 @@ class test_libHelperExceptions(unittest.TestCase):
             self.libc = C.CDLL(self.libcPath)
         else:
             self.libc = self._pass()
-
-
 
 ###############################################################################
 ##### Helper Classes

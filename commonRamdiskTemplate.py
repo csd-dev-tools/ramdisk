@@ -12,7 +12,7 @@ from lib.loggers import CyLogger
 
 ###########################################################################
 
-class NotValidForThisOS(Exception):
+classNotValidForThisOS(Exception):
     """
     Meant for being thrown when an action/class being run/instanciated is not
     applicable for the running operating system.
@@ -125,7 +125,7 @@ class RamDiskTemplate(object):
 
     ###########################################################################
 
-    def umount(self) :
+    def unmount(self) :
         """
         Unmount the disk - same functionality as __eject on the mac
 
@@ -136,6 +136,8 @@ class RamDiskTemplate(object):
         success = False
         return success
 
+    ###########################################################################
+
     def __isMemoryAvailable(self) :
         """
         Check to make sure there is plenty of memory of the size passed in
@@ -143,7 +145,21 @@ class RamDiskTemplate(object):
 
         @author: Roy Nielsen
         """
-        pass
+        success = False
+        return success
+
+    ###########################################################################
+
+    def _format(self) :
+        """
+        Format the ramdisk
+
+        Must be over-ridden to provide OS/Method specific functionality
+
+        @author: Roy Nielsen
+        """
+        success = False
+        return success
 
     ###########################################################################
 

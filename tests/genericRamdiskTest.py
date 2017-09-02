@@ -24,9 +24,9 @@ from tests.genericTestUtilities import GenericTestUtilities
 if sys.platform.startswith("darwin"):
     #####
     # For Mac
-    from macRamdisk import MacRamDisk as RamDisk
+    from macRamdisk import RamDisk
     from macRamdisk import detach
-    from macRamdisk import umount
+    from macRamdisk import unmount
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
