@@ -19,6 +19,18 @@ from lib.loggers import LogPriority as lp
 
 ###############################################################################
 
+class TestResultsErrors(BaseException):
+    """
+    Meant for being thrown when an action/class being run/instanciated is not
+    applicable for the running operating system.
+
+    @author: Roy Nielsen
+    """
+    def __init__(self, *args, **kwargs):
+        Exception.__init__(self, *args, **kwargs)
+
+###########################################################################
+
 class BuildAndRunSuite(object):
 
     def __init__(self, logger):
@@ -121,7 +133,7 @@ class BuildAndRunSuite(object):
         testResults  = runner.run(self.test_suite)
         
         if testResults.errors:
-            raise str(testResults.error)
+            raise TestResultsErrors(str(testResults.error))
 
 ###############################################################################
 
