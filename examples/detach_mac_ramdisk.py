@@ -7,11 +7,11 @@ from __future__ import absolute_import
 import re
 import sys
 from optparse import OptionParser, SUPPRESS_HELP
-sys.path.append("..")
+
 #--- non-native python libraries in this source tree
-from macRamdisk import detach
-from lib.loggers import CyLogger
-from lib.loggers import LogPriority as lp
+from ..macRamdisk import detach
+from ..lib.loggers import CyLogger
+from ..lib.loggers import LogPriority as lp
 
 parser = OptionParser(usage="\n\n%prog [options]\n\n", version="0.7.2")
 
