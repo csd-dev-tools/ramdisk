@@ -4,6 +4,7 @@
 """
 from __future__ import absolute_import
 #--- Native python libraries
+import re
 import sys
 from optparse import OptionParser, SUPPRESS_HELP
 sys.path.append("..")

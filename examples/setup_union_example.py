@@ -18,7 +18,7 @@ from lib.loggers import LogPriority as lp
 if sys.platform.startswith("darwin"):
     #####
     # For Mac
-    from macRamdisk import MacRamDisk as RamDisk
+    from macRamdisk import RamDisk
     from macRamdisk import detach
 elif sys.platform.startswith("linux"):
     #####
@@ -68,12 +68,12 @@ logger = CyLogger(level=level)
 logger.initializeLogs()
 
 ramdisk = RamDisk(size=size)
-ramdisk.logData()
-ramdisk.printData()
+ramdisk.getNlogData()
+ramdisk.getNprintData()
 
 ramdisk.unionOver(mntpnt)
 
-ramdisk.printData()
+ramdisk.getNprintData()
 
 if not ramdisk.success:
     raise Exception("Ramdisk setup failed..")
