@@ -50,7 +50,7 @@ class RootAccessRequired(Exception):
         Exception.__init__(self, *args, **kwargs)
 
 
-class ManageUserTemplate(object):
+class ParentManageUser(object):
     """
     Class to manage user properties.
 
