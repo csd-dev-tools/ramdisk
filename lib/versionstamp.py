@@ -12,7 +12,7 @@ import sys
 import argparse
 from datetime import datetime
 
-from ramdisk.lib.loggers import Logger
+from ramdisk.lib.loggers import CyLogger
 from ramdisk.lib.loggers import LogPriority as lp
 
 class SedFile4VersionStamp(object):
