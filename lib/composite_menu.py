@@ -78,11 +78,6 @@ class MenuComponent(object):
         """
         pass
 
-    def menuAction(self):
-        """
-        """
-        pass
-
     def get_key(self):
         """
         Wait for a keypress and return a single character string.
