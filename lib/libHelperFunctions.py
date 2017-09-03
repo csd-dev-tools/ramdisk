@@ -14,9 +14,9 @@ import termios
 from subprocess import Popen, STDOUT, PIPE
 
 #--- non-native python libraries in this source tree
-from lib.loggers import CyLogger
-from lib.loggers import LogPriority as lp
-from lib.run_commands import RunWith
+from .loggers import CyLogger
+from .loggers import LogPriority as lp
+from .run_commands import RunWith
 
 logger = CyLogger()
 run = RunWith(logger)

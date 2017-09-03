@@ -780,7 +780,7 @@ class Environment(object):
 
         try:
             script_path_one = os.path.realpath(sys.argv[1])
-        except ValueError:
+        except IndexError:
             script_path_one = ""
 
         self.test_mode = False

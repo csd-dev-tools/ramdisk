@@ -12,9 +12,9 @@ import tty
 import termios
 
 sys.path.append("..")
-from lib.loggers import CyLogger
-from lib.loggers import LogPriority as lp
-from lib.run_commands import RunWith, runMyThreadCommand
+from ..lib.loggers import CyLogger
+from ..lib.loggers import LogPriority as lp
+from ..lib.run_commands import RunWith, runMyThreadCommand
 
 class NotASaneNameError(Exception):
     """
