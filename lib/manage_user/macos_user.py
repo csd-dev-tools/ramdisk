@@ -19,12 +19,12 @@ from subprocess import Popen
 
 ########## 
 # local app libraries
-from lib.manage_user.parent_manage_user import ParentManageUser
-from lib.manage_user.parent_manage_user import BadUserInfoError
-from lib.run_commands import RunWith
-from lib.loggers import CyLogger
-from lib.loggers import LogPriority as lp
-from lib.libHelperFunctions import waitnoecho
+from ..manage_user.parent_manage_user import ParentManageUser
+from ..manage_user.parent_manage_user import BadUserInfoError
+from ..run_commands import RunWith
+from ..loggers import CyLogger
+from ..loggers import LogPriority as lp
+from ..libHelperFunctions import waitnoecho
 
 
 class DsclError(Exception):

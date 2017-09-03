@@ -11,11 +11,11 @@ import os
 import re
 import inspect
 
-from lib.run_commands import RunWith
-from lib.loggers import CyLogger
-from lib.loggers import LogPriority as lp
-from lib.CheckApplicable import CheckApplicable
-from lib.environment import Environment
+from ..run_commands import RunWith
+from ..loggers import CyLogger
+from ..loggers import LogPriority as lp
+from ..CheckApplicable import CheckApplicable
+from ..environment import Environment
 
 
 class BadUserInfoError(Exception):

@@ -9,11 +9,11 @@ import os
 import re
 ########## 
 # local app libraries
-from lib.run_commands import RunWith
-from lib.loggers import CyLogger
-from lib.loggers import LogPriority as lp
-from lib.manage_user.macos_user import MacOSUser
-from lib.manage_keychain.manage_keychain_template import ManageKeychainTemplate
+from ..run_commands import RunWith
+from ..loggers import CyLogger
+from ..loggers import LogPriority as lp
+from ..manage_user.macos_user import MacOSUser
+from ..manage_keychain.manage_keychain_template import ManageKeychainTemplate
 
 class UnsupportedSecuritySubcommand(Exception):
     """

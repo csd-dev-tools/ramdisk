@@ -9,8 +9,8 @@ import os
 import sys
 import inspect
 
-from lib.loggers import LogPriority as lp
-from lib.libHelperExceptions import UnsupportedOSError
+from ..loggers import LogPriority as lp
+from ..libHelperExceptions import UnsupportedOSError
 
 
 class ManageUser(object):
@@ -29,7 +29,7 @@ class ManageUser(object):
         self.logger.log(lp.INFO, "Logger: " + str(self.logger))
 
         if sys.platform.lower() == "darwin":
-            from lib.manage_user import macos_user 
+            from ..manage_user import macos_user 
             # import lib.manage_user.macos_user
             self.userMgr = macos_user.MacOSUser(logDispatcher=self.logger)
         else:
