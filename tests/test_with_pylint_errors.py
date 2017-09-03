@@ -4,7 +4,7 @@ import unittest
 from lib.loggers import CyLogger
 from lib.run_commands import RunWith
 
-dirPkgRoot = '.'
+dirPkgRoot = '..'
 logger = CyLogger()
 logger.initializeLogs()
 rw = RunWith(logger)
