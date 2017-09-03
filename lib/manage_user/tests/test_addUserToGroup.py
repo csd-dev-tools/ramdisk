@@ -17,7 +17,7 @@ from datetime import datetime
 
 #--- non-native python libraries in this source tree
 sys.path.append("..")
-from lib.loggers import CrazyLogger
+from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 
 from lib.libHelperExceptions import NotValidForThisOS
@@ -27,7 +27,7 @@ from lib.libHelperExceptions import NotValidForThisOS
 if sys.platform.startswith("darwin"):
     #####
     # For Mac
-    from macos_users import MacOSUser
+    from lib.manage_user.macos_users import MacOSUser
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
