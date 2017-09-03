@@ -2,6 +2,9 @@
  
 import traceback
 import getpass
+import sys
+
+sys.path.append("..")
 
 from lib.manage_user.manage_user import ManageUser
 from lib.manage_keychain.manage_keychain import ManageKeychain

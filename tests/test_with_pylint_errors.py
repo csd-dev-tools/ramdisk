@@ -1,6 +1,11 @@
+from __future__ import absolute_import
 import os
 import re
+import sys
 import unittest
+
+sys.path.append("..")
+
 from lib.loggers import CyLogger
 from lib.run_commands import RunWith
 
