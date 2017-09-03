@@ -11,18 +11,20 @@ from __future__ import absolute_import
 import re
 import os
 import pty
+import pwd
 import sys
+import time
 import shutil
 from subprocess import Popen
 
 ########## 
 # local app libraries
-from lib.manage_user.manage_user_template import ManageUserTemplate
-from lib.manage_user.manage_user_template import BadUserInfoError
+from lib.manage_user.parent_manage_user import ParentManageUser
+from lib.manage_user.parent_manage_user import BadUserInfoError
 from lib.run_commands import RunWith
 from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
-from lib.logdispatcher_lite import LogDispatcher
+from lib.libHelperFunctions import waitnoecho
 
 
 class DsclError(Exception):
@@ -47,10 +49,12 @@ class CreateHomeDirError(Exception):
         Exception.__init__(self, *args, **kwargs)
 
 
-class MacOSUser(ManageUserTemplate):
+class MacOSUser(ParentManageUser):
     """
     Class to manage users on Mac OS.
 
+    #----- Acquire user (pwd) map
+    @method getUsers
     #----- Getters
     @method findUniqueUid
     @method uidTaken
@@ -100,8 +104,37 @@ class MacOSUser(ManageUserTemplate):
         self.module_version = '20160225.125554.540679'
 
         self.dscl = "/usr/bin/dscl"
-        self.runWith = RunWith(self.logger)
+        self.runner = RunWith(self.logger)
 
+        self.users = self.getUsers()
+
+    #----------------------------------------------------------------------
+    # Getters
+    #----------------------------------------------------------------------
+
+    def getUsers(self):
+        """
+        Return a list of users, from pwd.
+        
+        Password database entries are reported as a tuple-like object, whose 
+        attributes correspond to the members of the passwd structure (Attribute
+        field below, see <pwd.h>):
+        
+        Index    Attribute    Meaning
+        0    pw_name    Login name
+        1    pw_passwd    Optional encrypted password
+        2    pw_uid    Numerical user ID
+        3    pw_gid    Numerical group ID
+        4    pw_gecos    User name or comment field
+        5    pw_dir    User home directory
+        6    pw_shell    User command interpreter
+
+        The uid and gid items are integers, all others are strings. KeyError
+        is raised if the entry asked for cannot be found. 
+        """
+        self.users = pwd.getpwall()
+        return self.users
+        
     #----------------------------------------------------------------------
     # Getters
     #----------------------------------------------------------------------
@@ -197,8 +230,8 @@ class MacOSUser(ManageUserTemplate):
                             # into the dictionary
                             properties[propertyName] = propertyAttribute
                         
-                        property = line.split(':')
-                        propertyName = property[0].strip()
+                        prop = line.split(':')
+                        propertyName = prop[0].strip()
                         if re.search("JPEGPhoto", propertyName):
                             jpegPhotoFound = True
                             continue
@@ -340,9 +373,9 @@ class MacOSUser(ManageUserTemplate):
         success = False
         if self.isSaneUserName(user):
             cmd = [self.dscl, ".", "-read", "/Users/" + str(user)]
-            self.runWith.setCommand(cmd)
-            self.runWith.communicate()
-            retval, reterr, retcode = self.runWith.getNlogReturns()
+            self.runner.setCommand(cmd)
+            self.runner.communicate()
+            retval, reterr, retcode = self.runner.getNlogReturns()
 
             if not reterr:
                 success = True
@@ -359,8 +392,7 @@ class MacOSUser(ManageUserTemplate):
         """
         self.logger.log(lp.DEBUG, "U: " + str(userName))
         self.logger.log(lp.DEBUG, "G: " + str(groupName))
-        
-        
+
         success = False
         if self.isSaneUserName(userName) and self.isSaneGroupName(groupName):
             output = self.getDscl(".", "-read", "/Groups/" + groupName, "users")
@@ -370,6 +402,120 @@ class MacOSUser(ManageUserTemplate):
             if userName in users:
                 success = True
         return success
+
+    #----------------------------------------------------------------------
+
+    def accountCreationTime(self, userName=""):
+        """
+        """
+        userInfo = False
+        if self.isSaneUserName(userName):
+            output = self.getDscl(".", "-readpl", "/Users/" + str(userName), 
+                                  "accountPolicyData", "creationTime")
+            try:
+                userInfo = output.split()[1]
+            except (KeyError, IndexError), err:
+                self.logger.log(lp.INFO, "Error attempting to find user" + \
+                                         str(userName) + " in the " + \
+                                         "directory service.")
+            else:
+                epochtime = userInfo
+                timestring = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(epochtime))
+                userInfo = [epochtime, timestring]
+        else:
+            raise BadUserInfoError("Need a valid user name...")
+
+        return userInfo
+
+    #----------------------------------------------------------------------
+
+    def failedLoginCount(self, userName=""):
+        """
+        """
+        userInfo = False
+        if self.isSaneUserName(userName):
+            output = self.getDscl(".", "-readpl", "/Users/" + str(userName), 
+                                  "accountPolicyData", "failedLoginCount")
+            try:
+                userInfo = output.split()[1]
+            except (KeyError, IndexError), err:
+                self.logger.log(lp.INFO, "Error attempting to find user" + \
+                                         str(userName) + " in the " + \
+                                         "directory service.")
+        else:
+            raise BadUserInfoError("Need a valid user name...")
+
+        return userInfo
+
+    #----------------------------------------------------------------------
+
+    def failedLoginTimestamp(self, userName=""):
+        """
+        """
+        userInfo = False
+        if self.isSaneUserName(userName):
+            output = self.getDscl(".", "-readpl", "/Users/" + str(userName), 
+                                  "accountPolicyData", "failedLoginTimestamp")
+            try:
+                userInfo = output.split()[1]
+            except (KeyError, IndexError), err:
+                self.logger.log(lp.INFO, "Error attempting to find user" + \
+                                         str(userName) + " in the " + \
+                                         "directory service.")
+            else:
+                epochtime = userInfo
+                timestring = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(epochtime))
+                userInfo = [epochtime, timestring]
+        else:
+            raise BadUserInfoError("Need a valid user name...")
+
+        return userInfo
+
+    #----------------------------------------------------------------------
+
+    def passwordLastSetTime(self, userName=""):
+        """
+        """
+        userInfo = False
+        
+        if self.isSaneUserName(userName):
+            output = self.getDscl(".", "-readpl", "/Users/" + str(userName), 
+                                  "accountPolicyData", "passwordLastSetTime")
+            try:
+                userInfo = output.split()[1]
+            except (KeyError, IndexError), err:
+                self.logger.log(lp.INFO, "Error attempting to find user" + \
+                                         str(userName) + " in the " + \
+                                         "directory service.")
+            else:
+                epochtime = userInfo
+                timestring = time.strftime('%Y-%m-%d %H:%M:%S', 
+                                           time.localtime(epochtime))
+                userInfo = [epochtime, timestring]
+        else:
+            raise BadUserInfoError("Need a valid user name...")
+
+        return userInfo
+
+    #----------------------------------------------------------------------
+
+    def isAuthenticationAllowed(self, userName=""):
+        """
+        """
+        userInfo = False
+        
+        if self.isSaneUserName(userName):
+            self.runner.setCommand(["/usr/bin/pwpolicy", "-u", str(userName),
+                                     "-authentication-allowed"])
+            output, error, retcode = self.runner.communicate()
+            
+            self.logger.log(lp.DEBUG, "Output: " + str(output.strip()))
+            
+            userInfo = output
+        else:
+            raise BadUserInfoError("Need a valid user name...")
+            
+        return userInfo
 
     #----------------------------------------------------------------------
 
@@ -428,6 +574,8 @@ class MacOSUser(ManageUserTemplate):
 
         return sane
 
+    #----------------------------------------------------------------------
+
     def authenticate(self, user="", password=""):
         """
         Open a pty to run "su" to see if the password is correct...
@@ -438,6 +586,8 @@ class MacOSUser(ManageUserTemplate):
         @author: Roy Nielsen
         """
         authenticated = False
+        output = ""
+        error = ""
 
         if not self.isSaneUserName(user) or \
            re.match("^\s+$", password) or not password:
@@ -446,15 +596,18 @@ class MacOSUser(ManageUserTemplate):
             self.logger.log(lp.INFO, "check password...")
         else:
             
-            self.runWith.setCommand(['/bin/echo', 'hello world'])
+            self.runner.setCommand(['/bin/echo', 'HelloWorld'])
+            output, error, retcode = self.runner.runAs(user.strip(), password.strip())
             
-            output, error, retcode = self.runWith.communicate()
+            #self.logger.log(lp.DEBUG, "Output: " + str(output.strip()))
             
-            self.logger.log(lp.DEBUG, "Output: " + str(output.strip()))
-            
-            if re.match("^hello world$", output.strip()):
+            if not retcode:
                 authenticated = True
 
+        self.logger.log(lp.DEBUG, "output: " + str(output))
+        self.logger.log(lp.DEBUG, "error: " + str(error))
+        self.logger.log(lp.DEBUG, "retcode: " + str(retcode))
+        self.logger.log(lp.DEBUG, "authenticated: " + str(authenticated))
         return authenticated
 
     #----------------------------------------------------------------------
@@ -503,9 +656,9 @@ class MacOSUser(ManageUserTemplate):
         if isinstance(userName, basestring)\
            and re.match("^[A-Za-z][A-Za-z0-9]*$", userName):
             cmd = [self.dscl, ".", "-create", "/Users/" + str(userName)]
-            self.runWith.setCommand(cmd)
-            self.runWith.communicate()
-            retval, reterr, retcode = self.runWith.getNlogReturns()
+            self.runner.setCommand(cmd)
+            self.runner.communicate()
+            retval, reterr, retcode = self.runner.getNlogReturns()
 
             if not reterr:
                 success = True
@@ -628,9 +781,9 @@ class MacOSUser(ManageUserTemplate):
         reterr = ""
         if user:
             cmd = ["/usr/sbin/createhomedir", "-c", " -u", + str(user)]
-            self.runWith.setCommand(cmd)
-            self.runWith.communicate()
-            retval, reterr, retcode = self.runWith.getNlogReturns()
+            self.runner.setCommand(cmd)
+            self.runner.communicate()
+            retval, reterr, retcode = self.runner.getNlogReturns()
 
             if not reterr:
                 success = True
@@ -741,9 +894,9 @@ class MacOSUser(ManageUserTemplate):
 
         if self.isSaneUserName(user):
             cmd = [self.dscl, ".", "-delete", "/Users/" + str(user)]
-            self.runWith.setCommand(cmd)
-            self.runWith.communicate()
-            retval, reterr, retcode = self.runWith.getNlogReturns()
+            self.runner.setCommand(cmd)
+            self.runner.communicate()
+            retval, reterr, retcode = self.runner.getNlogReturns()
 
             if not reterr:
                 success = True
@@ -953,7 +1106,7 @@ class MacOSUser(ManageUserTemplate):
 
     #----------------------------------------------------------------------
 
-    def setDscl(self, directory=".", action="", object="", property="", value=""):
+    def setDscl(self, directory=".", action="", dirObject="", dirProperty="", value=""):
         """
         Using dscl to set a value in a directory...
 
@@ -963,15 +1116,15 @@ class MacOSUser(ManageUserTemplate):
         reterr = ""
         retval = ""
         #####
-        # If elevated, use the liftDown runWith method to run the command as
+        # If elevated, use the liftDown runner method to run the command as
         # a regular user.
         if directory and action and object and property:
             if directory and action and object and property and value:
-                cmd = [self.dscl, directory, action, object, property, value]
+                cmd = [self.dscl, directory, action, dirObject, dirProperty, value]
             else:
-                cmd = [self.dscl, directory, action, object, property]
+                cmd = [self.dscl, directory, action, dirObject, dirProperty]
 
-            self.runWith.setCommand(cmd)
+            self.runner.setCommand(cmd)
             if re.match("^%0$", str(os.getuid()).strip()):
                 passfound = False
                 for arg in cmd:
@@ -984,26 +1137,26 @@ class MacOSUser(ManageUserTemplate):
 
                 #####
                 # Run the command, lift down...
-                self.runWith.liftDown(self.userName)
+                self.runner.liftDown(self.userName)
                 self.logger.log(lp.INFO, "Took the lift down...")
-                retval, reterr, retcode = self.runWith.getNlogReturns()
+                retval, reterr, retcode = self.runner.getNlogReturns()
                 if not reterr:
                     success = True
             else:
                 #####
                 # Run the command
-                retval, reterr, retcode = self.runWith.communicate()
+                retval, reterr, retcode = self.runner.communicate()
 
                 if not reterr:
                     success = True
 
-            retval, reterr, retcode = self.runWith.getNlogReturns()
+            retval, reterr, retcode = self.runner.getNlogReturns()
 
         return success
 
     #----------------------------------------------------------------------
 
-    def getDscl(self, directory="", action="", dirobj="", dirprop=""):
+    def getDscl(self, directory="", action="", dirobj="", dirprop="", subprop=""):
         """
         Using dscl to retrieve a value from the directory
 
@@ -1035,11 +1188,14 @@ class MacOSUser(ManageUserTemplate):
         #####
         # Now do the directory lookup.
         if success:
-            cmd = [self.dscl, directory, action, dirobj, dirprop]
+            if directory and action and dirobj and dirprop and subprop:
+                cmd = [self.dscl, directory, action, dirobj, dirprop, subprop]
+            else:
+                cmd = [self.dscl, directory, action, dirobj, dirprop]
 
-            self.runWith.setCommand(cmd)
-            self.runWith.communicate()
-            retval, reterr, retcode = self.runWith.getNlogReturns()
+            self.runner.setCommand(cmd)
+            self.runner.communicate()
+            retval, reterr, retcode = self.runner.getNlogReturns()
 
             if not reterr:
                 success = True
