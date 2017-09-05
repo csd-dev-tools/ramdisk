@@ -31,7 +31,7 @@ def getRecursiveTree(targetRootDir="."):
                 filesList.append(os.path.abspath(os.path.join(root, myfile)))
     return filesList
 
-def genDirList(targetDir="."):
+def getDirList(targetDir="."):
     filesList = []
     for myfile in os.listdir(targetDir):
         if re.search(".+\.py$", myfile): 
@@ -46,7 +46,7 @@ def genTestData(fileList=[]):
 
     pIface = PylintIface(logger)
     for myfile in fileList:
-        print myfile
+        #print myfile
         try:
             if not re.search(".+\.py$", myfile):
                 continue
@@ -148,7 +148,7 @@ if __name__=="__main__":
     testResults  = runner.run(test_suite)
     
     if testResults.errors:
-        raise TestResultsErrors(str(testResults.error))
+        raise TestResultsError(str(testResults.error))
 
 else:
     #####
