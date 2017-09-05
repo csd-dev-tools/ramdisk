@@ -11,7 +11,7 @@ sys.path.append("..")
 
 from lib.loggers import CyLogger
 #from lib.run_commands import RunWith
-from .PylintIface import PylintIface, processFile
+from tests.PylintIface import PylintIface, processFile
 
 from pylint import epylint
 
