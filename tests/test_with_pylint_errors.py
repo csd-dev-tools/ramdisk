@@ -11,7 +11,7 @@ sys.path.append("..")
 
 from lib.loggers import CyLogger
 #from lib.run_commands import RunWith
-from PylintIface import PylintIface, processFile
+from .PylintIface import PylintIface, processFile
 
 from pylint import epylint
 
@@ -54,7 +54,7 @@ def pylint_test_template(*args):
     return foo
 
 
-class PylintTest(unittest.TestCase):
+class test_with_pylint_errors(unittest.TestCase):
     def assert_pylint_error(self, myfile, lineNum, text):
         self.assertTrue(False, myfile + ": (" + str(lineNum) + ") " + text)
 
@@ -63,5 +63,5 @@ for specificError in test_case_data:
     myfile, lineNum, text = specificError
     test_name = "test_with_pylint_{0}_{1}_{2}".format(myfile, lineNum, text)
     error_case = pylint_test_template(*specificError)
-    setattr(PylintTest, test_name, error_case)
+    setattr(test_with_pylint_errors, test_name, error_case)
 
