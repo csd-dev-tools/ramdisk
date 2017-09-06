@@ -19,7 +19,7 @@ from lib.libHelperExceptions import SystemToolNotAvailable
 
 ###############################################################################
 
-class TmpfsRamDisk(RamDiskTemplate):
+class RamDisk(RamDiskTemplate):
     """
     http://www.cyberciti.biz/tips/what-is-devshm-and-its-practical-usage.html
 
@@ -83,7 +83,7 @@ class TmpfsRamDisk(RamDiskTemplate):
                  fstype="tmpfs", nr_inodes=None, nr_blocks=None):
         """
         """
-        super(TmpfsRamDisk, self).__init__(size, mountpoint, logger)
+        super(RamDisk, self).__init__(size, mountpoint, logger)
         #####
         # The passed in size of ramdisk should be in 1Mb chunks
         self.module_version = '20160224.032043.009191'
@@ -322,6 +322,19 @@ class TmpfsRamDisk(RamDiskTemplate):
 
     ###########################################################################
 
+    def umount(self):
+        """
+        Unmount the disk
+
+        @author: Roy Nielsen
+        """
+        success = False
+
+        success = self.unmount()
+        return success
+
+    ###########################################################################
+
     def detach(self) :
         """
         Unmount the disk
@@ -410,3 +423,10 @@ def umount(mnt_point="", logger=False):
 
     return success
 
+def unmount(mnt_point="", logger=False):
+    '''
+    mirror functioin for umount
+    '''
+    success = False
+    success = umount(mnt_point, logger)
+    return success

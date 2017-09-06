@@ -111,7 +111,7 @@ if __name__=="__main__":
         level=lp.WARNING
 
     if not opts.treeRoot and not opts.dirToCheck and not opts.fileToCheck:
-        output, error = Popen([__file__, "-h"], stdout=PIPE, stderr=PIPE)
+        output, error = Popen([__file__, "-h"], stdout=PIPE, stderr=PIPE).communicate()
         sys.exit(0)
 
     else:
@@ -145,11 +145,8 @@ if __name__=="__main__":
     test_suite.addTest(unittest.makeSuite(test_with_pylint_errors))
     #test_suite.addTest(unittest.makeSuite(ConfigTestCase))
     runner = unittest.TextTestRunner()
-    testResults  = runner.run(test_suite)
+    testResults  = runner.run(test_suite)  # output goes to stderr
     
-    if testResults.errors:
-        raise TestResultsError(str(testResults.error))
-
 else:
     #####
     # Run unittest per current source tree

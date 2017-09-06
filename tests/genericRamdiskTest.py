@@ -30,7 +30,7 @@ if sys.platform.startswith("darwin"):
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
-    from linuxTmpfsRamdisk import TmpfsRamDisk as RamDisk
+    from linuxTmpfsRamdisk import RamDisk
     from linuxTmpfsRamdisk import umount
 else:
     raise Exception("Damn it Jim!!! What OS is this???")

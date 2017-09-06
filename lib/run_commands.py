@@ -20,9 +20,17 @@ from subprocess import Popen, PIPE
 
 #from loggers import CyLogger
 from .loggers import LogPriority as lp
+from .loggers import CyLogger
 from .get_libc import getLibc
 
 def OSNotValidForRunWith(BaseException):
+    """
+    Custom Exception
+    """
+    def __init__(self, *args, **kwargs):
+        Exception.__init__(self, *args, **kwargs)
+
+def NotACyLoggerError(BaseException):
     """
     Custom Exception
     """
@@ -47,8 +55,11 @@ class RunWith(object):
 
     @author: Roy Nielsen
     """
-    def __init__(self, logger=False, dbmode=lp.INFO):
-        self.logger = logger
+    def __init__(self, logger, dbmode=lp.INFO):
+        if isinstance(logger, CyLogger):
+            self.logger = logger
+        else:
+            raise NotACyLoggerError("Passed in value for logger is invalid, try again.")
         self.command = None
         self.output = None
         self.error = None
@@ -704,12 +715,11 @@ class RunThread(threading.Thread) :
 
     @author: Roy Nielsen
     """
-    def __init__(self, command=[], logger=False) :
+    def __init__(self, command, logger) :
         """
         Initialization method
         """
         self.command = command
-        self.logger = logger
         self.retout = None
         self.reterr = None
         threading.Thread.__init__(self)
@@ -721,7 +731,10 @@ class RunThread(threading.Thread) :
             self.shell = False
             self.printcmd = self.command
 
-        self.logger = logger
+        if isinstance(logger, CyLogger):
+            self.logger = logger
+        else:
+            raise NotACyLoggerError("Passed in value for logger is invalid, try again.")
 
         self.logger.log(lp.INFO, "Initialized runThread...")
 
@@ -779,7 +792,7 @@ class RunThread(threading.Thread) :
 
 ##############################################################################
 
-def runMyThreadCommand(cmd=[], logger=False) :
+def runMyThreadCommand(cmd, logger) :
     """
     Use the RunThread class to get the stdout and stderr of a command
 
@@ -787,6 +800,8 @@ def runMyThreadCommand(cmd=[], logger=False) :
     """
     retval = None
     reterr = None
+    if not isinstance(logger, CyLogger):
+        raise NotACyLoggerError("Passed in value for logger is invalid, try again.")
     print str(cmd)
     print str(logger)
     if cmd and logger :

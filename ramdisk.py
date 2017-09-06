@@ -53,8 +53,8 @@ class RamDisk(object):
         linuxApplicableHere = self.chkApp.isApplicable(linuxApplicable)        
 
         if linuxApplicableHere:
-            from linuxTmpfsRamdisk import TmpfsRamDisk
-            self.ramdisk = TmpfsRamDisk(*args, **kwargs)
+            from linuxTmpfsRamdisk import RamDisk
+            self.ramdisk = RamDisk(*args, **kwargs)
         elif macApplicableHere:
             from macRamdisk import RamDisk
             self.ramdisk = RamDisk(*args, **kwargs)

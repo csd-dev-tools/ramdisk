@@ -10,7 +10,8 @@ import sys
 import inspect
 
 from ..loggers import LogPriority as lp
-from ..libHelperExceptions import UnsupportedOSError
+from ..loggers import CyLogger
+from ..libHelperExceptions import UnsupportedOSError, NotACyLoggerError
 
 
 class ManageUser(object):
@@ -19,13 +20,16 @@ class ManageUser(object):
 
     #----------------------------------------------------------------------
 
-    def __init__(self, logger=False):
+    def __init__(self, logger):
         """
         Class initialization method
         """
         #####
         # Set up logging
-        self.logger = logger
+        if isinstance(logger, CyLogger):
+            self.logger = logger
+        else:
+            raise NotACyLoggerError("Passed in value for logger is invalid, try again.")
         self.logger.log(lp.INFO, "Logger: " + str(self.logger))
 
         if sys.platform.lower() == "darwin":

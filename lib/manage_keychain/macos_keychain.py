@@ -749,7 +749,7 @@ class MacOSKeychain(MacOSUser, ManageKeychainTemplate):
         '''
         success = False
         stdout = False
-        name = name.strip()
+        #name = name.strip()
         keychain = keychain.strip()
         if not options:
             options = []

@@ -19,8 +19,8 @@ from subprocess import Popen
 
 ########## 
 # local app libraries
-from ..manage_user.parent_manage_user import ParentManageUser
-from ..manage_user.parent_manage_user import BadUserInfoError
+from ..manage_user.manage_user_template import ManageUserTemplate
+from ..manage_user.manage_user_template import BadUserInfoError
 from ..run_commands import RunWith
 from ..loggers import CyLogger
 from ..loggers import LogPriority as lp
@@ -49,7 +49,7 @@ class CreateHomeDirError(Exception):
         Exception.__init__(self, *args, **kwargs)
 
 
-class MacOSUser(ParentManageUser):
+class MacOSUser(ManageUserTemplate):
     """
     Class to manage users on Mac OS.
 
@@ -212,6 +212,9 @@ class MacOSUser(ParentManageUser):
         """
         """
         success = False
+        properties = 0
+        return success, properties
+    '''
         properties = {}
         userInfo = False
         if self.isSaneUserName(userName):
@@ -246,7 +249,6 @@ class MacOSUser(ParentManageUser):
                             else:
                                 propertyAttribute = propertyAttribute + ", " + line
         return success, {userName : properties }
-    '''
             try:
                 userInfo = output.split()[1]
             except (KeyError, IndexError), err:
@@ -257,7 +259,7 @@ class MacOSUser(ParentManageUser):
             raise BadUserInfoError("Need a valid user name...")
 
         return userInfo
-    '''
+        '''
     #----------------------------------------------------------------------
 
     def getUserShell(self, userName=""):

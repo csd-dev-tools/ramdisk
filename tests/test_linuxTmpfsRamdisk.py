@@ -31,7 +31,7 @@ if sys.platform.startswith("darwin"):
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
-    from linuxTmpfsRamdisk import TmpfsRamDisk as RamDisk
+    from linuxTmpfsRamdisk import RamDisk
     from linuxTmpfsRamdisk import umount
 
 class test_linuxTmpfsRamdisk(GenericRamdiskTest):

@@ -50,7 +50,7 @@ class RootAccessRequired(Exception):
         Exception.__init__(self, *args, **kwargs)
 
 
-class ParentManageUser(object):
+class ManageUserTemplate(object):
     """
     Class to manage user properties.
 
@@ -471,12 +471,12 @@ class ParentManageUser(object):
                                'family': ['linux']}
             #####
             # perform the isapplicable check
-            if checkApplicable.isapplicable(macApplicable):
+            if checkApplicable.isApplicable(macApplicable):
                 #####
                 # If in the correct group, success = True
                 if self.isUserInGroup(userName="", groupName="admin"):
                     success = True
-            elif checkApplicable.isapplicable(linuxApplicable):
+            elif checkApplicable.isApplicable(linuxApplicable):
                 #####
                 # If in the correct group, success = True
                 if self.isUserInGroup(userName="", groupName="wheel"):

@@ -108,7 +108,7 @@ class RamDiskFactory(object):
             elif self.myosfamily == "linux" and ramdiskType == "tmpfs":
                 #####
                 # Found Linux with a tmpfs ramdisk request.
-                from linuxTmpfsRamdisk import TmpfsRamDisk
+                from linuxTmpfsRamdisk import RamDisk
                 self.activeRamdisk = RamDisk(size, mountpoint, self.logger)
 
             else:

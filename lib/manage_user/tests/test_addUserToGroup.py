@@ -27,7 +27,7 @@ from lib.libHelperExceptions import NotValidForThisOS
 if sys.platform.startswith("darwin"):
     #####
     # For Mac
-    from lib.manage_user.macos_users import MacOSUser
+    from lib.manage_user.macos_user import MacOSUser
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
@@ -44,7 +44,7 @@ class test_addUserToGroup(unittest.TestCase):
         """
         # Start timer in miliseconds
         self.test_start_time = datetime.now()
-        self.logger = CrazyLogger()
+        self.logger = CyLogger()
         
         self.manage_user = MacOSUser()
         
@@ -89,7 +89,7 @@ class test_addUserToGroup(unittest.TestCase):
         """
         Final cleanup actions...
         """
-        self.logger = CrazyLogger()
+        self.logger = CyLogger()
         #####
         # capture end time
         test_end_time = datetime.now()
@@ -105,6 +105,6 @@ class test_addUserToGroup(unittest.TestCase):
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
-    logger = CrazyLogger()
+    logger = CyLogger()
     logger.initializeLogs()
     unittest.main()
