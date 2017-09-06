@@ -40,8 +40,6 @@ def getLibc(logger=False):
                 libc = ctypes.CDLL(path)
                 #print "     Found libc!!!"
                 break
-    else:
-        libc = False
     try:
         if libc:
             libc.sync()

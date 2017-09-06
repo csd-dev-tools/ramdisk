@@ -21,7 +21,7 @@ if sys.platform.startswith("darwin"):
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
-    from ramdisk.linuxTmpfsRamdisk import TmpfsRamDisk as RamDisk
+    from ramdisk.linuxTmpfsRamdisk import RamDisk
     from ramdisk.linuxTmpfsRamdisk import umount
 
 parser = OptionParser(usage="\n\n%prog [options]\n\n", version="0.8.6")

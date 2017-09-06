@@ -61,7 +61,7 @@ class MenuComponent(object):
         if self.isSaneAction(action):
             self.action = action
 
-        self.runner = RunWith()
+        self.runner = RunWith(logger)
         self.logger = CyLogger(debug_mode=True)
         self.logger.initializeLogs()
         
@@ -70,6 +70,8 @@ class MenuComponent(object):
         self.g_dict = {}
         self.action = False
         self.anchor = False
+        
+        self.previous = None
 
         self.run = runMyThreadCommand
 
@@ -494,4 +496,5 @@ if __name__ == "__main__" :
     print "### Ready To Work...                ###"
     print "======================================="
     print "---------------------------------------"
+
 
