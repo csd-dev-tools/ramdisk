@@ -16,11 +16,11 @@ import ctypes
 import select
 import termios
 import threading
+import traceback
 from subprocess import Popen, PIPE
 
-#from loggers import CyLogger
-from .loggers import LogPriority as lp
 from .loggers import CyLogger
+from .loggers import LogPriority as lp
 from .get_libc import getLibc
 
 def OSNotValidForRunWith(BaseException):
@@ -42,14 +42,23 @@ class RunWith(object):
     Class that will run commands in various ways.
 
     @method setCommand(self, command=[])
-    @method communicate(self)
-    @method wait(self)
-    @method timeout(self, seconds=0)
-    @method runAs(self, user="", password="")
-    @method runAsWithSudo(self, user="", password="")
     @method getStdout(self)
     @method getStderr(self)
     @method getReturnCode(self)
+    @method getReturns(self)
+    @method getNlogReturns(self)
+    @method getNprintReturns(self)
+    @method communicate(self)
+    @method wait(self)
+    @method waitNpassThruStdout(self)
+    @method killProc(self)
+    @method timeout(self, seconds=0)
+    @method runAs(self, user="", password="")
+    @method liftDown(self)
+    @method getecho(self)
+    @method waitnoecho(self)
+    @method runAsWithSudo(self, user="", password="")
+    @method runWithSudo(self, user="", password="")
 
     @WARNING - Known to work on Mac, may or may not work on other platforms
 
@@ -71,7 +80,7 @@ class RunWith(object):
         # setting up to call ctypes to do a filesystem sync
         self.libc = getLibc(self.logger)
 
-    def setCommand(self, command, env=False, myshell=False):
+    def setCommand(self, command, env=None, myshell=False, close_fds=False):
         """
         initialize a command to run
 
@@ -90,13 +99,18 @@ class RunWith(object):
             self.command = command
             self.printcmd = command
             success = True
+        if myshell and isinstance(myshell, bool):
+            self.myshell = myshell
         else:
-            self.logger.log(lp.INFO, "Damn it Jim! I can't obey a command I can't Grok!!")
-        #####
-        # Handle Popen's shell, or "myshell"...
-        self.myshell = myshell
-        self.environ = env
-        return success
+            self.myshell = False
+        if env and isinstance(env, dict):
+            self.environ = env
+        else:
+            self.environ = None
+        if close_fds and isinstance(close_fds, bool):
+            self.cfds = close_fds
+        else:
+            self.cfds = False
 
     ############################################################################
 
@@ -182,7 +196,10 @@ class RunWith(object):
         self.returncode = 999
         if self.command:
             try:
-                proc = Popen(self.command, stdout=PIPE, stderr=PIPE, shell=self.myshell)
+                proc = Popen(self.command, stdout=PIPE, stderr=PIPE,
+                             shell=self.myshell, 
+                             env=self.environ,
+                             close_fds=self.cfds)
                 self.libc.sync()
                 self.output, self.error = proc.communicate()
                 self.libc.sync()
@@ -190,6 +207,8 @@ class RunWith(object):
                 self.logger.log(lp.WARNING, "- Unexpected Exception: "  + \
                            str(err)  + " command: " + self.printcmd)
                 self.logger.log(lp.WARNING, "stderr: " + str(self.error))
+                self.logger.log(lp.WARNING, traceback.format_exc())
+                self.logger.log(lp.WARNING, str(err))
                 raise err
             else :
                 #self.logger.log(lp.DEBUG, self.printcmd + " Returned with error/returncode: " + str(proc.returncode))
@@ -214,18 +233,29 @@ class RunWith(object):
 
         @author: Roy Nielsen
         """
+        self.output = ''
+        self.error = ''
         if self.command :
             try:
                 proc = Popen(self.command,
-                             stdout=PIPE, stderr=PIPE, shell=self.myshell)
+                             stdout=PIPE, stderr=PIPE,
+                             shell=self.myshell,
+                             env=self.environ,
+                             close_fds=self.cfds)
                 proc.wait()
                 for line in proc.stdout.readline():
-                    self.output = self.output + line
+                    if line:
+                        self.output = self.output + str(line) + "\n"
+                """
                 for line in proc.stderr.readline():
-                    self.error = self.error + line
+                    if line:
+                        self.error = self.error + str(line)
+                """
             except Exception, err:
                 self.logger.log(lp.WARNING, "system_call_retval - Unexpected Exception: "  + \
-                                str(err)  + " command: " + str(self.printcmd))
+                           str(err)  + " command: " + str(self.printcmd))
+                self.logger.log(lp.WARNING, traceback.format_exc())
+                self.logger.log(lp.WARNING, str(err))
                 raise err
             else :
                 self.logger.log(lp.DEBUG, str(self.printcmd) + \
@@ -235,13 +265,109 @@ class RunWith(object):
             finally:
                 self.logger.log(lp.DEBUG, "Done with command: " + self.printcmd)
                 self.output = str(proc.stdout)
-                self.error = str(proc.stderr)
+                #self.error = str(proc.stderr)
                 self.returncode = str(proc.returncode)
         else :
             self.logger.log(lp.WARNING, "Cannot run a command that is empty...")
             self.stdout = None
             self.stderr = None
             self.returncode = None
+        return self.output, self.error, self.returncode
+
+    ############################################################################
+
+    def waitNpassThruStdout(self, chk_string=None, respawn=False):
+        """
+        Use the subprocess module to execute a command, returning
+        the output of the command
+        
+        Author: Roy Nielsen
+        """
+        self.output = ''
+        self.error = ''
+        self.retcode = 999
+        if self.command:
+            try:
+                proc = Popen(self.command, stdout=PIPE, stderr=PIPE,
+                             shell=self.myshell, 
+                             env=self.environ,
+                             close_fds=self.cfds)
+                if proc:
+                    while True:
+                        myout = proc.stdout.readline()
+                        if myout == '' and proc.poll() != None: 
+                            break
+                        tmpline = myout.strip()
+                        self.output += tmpline + "\n"
+
+                        if tmpline:
+                            self.logger.log(lp.DEBUG, str(tmpline))
+                        
+                        if isinstance(chk_string, str) :
+                            if not chk_string:
+                                continue
+                            else:
+                                if re.search(chk_string, tmpline):
+                                    #proc.stdout.close()
+                                    if respawn:
+                                        pass
+                                    else:
+                                        self.logger.log(lp.INFO, "chk_string found... exiting process.")
+                                    break
+                    while True:
+                        myerr = proc.stderr.readline()
+                        if myerr == '' and proc.poll() != None: 
+                            break
+                        tmpline = myerr.strip()
+                        self.error += tmpline + "\n"
+
+                        if tmpline:
+                            self.logger.log(lp.DEBUG, str(tmpline))
+                        
+                        if isinstance(chk_string, list) :
+                            if not chk_string:
+                                continue
+                            else:
+                                for mystring in chk_string :
+                                    if chk_string(chk_string, tmpline):
+                                        #proc.stdout.close()
+                                        if respawn:
+                                            pass
+                                        else:
+                                            self.logger.log(lp.INFO, "chk_string found... exiting process.")
+                                            break
+                            
+                    #self.error = "\n".join(proc.stderr.readlines())
+                proc.wait()
+                proc.stdout.close()
+
+            except Exception, err:
+                print "DANGER WILL ROBINSON!"
+                print str(err)
+
+                self.libc.sync()
+
+            except Exception, err:
+                trace = traceback.format_exc()
+                self.logger.log(lp.WARNING, "- Unexpected Exception: "  + \
+                           str(err)  + " command: " + self.printcmd)
+                self.logger.log(lp.WARNING, "stderr: " + str(self.error))
+                self.logger.log(lp.WARNING, str(trace))
+                raise
+            else :
+                self.logger.log(lp.DEBUG, self.printcmd + " Returned with error/returncode: " + str(proc.returncode))
+                self.logger.log(lp.DEBUG, self.printcmd + " Returned with error/returncode: " + str(self.output))
+                self.logger.log(lp.DEBUG, self.printcmd + " Returned with error/returncode: " + str(self.error))
+                self.retcode = str(proc.returncode)
+            finally:
+                self.logger.log(lp.DEBUG, "Done with command: " + self.printcmd)
+        else :
+            self.logger.log(lp.WARNING, "Cannot run a command that is empty...")
+            self.output = None
+            self.error = None
+            self.retcode = None
+
+        return self.output, self.error, self.retcode
 
     ############################################################################
 
@@ -283,6 +409,8 @@ class RunWith(object):
                 self.logger.log(lp.WARNING, "system_call_retval - Unexpected " + \
                             "Exception: "  + str(err)  + \
                             " command: " + self.printcmd)
+                self.logger.log(lp.WARNING, traceback.format_exc())
+                self.logger.log(lp.WARNING, str(err))
                 raise err
             else :
                 self.logger.log(lp.DEBUG, self.printcmd + \
@@ -374,7 +502,7 @@ class RunWith(object):
             output = output.strip()
             #log_message("Leaving runAs with: \"" + str(output) + "\"",
             #            "debug", message_level)
-            return output
+            return output, self.error, self.returncode
 
     ############################################################################
 
@@ -535,6 +663,8 @@ class RunWith(object):
                 (master, slave) = pty.openpty()
             except Exception, err:
                 self.logger.log(lp.WARNING, "Error trying to open pty: " + str(err))
+                self.logger.log(lp.WARNING, traceback.format_exc())
+                self.logger.log(lp.WARNING, str(err))
                 raise err
             else:
                 try:
@@ -544,6 +674,8 @@ class RunWith(object):
                 except Exception, err:
                     self.logger.log(lp.WARNING, "Error opening process to pty: " + \
                                 str(err))
+                    self.logger.log(lp.WARNING, traceback.format_exc())
+                    self.logger.log(lp.WARNING, str(err))
                     raise err
                 else:
                     #####
@@ -642,6 +774,8 @@ class RunWith(object):
                 (master, slave) = pty.openpty()
             except Exception, err:
                 self.logger.log(lp.WARNING, "Error trying to open pty: " + str(err))
+                self.logger.log(lp.WARNING, traceback.format_exc())
+                self.logger.log(lp.WARNING, str(err))
                 raise err
             else:
                 try:
@@ -650,6 +784,8 @@ class RunWith(object):
                 except Exception, err:
                     self.logger.log(lp.WARNING, "Error opening process to pty: " + \
                                 str(err))
+                    self.logger.log(lp.WARNING, traceback.format_exc())
+                    self.logger.log(lp.WARNING, str(err))
                     raise err
                 else:
                     #####
@@ -715,26 +851,28 @@ class RunThread(threading.Thread) :
 
     @author: Roy Nielsen
     """
-    def __init__(self, command, logger) :
+    def __init__(self, command=[], logger=False, myshell=False) :
         """
         Initialization method
         """
         self.command = command
+        self.logger = logger
         self.retout = None
         self.reterr = None
+        self.shell = myshell
         threading.Thread.__init__(self)
-
+        """
         if isinstance(self.command, types.ListType) :
             self.shell = True
             self.printcmd = " ".join(self.command)
         if isinstance(self.command, types.StringTypes) :
             self.shell = False
             self.printcmd = self.command
-
-        if isinstance(logger, CyLogger):
-            self.logger = logger
+        """
+        if not isinstance(logger, (logger, CyLogger)):
+            self.logger = CyLogger()
         else:
-            raise NotACyLoggerError("Passed in value for logger is invalid, try again.")
+            self.logger = logger
 
         self.logger.log(lp.INFO, "Initialized runThread...")
 
@@ -748,8 +886,9 @@ class RunThread(threading.Thread) :
                                         shell=self.shell)
             except Exception, err :
                 self.logger.log(lp.WARNING, "Exception trying to open: " + \
-                            str(self.printcmd))
-                self.logger.log(lp.WARNING, "Associated exception: " + str(err))
+                            str(self.command))
+                self.logger.log(lp.WARNING, traceback.format_exc())
+                self.logger.log(lp.WARNING, str(err))
                 raise err
             else :
                 try:
