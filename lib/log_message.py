@@ -56,8 +56,7 @@ def logMessage(message="", level="normal", priority="debug", syslog_level=None) 
             retcode = call(cmd_string, shell=True)
             if retcode < 0 :
                 print >> sys.stderr, \
-                         "logger Child was terminated by signal", \
-                        -retcode
+                         "logger Child was terminated by signal: ", str(retcode)
             else :
                 pass
 

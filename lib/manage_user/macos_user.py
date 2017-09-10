@@ -782,7 +782,7 @@ class MacOSUser(ManageUserTemplate):
         success = False
         reterr = ""
         if user:
-            cmd = ["/usr/sbin/createhomedir", "-c", " -u", + str(user)]
+            cmd = ["/usr/sbin/createhomedir", "-c", " -u", str(user)]
             self.runner.setCommand(cmd)
             self.runner.communicate()
             retval, reterr, retcode = self.runner.getNlogReturns()
