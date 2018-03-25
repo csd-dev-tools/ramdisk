@@ -36,7 +36,7 @@ import re
 import traceback
 from distutils.version import LooseVersion
 #--- non-native python libraries in this source tree
-from .loggers import LogPriority
+from . loggers import LogPriority
 
 
 class CheckApplicable(object):
@@ -364,3 +364,4 @@ class CheckApplicable(object):
         self.myosversion = self.environ.getosver()
         self.myostype = self.environ.getostype()
         self.fismacat = self.environ.getsystemfismacat()
+

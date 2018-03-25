@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 ###############################################################################
 #                                                                             #
 # Copyright 2015.  Los Alamos National Security, LLC. This material was       #
@@ -41,19 +42,27 @@ Created on Aug 24, 2010
 @change: 2017/03/07 - dkennel - added fisma risk level support
 @change: 2017.09/01 - rsn - taking out stonix specifics
 '''
+from __future__ import absolute_import
+#--- Native python libraries
 import os
 import re
-import platform
-import pwd
 import sys
 import socket
 import subprocess
+import types
+import platform
+import pwd
 import time
 
-VERSION = '0.0.1'
+try:
+    from localize import VERSION
+except:
+    VERSION = '0.0.1'
 
-# must be one of ['high', 'medium', 'low']
-FISMACAT = 'low'
+try:
+    from localize import FISMACAT
+except:
+    FISMACAT = 'low'
 
 if os.geteuid() == 0:
     try:
@@ -819,14 +828,25 @@ class Environment(object):
 
         #####
         # Set the rules & stonix_resources paths
-        # ##
-        # create the self.resources_path
-        self.resources_path = os.path.abspath(os.path.dirname(__file__))
-
-        #####
-        # create the self.rules_path
-        self.rules_path = self.resources_path + "/rules"
-
+        if re.search("stonix.app/Contents/MacOS$", self.script_path):
+            #####
+            # Find the stonix.conf file in the stonix.app/Contents/Resources
+            # directory
+            macospath = self.script_path
+            self.resources_path = os.path.join(self.script_path,
+                                               "stonix_resources")
+            self.rules_path = os.path.join(self.resources_path,
+                                           "rules")
+        else:
+            # ##
+            # create the self.resources_path
+            self.resources_path = os.path.join(self.script_path,
+                                               "stonix_resources")
+            # ##
+            # create the self.rules_path
+            self.rules_path = os.path.join(self.script_path,
+                                           "stonix_resources",
+                                           "rules")
         #####
         # Set the log file path
         if self.geteuid() == 0:
@@ -843,7 +863,26 @@ class Environment(object):
 
         #####
         # Set the configuration file path
-        self.conf_path = "/etc/stonix.conf"
+        if re.search("stonix.app/Contents/MacOS/stonix$", os.path.realpath(sys.argv[0])):
+            #####
+            # Find the stonix.conf file in the stonix.app/Contents/Resources
+            # directory
+            macospath = self.script_path
+            parents = macospath.split("/")
+            parents.pop()
+            parents.append("Resources")
+            resources_dir = "/".join(parents)
+            self.conf_path = os.path.join(resources_dir, "stonix.conf")
+        elif os.path.exists(os.path.join(self.script_path, "etc", "stonix.conf")):
+            self.conf_path = os.path.join(self.script_path, "etc", "stonix.conf")
+        elif re.search('pydev', script_path_zero) and re.search('stonix_resources', script_path_one):
+            print "INFO: Called by unit test"
+            srcpath = script_path_one.split('/')[:-2]
+            srcpath = '/'.join(srcpath)
+            self.conf_path = os.path.join(srcpath, 'etc', 'stonix.conf')
+            print self.conf_path
+        else:
+            self.conf_path = "/etc/stonix.conf"
 
     def determinefismacat(self):
         '''

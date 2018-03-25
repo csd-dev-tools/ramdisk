@@ -11,7 +11,10 @@ from subprocess import Popen, PIPE
 from optparse import OptionParser
 from optparse import Option, OptionValueError
 
-sys.path.append("..")
+mydir = os.path.dirname(os.path.abspath(__file__))
+parentdir = "/" + "/".join(mydir.split("/")[:-1])
+print parentdir
+sys.path.append(parentdir)
 
 from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
@@ -27,14 +30,14 @@ def getRecursiveTree(targetRootDir="."):
     filesList = []
     for root, dirs, files in os.walk(targetRootDir):
         for myfile in files:
-            if re.search(".+\.py$", myfile): 
+            if re.search(".+\.py$", myfile):
                 filesList.append(os.path.abspath(os.path.join(root, myfile)))
     return filesList
 
 def getDirList(targetDir="."):
     filesList = []
     for myfile in os.listdir(targetDir):
-        if re.search(".+\.py$", myfile): 
+        if re.search(".+\.py$", myfile):
             filesList.append(os.path.abspath(os.path.join(targetDir, myfile)))
     return filesList
 
@@ -95,7 +98,7 @@ def pylint_test_template(*args):
     return foo
 
 
-class test_with_pylint_errors(unittest.TestCase):
+class test_with_pylint(unittest.TestCase):
     def assert_pylint_error(self, myfile, lineNum, text):
         self.assertTrue(False, myfile + ": (" + str(lineNum) + ") " + text)
 
@@ -140,7 +143,7 @@ if __name__=="__main__":
                       dest="excludeFiles",
                       metavar="EXCLUDEFILES",
                       default=[],
-                      help="comma separated list of strings to use to exclude lint errors.  Also can have multiple -f, each with it's own file name string to exclude.")
+                      help="comma separated list of files to use to exclude lint errors.  Also can have multiple -f, each with it's own file name string to exclude.")
 
     parser.add_option("-l", "--exclude_lines_with",
                       action="extend", type="string",
@@ -157,11 +160,11 @@ if __name__=="__main__":
                       default="",
                       help="The root of a directory to recurse and check all '*.py' files")
 
-    parser.add_option("--dir", dest="dirToCheck",
+    parser.add_option("-d", "--dir-to-check", dest="dirToCheck",
                       default="",
                       help="Name of the directory to look at for '*.py' files (not recursive)")
 
-    parser.add_option("-d", "--debug", action="store_true", dest="debug",
+    parser.add_option("--debug", action="store_true", dest="debug",
                       default=0, help="Print debug messages")
 
     parser.add_option("-v", "--verbose", action="store_true",
@@ -210,27 +213,27 @@ if __name__=="__main__":
                 excludeFiles = confFileData['excludeFiles']
             except ValueError:
                 excludeFiles = []
-            
+
             try:
                 doFiles = confFileData['doFiles']
             except ValueError:
                 doFiles = []
-            
+
             try:
                 excludeLinesWith = confFileData['excludeLinesWith']
             except ValueError:
                 excludeLinesWith = []
-            
+
             try:
                 recursiveTree = confFileData['recursiveTree']
             except ValueError:
                 recursiveTree = ""
-            
+
             try:
                 dirToCheck = confFileData['dirToCheck']
             except ValueError:
                 dirToCheck = ""
-            
+
             try:
                 if re.match("^True$", confFileData['verbose']):
                     verbose = True
@@ -238,7 +241,7 @@ if __name__=="__main__":
                     verbose = False
             except ValueError:
                 verbose = False
-            
+
             try:
                 if re.match("^True$", confFileData['debug']):
                     debug = True
@@ -276,9 +279,9 @@ if __name__=="__main__":
         test_name = "test_with_pylint_{0}_{1}_{2}".format("_".join("_".join(myfile.split("/")).split(".")), lineNum, "_".join("_".join(text.split(" ")).split("'")))
         #print test_name
         error_case = pylint_test_template(*specificError)
-        setattr(test_with_pylint_errors, test_name, error_case)
+        setattr(test_with_pylint, test_name, error_case)
 
-    test_suite.addTest(unittest.makeSuite(test_with_pylint_errors))
+    test_suite.addTest(unittest.makeSuite(test_with_pylint))
     runner = unittest.TextTestRunner()
     testResults  = runner.run(test_suite)  # output goes to stderr
 
@@ -293,5 +296,5 @@ else:
         test_name = "test_with_pylint_{0}_{1}_{2}".format("_".join("_".join(myfile.split("/")).split(".")), lineNum, "_".join("_".join(text.split(" ")).split("'")))
         #print test_name
         error_case = pylint_test_template(*specificError)
-        setattr(test_with_pylint_errors, test_name, error_case)
+        setattr(test_with_pylint, test_name, error_case)
 
