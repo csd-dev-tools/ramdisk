@@ -9,6 +9,7 @@ Test harness creating a test suite, and running it.
 import os
 import re
 import sys
+import traceback
 import unittest
 from optparse import OptionParser, SUPPRESS_HELP, OptionValueError, Option
 
@@ -27,7 +28,7 @@ class TestResultsErrors(BaseException):
     @author: Roy Nielsen
     """
     def __init__(self, *args, **kwargs):
-        Exception.__init__(self, *args, **kwargs)
+        BaseException.__init__(self, *args, **kwargs)
 
 ###########################################################################
 
@@ -41,7 +42,7 @@ class BuildAndRunSuite(object):
         else:
             self.logger = CyLogger()
         self.module_version = '20160224.032043.009191'
-        self.prefix=[]
+        self.prefix = []
 
     ##############################################
 
@@ -52,7 +53,7 @@ class BuildAndRunSuite(object):
         if prefix and isinstance(prefix, list):
             self.prefix = prefix
         else:
-            self.prefix=["test_"]
+            self.prefix=["test_", "Test_"]
 
     ##############################################
 
@@ -70,9 +71,10 @@ class BuildAndRunSuite(object):
                 pycfile = os.path.join("./tests/", test_name + ".pyc")
                 if os.path.exists(pycfile):
                     os.unlink(pycfile)
-                elif re.match("^test_.+.py$", check_file):
-                    print "Loading test: " + str(check_file)
-                    test_list.append(os.path.join("./tests/", check_file))
+                for item in self.prefix:
+                    if re.match("^%s.+\.py$"%item, check_file):
+                        print "Loading test: " + str(check_file)
+                        test_list.append(os.path.join("./tests/", check_file))
             print str(test_list)
 
         return test_list
@@ -107,18 +109,22 @@ class BuildAndRunSuite(object):
             test_name = str(test_name).split(".")[0]
             self.logger.log(lp.DEBUG, "test_name: " + str(test_name))
             test_name_import_path = ".".join([self.test_dir_name, test_name])
-            self.logger.log(lp.DEBUG, "test_name_import_path: " + str(test_name_import_path))
+            self.logger.log(lp.DEBUG, "test_name_import_path: " +
+                            str(test_name_import_path))
 
-            ################################################
-            # Test class needs to be named the same as the
-            #   filename for this to work.
-            # import the file named in "test_name" variable
-            module_to_run = __import__(test_name_import_path, fromlist=[test_name], level=-1)
-            # getattr(x, 'foobar') is equivalent to x.foobar
-            test_to_run = getattr(module_to_run, test_name)
-            # Add the test class to the test suite
-            self.test_suite.addTest(unittest.makeSuite(test_to_run))
-
+            try:
+                ################################################
+                # Test class needs to be named the same as the
+                #   filename for this to work.
+                # import the file named in "test_name" variable
+                module_to_run = __import__(test_name_import_path, 
+                                           fromlist=test_name, level=-1)
+                # getattr(x, 'foobar') is equivalent to x.foobar
+                test_to_run = getattr(module_to_run, test_name)
+                # Add the test class to the test suite
+                self.test_suite.addTest(unittest.makeSuite(test_to_run))
+            except AttributeError, err:
+                pass
         #####
         # calll the run_action to execute the test suite
         self.run_action()
@@ -130,10 +136,7 @@ class BuildAndRunSuite(object):
         Run the Suite.
         """
         runner = unittest.TextTestRunner()
-        testResults  = runner.run(self.test_suite)
-        
-        if testResults.errors:
-            raise TestResultsErrors(str(testResults.error))
+        runner.run(self.test_suite)
 
 ###############################################################################
 
@@ -224,8 +227,9 @@ if __name__ == "__main__":
     if options.prefix:
         prefix = options.prefix
     else:
-        prefix = ["test_"]
+        prefix = ["test_", "Test_"]
 
 
     bars = BuildAndRunSuite(logger)
+    bars.setPrefix(prefix)
     bars.run_suite(modules)
