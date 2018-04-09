@@ -598,18 +598,15 @@ class MacOSUser(ManageUserTemplate):
             self.logger.log(lp.INFO, "check password...")
         else:
             
-            self.runner.setCommand(['/bin/echo', 'HelloWorld'])
-            output, error, retcode = self.runner.runAs(user.strip(), password.strip())
+            self.runner.setCommand(['/bin/echo', 'hello world'])
             
-            #self.logger.log(lp.DEBUG, "Output: " + str(output.strip()))
+            output, error, retcode = self.runWith.runAs(user, password)
             
-            if not retcode:
+            self.logger.log(lp.DEBUG, "Output: " + str(output.strip()))
+            
+            if re.match("^hello world$", output.strip()):
                 authenticated = True
 
-        self.logger.log(lp.DEBUG, "output: " + str(output))
-        self.logger.log(lp.DEBUG, "error: " + str(error))
-        self.logger.log(lp.DEBUG, "retcode: " + str(retcode))
-        self.logger.log(lp.DEBUG, "authenticated: " + str(authenticated))
         return authenticated
 
     #----------------------------------------------------------------------
@@ -877,6 +874,8 @@ class MacOSUser(ManageUserTemplate):
             except:
                 success = False
                 self.logger.log(lp.INFO, "Exception attempting to chown...")
+                self.logger.log(lp.WARNING, traceback.format_exc())
+                self.logger.log(lp.WARNING, str(err))
                 raise err
             else:
                 success = True
@@ -932,7 +931,8 @@ class MacOSUser(ManageUserTemplate):
                 shutil.rmtree("/Users/" + str(user))
             except IOError or OSError, err:
                 self.logger.log(lp.INFO, "Exception trying to remove user home...")
-                self.logger.log(lp.INFO, "Exception: " + str(err))
+                self.logger.log(lp.WARNING, traceback.format_exc())
+                self.logger.log(lp.WARNING, str(err))
                 raise err
             else:
                 success = True

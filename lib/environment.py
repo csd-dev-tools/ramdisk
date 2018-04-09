@@ -50,10 +50,16 @@ import socket
 import subprocess
 import time
 
-VERSION = '0.0.1'
+try:
+    from localize import VERSION
+except:
+    VERSION = '0.0.1'
 
-# must be one of ['high', 'medium', 'low']
-FISMACAT = 'low'
+# FISMACAT must be one of ['high', 'medium', 'low']
+try:
+    from localize import FISMACAT
+except:
+    FISMACAT = 'low'
 
 if os.geteuid() == 0:
     try:

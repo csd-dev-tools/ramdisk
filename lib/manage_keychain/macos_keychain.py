@@ -13,7 +13,7 @@ from ..run_commands import RunWith
 from ..loggers import CyLogger
 from ..loggers import LogPriority as lp
 from ..manage_user.macos_user import MacOSUser
-from ..manage_keychain.manage_keychain_template import ManageKeychainTemplate
+from .manage_keychain_template import ManageKeychainTemplate
 
 class UnsupportedSecuritySubcommand(Exception):
     """
@@ -37,8 +37,6 @@ class MacOSKeychain(MacOSUser, ManageKeychainTemplate):
         if 'logDispatcher' not in kwargs:
             raise ValueError("Variable 'logDispatcher' a required parameter for " + str(self.__class__.__name__))
         super(MacOSKeychain, self).__init__(**kwargs)
-        #self.logger = CyLogger(debug_mode=True)
-        #self.logger.initializeLogs(logdir="/tmp", filename="kch", extension_type="none", myconsole=True)
         
         self.mgr = "/usr/bin/security"
         self.userName = ""
@@ -140,6 +138,7 @@ class MacOSKeychain(MacOSUser, ManageKeychainTemplate):
         error = ""
         returncode = ""
         uid = os.getuid()
+
         #####
         # Make sure the command dictionary was properly formed, as well as
         # returning the formatted subcommand list

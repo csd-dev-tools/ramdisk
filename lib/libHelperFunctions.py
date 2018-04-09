@@ -66,6 +66,8 @@ def get_console_user():
     except Exception, err:
         logger.log(lp.VERBOSE, "Exception trying to get the console user...")
         logger.log(lp.VERBOSE, "Associated exception: " + str(err))
+        logger.log(lp.WARNING, traceback.format_exc())
+        logger.log(lp.WARNING, str(err))
         raise err
     else:
         """
@@ -279,4 +281,20 @@ def waitnoecho (fileDescriptor, timeout=3):
         if timeout is not None:
             timeout = end_time - time.time()
         time.sleep(0.1)
+
+###########################################################################
+
+def isSaneFilePath(filepath):
+    """
+    Check for a good file path in the passed in string.
+    
+    @author: Roy Nielsen
+    """
+    sane = False
+    if filepath and isinstance(filepath, basestring):
+        if re.match("^[A-Za-z0-9_\-/\.]*", filepath):
+            sane = True
+    return sane
+
+###########################################################################
 

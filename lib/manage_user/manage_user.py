@@ -33,9 +33,9 @@ class ManageUser(object):
         self.logger.log(lp.INFO, "Logger: " + str(self.logger))
 
         if sys.platform.lower() == "darwin":
-            from ..manage_user import macos_user 
+            from .macos_user import MacOSUser 
             # import lib.manage_user.macos_user
-            self.userMgr = macos_user.MacOSUser(logDispatcher=self.logger)
+            self.userMgr = MacOSUser(logDispatcher=self.logger)
         else:
             raise UnsupportedOSError("This operating system is not supported...")
 
@@ -61,6 +61,8 @@ class ManageUser(object):
             functionName = str(inspect.stack()[2][3])
             lineNumber = str(inspect.stack()[2][2])
         except Exception, err:
+            logger.log(lp.WARNING, traceback.format_exc())
+            logger.log(lp.WARNING, str(err))
             raise err
         else:
             self.logger.log(lp.DEBUG, "called by: " + \
