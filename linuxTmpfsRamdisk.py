@@ -78,7 +78,7 @@ class RamDisk(RamDiskTemplate):
     mount -t tmpfs -o size=512m tmpfs /mnt/ramdisk
 
     """
-    def __init__(self, size=0, mountpoint="",  logger=False,
+    def __init__(self, size, mountpoint,  logger,
                  mode=700, uid=None, gid=None,
                  fstype="tmpfs", nr_inodes=None, nr_blocks=None):
         """

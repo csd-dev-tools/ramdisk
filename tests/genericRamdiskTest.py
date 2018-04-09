@@ -17,7 +17,7 @@ from datetime import datetime
 #--- non-native python libraries in this source tree
 from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
-from lib.get_libc import getLibc
+from lib.getLibc import getLibc
 from tests.genericTestUtilities import GenericTestUtilities
 #####
 # Load OS specific Ramdisks
@@ -60,7 +60,7 @@ class GenericRamdiskTest(unittest.TestCase, GenericTestUtilities):
         #Calculate size of ramdisk to make for this unit test.
         size_in_mb = 1800
         ramdisk_size = size = size_in_mb
-        self.mnt_pnt_requested = ""
+        self.mnt_pnt_requested = "testmntpnt"
 
         self.success = False
         self.mountPoint = ""
@@ -68,7 +68,7 @@ class GenericRamdiskTest(unittest.TestCase, GenericTestUtilities):
         self.mnt_pnt_requested = False
 
         # get a ramdisk of appropriate size, with a secure random mountpoint
-        self.my_ramdisk = RamDisk(size=str(ramdisk_size), logger=self.logger)
+        self.my_ramdisk = RamDisk(str(ramdisk_size), self.mnt_pnt_requested, logger=self.logger)
         (self.success, self.mountPoint, self.ramdiskDev) = self.my_ramdisk.getData()
         self.logger.log(lp.WARNING, str(self.success) + " : " + str(self.mountPoint) + " : " + str(self.ramdiskDev))
         self.mount = self.mountPoint
