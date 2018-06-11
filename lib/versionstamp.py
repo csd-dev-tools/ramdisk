@@ -12,10 +12,8 @@ import sys
 import argparse
 from datetime import datetime
 
-
-
-from loggers import CyLogger
-from loggers import LogPriority as lp
+from . loggers import CyLogger
+from . loggers import LogPriority as lp
 
 class SedFile4VersionStamp(object):
     def __init__(self, files=[], logger=None):

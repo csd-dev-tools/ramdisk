@@ -11,6 +11,7 @@ import sys
 import time
 import ctypes
 import termios
+import traceback
 from subprocess import Popen, STDOUT, PIPE
 
 #--- non-native python libraries in this source tree

@@ -26,7 +26,7 @@ if sys.platform.startswith("darwin"):
     # For Mac
     from macRamdisk import RamDisk
     from macRamdisk import detach
-    from macRamdisk import unmount
+    from macRamdisk import umount
 elif sys.platform.startswith("linux"):
     #####
     # For Linux

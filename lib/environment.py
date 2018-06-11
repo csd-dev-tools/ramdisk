@@ -56,14 +56,14 @@ import time
 
 try:
     from localize import VERSION
-except:
+except ImportError or AssertionError:
     VERSION = '0.0.1'
 
 # FISMACAT must be one of ['high', 'medium', 'low']
 
 try:
     from localize import FISMACAT
-except:
+except ImportError or AssertionError:
     FISMACAT = 'low'
 
 if os.geteuid() == 0:
@@ -92,6 +92,10 @@ class Environment(object):
         self.ipaddress = ''
         self.macaddress = ''
         self.osversion = ''
+        self.major_ver = ''
+        self.minor_ver = ''
+        self.trivial_ver = ''
+        self.systemtype = ''
         self.numrules = 0
         self.version = VERSION
         self.euid = os.geteuid()
@@ -114,6 +118,91 @@ class Environment(object):
         self.systemfismacat = 'low'
         self.determinefismacat()
         self.collectinfo()
+
+    def setsystemtype(self):
+        '''
+        determine whether the current system is based on:
+        launchd
+        systemd
+        sysvinit (init)
+        or upstart
+        set the variable self.systemtype equal to the result
+
+        @author: Breen Malmberg
+        '''
+
+        validtypes = ['launchd', 'systemd', 'init', 'upstart']
+        cmdlocs = ["/usr/bin/ps", "/bin/ps"]
+        cmdbase = ""
+        cmd = ""
+
+        # buld the command
+        for cl in cmdlocs:
+            if os.path.exists(cl):
+                cmdbase = cl
+        if cmdbase:
+            cmd = cmdbase + " -p1"
+
+        try:
+
+            if cmd:
+                # run the command
+                cmdoutput = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, close_fds=True)
+                outputlines = cmdoutput.stdout.readlines()
+                for line in outputlines:
+                    for vt in validtypes:
+                        if re.search(vt, line, re.IGNORECASE):
+                            self.systemtype = vt
+
+            else:
+                print str(__name__) + ":Unable to determine systemtype. Required utility 'ps' does not exist on this system"
+        except OSError:
+            print str(__name__) + ":Unable to determine systemtype. Required utility 'ps' does not exist on this system"
+
+        if self.systemtype not in validtypes:
+            print str(__name__) + ":This system is based on an unknown architecture"
+        else:
+            print str(__name__) + ":Determined that this system is based on " + str(self.systemtype) + " architecture"
+
+    def getsystemtype(self):
+        '''
+        return the systemtype - either:
+        launchd, systemd, init, or upstart
+        (could potentially return a blank string)
+
+        @return: self.systemtype
+        @rtype: string
+
+        @author: Breen Malmberg
+        '''
+
+        return self.systemtype
+
+    def setinstallmode(self, installmode):
+        """
+        Set the install mode bool value. Should be true if the prog should run
+        in install mode.
+
+        @param bool: installmode
+        @return: void
+        @author: D. Kennel
+        """
+        try:
+            if type(installmode) is types.BooleanType:
+                self.installmode = installmode
+        except (NameError):
+            # installmode was undefined
+            pass
+
+    def getinstallmode(self):
+        """
+        Return the current value of the install mode bool. Should be true if
+        the program is to run in install mode.
+
+        @return: bool : installmode
+        @author: D. Kennel
+        """
+        return self.installmode
 
     def setverbosemode(self, verbosemode):
         """
@@ -271,6 +360,7 @@ class Environment(object):
         self.guessnetwork()
         self.collectpaths()
         self.determinefismacat()
+        self.setsystemtype()
 
     def discoveros(self):
         """
@@ -281,8 +371,8 @@ class Environment(object):
         # Alternative (better) implementation for Linux
         if os.path.exists('/usr/bin/lsb_release'):
             proc = subprocess.Popen('/usr/bin/lsb_release -dr',
-                                  shell=True, stdout=subprocess.PIPE,
-                                  close_fds=True)
+                                    shell=True, stdout=subprocess.PIPE,
+                                    close_fds=True)
             description = proc.stdout.readline()
             release = proc.stdout.readline()
             description = description.split()
@@ -336,6 +426,24 @@ class Environment(object):
                 else:
                     index = index + 1
             self.osversion = osver
+
+        # Breen Malmberg added support for os-release file
+        # method of getting version information
+        elif os.path.exists('/etc/os-release'):
+            relfile = open('/etc/os-release', 'r')
+            contentlines = relfile.readlines()
+            relfile.close()
+            for line in contentlines:
+                if re.search('VERSION\=', line, re.IGNORECASE):
+                    sline = line[+8:].split()
+                    sline[0] = sline[0].replace('"', '')
+                    self.osversion = sline[0]
+                elif re.search('NAME\=', line, re.IGNORECASE):
+                    sline = line[+5:].split()
+                    sline[0] = sline[0].replace('"', '')
+                    self.operatingsystem = sline[0]
+            self.osreportstring = self.operatingsystem +  ' ' + self.osversion
+
         elif os.path.exists('/usr/bin/sw_vers'):
             proc1 = subprocess.Popen('/usr/bin/sw_vers -productName',
                                      shell=True, stdout=subprocess.PIPE,
@@ -349,6 +457,7 @@ class Environment(object):
             release = release.strip()
             self.operatingsystem = description
             self.osversion = release
+
             proc3 = subprocess.Popen('/usr/bin/sw_vers -buildVersion',
                                      shell=True, stdout=subprocess.PIPE,
                                      close_fds=True)
@@ -356,6 +465,60 @@ class Environment(object):
             build = build.strip()
             opsys = description + ' ' + release + ' ' + build
             self.osreportstring = opsys
+
+    def getosmajorver(self):
+        '''
+        return the major revision number of the 
+        OS version as a string
+
+        @return: self.major_ver
+        @rtype: string
+        @author: Breen Malmberg
+        '''
+
+        ver = self.getosver()
+        try:
+            self.major_ver = ver.split('.')[0]
+        except IndexError:
+            self.major_ver = ver
+
+        return self.major_ver
+
+    def getosminorver(self):
+        '''
+        return the minor revision number of the 
+        OS version as a string
+
+        @return: self.minor_ver
+        @rtype: string
+        @author: Breen Malmberg
+        '''
+
+        ver = self.getosver()
+        try:
+            self.minor_ver = ver.split('.')[1]
+        except IndexError:
+            self.minor_ver = ver
+
+        return self.minor_ver
+
+    def getostrivialver(self):
+        '''
+        return the trivial revision number of the 
+        OS version as a string
+
+        @return: self.trivial_ver
+        @rtype: string
+        @author: Breen Malmberg
+        '''
+
+        ver = self.getosver()
+        try:
+            self.trivial_ver = ver.split('.')[2]
+        except IndexError:
+            self.trivial_ver = ver
+
+        return self.trivial_ver
 
     def setosfamily(self):
         """
@@ -435,10 +598,12 @@ class Environment(object):
 
         @return: string - ipaddress
         @author: dkennel
+        @change: 2017/9/20 - bgonz12 - Changed implementation to not branch
+                    conditionally by OS, but to branch by file system searches.
         """
         ipaddr = '127.0.0.1'
         gateway = ''
-        if sys.platform == 'linux2':
+        if os.path.exists('/usr/bin/lsb_release'):
             try:
                 routecmd = subprocess.Popen('/sbin/route -n', shell=True,
                                             stdout=subprocess.PIPE,
@@ -447,7 +612,7 @@ class Environment(object):
             except OSError:
                 return ipaddr
             for line in routedata:
-                if re.search('^default', line):
+                if re.search('^default|^0.0.0.0|^\*', line):
                     line = line.split()
                     try:
                         gateway = line[1]
@@ -517,46 +682,46 @@ class Environment(object):
 
         @return: list of strings
         @author: dkennel
+        @change: 2017/9/22 - bgonz12 - Changed implementation to use the ip
+                    command before trying to use the ifconfig command.
         """
         iplist = []
-        if sys.platform == 'linux2':
-            try:
-                ifcmd = subprocess.Popen('/sbin/ifconfig', shell=True,
-                                         stdout=subprocess.PIPE,
-                                         close_fds=True)
-                ifdata = ifcmd.stdout.readlines()
-            except OSError:
-                return iplist
-            for line in ifdata:
-                if re.search('inet addr:', line):
-                    try:
-                        line = line.split()
-                        addr = line[1]
-                        addr = addr.split(':')
-                        addr = addr[1]
-                        iplist.append(addr)
-                    except IndexError:
-                        continue
-        else:
-            try:
-                if os.path.exists('/usr/sbin/ifconfig'):
-                    cmd = '/usr/sbin/ifconfig -a'
-                else:
-                    cmd = '/sbin/ifconfig -a'
-                ifcmd = subprocess.Popen(cmd, shell=True,
-                                         stdout=subprocess.PIPE,
-                                         close_fds=True)
-                ifdata = ifcmd.stdout.readlines()
-            except OSError:
-                return iplist
-            for line in ifdata:
-                if re.search('inet ', line):
-                    try:
-                        line = line.split()
-                        addr = line[1]
-                        iplist.append(addr)
-                    except IndexError:
-                        continue
+        cmd = ''
+        if os.path.exists('/usr/sbin/ip'):
+            cmd = '/usr/sbin/ip address'
+        elif os.path.exists('/sbin/ip'):
+            cmd = '/sbin/ip address'
+        elif os.path.exists('/usr/sbin/ifconfig'):
+            cmd = '/usr/sbin/ifconfig -a'
+        elif os.path.exists('/sbin/ifconfig'):
+            cmd = '/sbin/ifconfig -a'
+        try:
+            ifcmd = subprocess.Popen(cmd, shell=True,
+                                     stdout=subprocess.PIPE,
+                                     close_fds=True)
+            ifdata = ifcmd.stdout.readlines()
+        except(OSError):
+            # TODO - Need error handler
+            raise
+        for line in ifdata:
+            if re.search('inet addr:', line):
+                try:
+                    line = line.split()
+                    addr = line[1]
+                    addr = addr.split(':')
+                    addr = addr[1]
+                    iplist.append(addr)
+                except(IndexError):
+                    continue
+            elif re.search('inet ', line):
+                try:
+                    line = line.split()
+                    addr = line[1]
+                    addr = addr.split('/')
+                    addr = addr[0]
+                    iplist.append(addr)
+                except(IndexError):
+                    continue
         return iplist
 
     def get_system_serial_number(self):
@@ -734,6 +899,7 @@ class Environment(object):
                     chassistype = chassis[key]['data']['Type']
                 if chassistype in dmitypes:
                     ismobile = True
+
             except(IndexError, KeyError):
                 # got unexpected data back from dmidecode
                 pass
@@ -765,10 +931,10 @@ class Environment(object):
                                     stdout=subprocess.PIPE, close_fds=True)
             netdata = proc.stdout.readlines()
             for line in netdata:
-                print "processing: " + line
+                # print "processing: " + line
                 match = re.search(littlesnitch, line)
                 if match is not None:
-                    print 'LittleSnitch Is Running'
+                    # print 'LittleSnitch Is Running'
                     issnitchactive = True
                     break
         return issnitchactive
@@ -798,16 +964,18 @@ class Environment(object):
         #####
         # Check which argv variable has the script name -- required to allow
         # for using the eclipse debugger.
-        if re.search("stonix.py$", script_path_zero) or re.search("stonix$", script_path_zero):
+        if re.search("stonix.py$", script_path_zero) or \
+           re.search("stonix$", script_path_zero):
             #####
             # Run normally
             self.script_path = os.path.dirname(os.path.realpath(sys.argv[0]))
         else:
             #####
-            # Run with Eclipse debugger -- Eclipse debugger will never try to run
-            # the "stonix" binary blob created by pyinstaller, so don't include
-            # here.
-            #print "DEBUG: Environment.collectpaths: unexpected argv[0]: " + str(sys.argv[0])
+            # Run with Eclipse debugger -- Eclipse debugger will never try
+            # to run the "stonix" binary blob created by pyinstaller,
+            # so don't include here.
+            # print "DEBUG: Environment.collectpaths: unexpected argv[0]" + \
+            #       ": " + str(sys.argv[0])
             if re.search("stonix.py$", script_path_one) or \
                re.search("stonixtest.py$", script_path_one):
                 script = script_path_one.split("/")[-1]
@@ -830,25 +998,15 @@ class Environment(object):
 
         #####
         # Set the rules & stonix_resources paths
-        if re.search("stonix.app/Contents/MacOS$", self.script_path):
-            #####
-            # Find the stonix.conf file in the stonix.app/Contents/Resources
-            # directory
-            macospath = self.script_path
-            self.resources_path = os.path.join(self.script_path,
-                                               "stonix_resources")
-            self.rules_path = os.path.join(self.resources_path,
-                                           "rules")
-        else:
-            # ##
-            # create the self.resources_path
-            self.resources_path = os.path.join(self.script_path,
-                                               "stonix_resources")
-            # ##
-            # create the self.rules_path
-            self.rules_path = os.path.join(self.script_path,
-                                           "stonix_resources",
-                                           "rules")
+        # ##
+        # create the self.resources_path
+        self.resources_path = os.path.join(self.script_path,
+                                           "stonix_resources")
+        # ##
+        # create the self.rules_path
+        self.rules_path = os.path.join(self.script_path,
+                                       "stonix_resources",
+                                       "rules")
         #####
         # Set the log file path
         if self.geteuid() == 0:
@@ -865,26 +1023,7 @@ class Environment(object):
 
         #####
         # Set the configuration file path
-        if re.search("stonix.app/Contents/MacOS/stonix$", os.path.realpath(sys.argv[0])):
-            #####
-            # Find the stonix.conf file in the stonix.app/Contents/Resources
-            # directory
-            macospath = self.script_path
-            parents = macospath.split("/")
-            parents.pop()
-            parents.append("Resources")
-            resources_dir = "/".join(parents)
-            self.conf_path = os.path.join(resources_dir, "stonix.conf")
-        elif os.path.exists(os.path.join(self.script_path, "etc", "stonix.conf")):
-            self.conf_path = os.path.join(self.script_path, "etc", "stonix.conf")
-        elif re.search('pydev', script_path_zero) and re.search('stonix_resources', script_path_one):
-            print "INFO: Called by unit test"
-            srcpath = script_path_one.split('/')[:-2]
-            srcpath = '/'.join(srcpath)
-            self.conf_path = os.path.join(srcpath, 'etc', 'stonix.conf')
-            print self.conf_path
-        else:
-            self.conf_path = "/etc/stonix.conf"
+        self.conf_path = "/etc/stonix.conf"
 
     def determinefismacat(self):
         '''
@@ -973,7 +1112,7 @@ class Environment(object):
         @param num: int - number of rules that apply to this host
         @author: dkennel
         '''
-        if isinstance(int, num):
+        if not isinstance(num, int):
             raise TypeError('Number of rules must be an integer')
         elif num < 0:
             raise ValueError('Number of rules must be a positive integer')

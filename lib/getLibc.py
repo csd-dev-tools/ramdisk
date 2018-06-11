@@ -1,13 +1,24 @@
+'''
+'''
 from __future__ import absolute_import
 
-#--- Native python libraries
+# --- Native python libraries
 import os
-import sys
 import ctypes
+
+# --- non-native python libraries in this source tree
+
+
+class LibcNotAvailableError(BaseException):
+    """
+    Custom Exception
+    """
+    def __init__(self, *args, **kwargs):
+        BaseException.__init__(self, *args, **kwargs)
 
 ##############################################################################
 
-def getLibc(logger=False):
+def getLibc( ):
     """
     Acquire a reference to the system libc, initially to access the
     filesystem "sync" function.
@@ -17,18 +28,13 @@ def getLibc(logger=False):
 
     @author: Roy Nielsen
     """
-    osFamily = sys.platform.lower().strip()
-    #print "---==## OS Family: " + str(osFamily) + " #==---"
-
-    if osFamily and  osFamily.startswith("darwin"):
-        #####
-        # For Mac
-        try:
-            libc = ctypes.CDLL("/usr/lib/libc.dylib")
-        except:
-            raise Exception("DAMN IT JIM!!!")
-
-    elif osFamily and  osFamily.startswith("linux"):
+    # libc = True
+    #####
+    # For Mac
+    try:
+        libc = ctypes.CDLL("/usr/lib/libc.dylib")
+        # libc = ctypes.CDLL("libc.dylib")
+    except OSError:
         #####
         # For Linux
         possible_paths = ["/lib/x86_64-linux-gnu/libc.so.6",
@@ -38,17 +44,13 @@ def getLibc(logger=False):
 
             if os.path.exists(path):
                 libc = ctypes.CDLL(path)
-                #print "     Found libc!!!"
                 break
 
     try:
         if libc:
             libc.sync()
-            #print":::::Syncing..............."
-    except:
-        raise Exception("..............................Cannot Sync.")
-
-    #print "OS Family: " + str(osFamily)
+    except AttributeError:
+        raise LibcNotAvailableError("............................Cannot Sync.")
 
     return libc
 

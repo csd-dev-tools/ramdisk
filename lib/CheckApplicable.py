@@ -29,6 +29,7 @@ Created on Aug 24, 2010
 @change: rsn 2017/03/20 Adding methods for validation, fisma check and setting
                         internal os variables per the environment.
 @change: rsn 2017/09/01 Port from stonix
+@change: 2017/11/13 ekkehard - make eligible for OS X El Capitan 10.11+
 '''
 from __future__ import absolute_import
 #--- Native python libraries
@@ -125,16 +126,16 @@ class CheckApplicable(object):
                             with a single version number. "r" indicates a range
                             and expects 2 version numbers.]
                             This key is for matching specific os versions.
-                             To match all Mac OS 10.9 and newer:
-                             os: {'Mac OS X': ['10.9', '+']}
+                             To match all Mac OS 10.11 and newer:
+                             os: {'Mac OS X': ['10.11', '+']}
                              To match all Mac OS 10.8 and older:
                              os: {'Mac OS X': ['10.8', '-']}
                              To match only RHEL 6:
                              os: {'Red Hat Enterprise Linux': ['6.0']}
-                             To match only Mac OS X 10.9.5:
-                             os: {'Mac OS X': ['10.9.5']
+                             To match only Mac OS X 10.11.5:
+                             os: {'Mac OS X': ['10.11.5']
                              To match a series of OS types:
-                             os: {'Mac OS X': ['10.9', 'r', '10.10'],
+                             os: {'Mac OS X': ['10.11', 'r', '10.13'],
                                   'Red Hat Enterprise Linux': ['6.0', '+'],
                                   'Ubuntu: ['14.04']}
         noroot   True|False This is an option, needed on systems like OS X,
@@ -152,9 +153,9 @@ class CheckApplicable(object):
         An Example dictionary might look like this:
         applicable = {'type': 'white',
                            'family': Linux,
-                           'os': {'Mac OS X': ['10.9', 'r', '10.10.5']}
+                           'os': {'Mac OS X': ['10.11', 'r', '10.13.10']}
         That example whitelists all Linux operating systems and Mac OS X from
-        10.9.0 to 10.10.5.
+        10.11.0 to 10.13.10.
 
         The family and os keys may be combined. Note that specifying a family
         will mask the behavior of the more specific os key.
@@ -162,7 +163,7 @@ class CheckApplicable(object):
         Note that version comparison is done using the distutils.version
         module. If the stonix environment module returns a 3 place version
         string then you need to provide a 3 place version string. I.E. in this
-        case 10.9 only matches 10.9.0 and does not match 10.9.3 or 10.9.5.
+        case 10.11 only matches 10.11.0 and does not match 10.11.3 or 10.11.5.
 
         This method may be overridden if required.
 
@@ -182,8 +183,10 @@ class CheckApplicable(object):
                 #####
                 # Use self.applicable as is
                 valid = self.isApplicableValid(self.applicable)
+                self.logger.log(LogPriority.DEBUG, "valid: " + str(valid))
                 if valid:
                     applicable = self.applicable
+        
         except KeyError:
             valid = self.isApplicableValid(applicableDict)
             applicable = applicableDict
@@ -191,6 +194,8 @@ class CheckApplicable(object):
         if not valid:
             self.logger.log(LogPriority.DEBUG, "Passed in 'applicable' has invalid contents...")
             return applies
+        else:
+            self.logger.log(LogPriority.DEBUG, "applicable appears to be valid.")
 
         # Determine whether we are a blacklist or a whitelist, default to a
         # blacklist

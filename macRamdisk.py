@@ -657,6 +657,16 @@ def unmount(device=" ", logger=False):
 
 ###############################################################################
 
+def umount(device=" ", logger=False):
+    """
+    On the Mac, call detach.
+
+    @author: Roy Nielsen
+    """
+    detach(device, logger)
+
+###############################################################################
+
 def detach(device=" ", logger=False):
     """
     Eject the ramdisk
