@@ -17,9 +17,9 @@ import threading
 import traceback
 from subprocess import Popen, PIPE
 
-from lib.loggers import CyLogger
-from lib.loggers import LogPriority as lp
-from lib.getLibc import getLibc
+from . loggers import CyLogger
+from . loggers import LogPriority as lp
+from . getLibc import getLibc
 
 
 class OSNotValidForRunWith(BaseException):

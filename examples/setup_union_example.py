@@ -8,7 +8,7 @@
 import os
 import sys
 from optparse import OptionParser, SUPPRESS_HELP
-sys.path.append("..")
+sys.path.append("../..")
 #--- non-native python libraries in this source tree
 from ramdisk.lib.loggers import CyLogger
 from ramdisk.lib.loggers import LogPriority as lp

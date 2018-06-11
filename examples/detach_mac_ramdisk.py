@@ -8,12 +8,14 @@ import re
 import sys
 from optparse import OptionParser, SUPPRESS_HELP
 
-#--- non-native python libraries in this source tree
-from ..macRamdisk import detach
-from ..lib.loggers import CyLogger
-from ..lib.loggers import LogPriority as lp
+sys.path.append("../..")
 
-parser = OptionParser(usage="\n\n%prog [options]\n\n", version="0.7.2")
+#--- non-native python libraries in this source tree
+from ramdisk.macRamdisk import detach
+from ramdisk.lib.loggers import CyLogger
+from ramdisk.lib.loggers import LogPriority as lp
+
+parser = OptionParser(usage="\n\n%prog [options]", version="0.9.2")
 
 parser.add_option("-D", "--detach", dest="device", default="",
                   help="Name of the device to detach")
@@ -32,18 +34,19 @@ elif opts.debug != 0:
 else:
     level=lp.WARNING
 
-if not isinstance(opts.device, basestring) and \
-   re.match("^[A-Za-z0-9/]+$", opts.device):
-    raise Exception("Cannot detach a device with no name..")
+if (not isinstance(opts.device, basestring) and \
+   re.match("^[A-Za-z0-9/]+$", opts.device)) or not opts.device:
+    print("Cannot detach a device with no name..")
+    parser.print_help()
 else:
     device = opts.device
-    
-logger = CyLogger(level=level)
-logger.initializeLogs()
-    
-if detach(device):
-    logger.log(lp.INFO, r"Successfully detached disk: " + str(device).strip())
-else:
-    logger.log(lp.WARNING, r"Couldn't detach disk: " + str(device).strip())
-    raise Exception(r"Cannot eject disk: " + str(device).strip())
+
+    logger = CyLogger(level=level)
+    logger.initializeLogs()
+        
+    if detach(device):
+        logger.log(lp.INFO, r"Successfully detached disk: " + str(device).strip())
+    else:
+        logger.log(lp.ERROR, r"Couldn't detach disk: " + str(device).strip())
+        parser.print_help()
 
