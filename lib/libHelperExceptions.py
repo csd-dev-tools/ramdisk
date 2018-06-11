@@ -5,6 +5,7 @@ Should be OS agnostic
 
 @author: Roy Nielsen
 """
+from __future__ import absolute_import
 
 class UnsupportedOSError(Exception):
     """
@@ -32,6 +33,22 @@ class SystemToolNotAvailable(Exception):
     use by the library.
 
     @author: Roy Nielsen
+    """
+    def __init__(self, *args, **kwargs):
+        Exception.__init__(self, *args, **kwargs)
+
+class NotEnoughMemoryError(Exception):
+    """
+    Thrown when there is not enough memory for this operation.
+
+    @author: Roy Nielsen
+    """
+    def __init__(self, *args, **kwargs):
+        Exception.__init__(self, *args, **kwargs)
+
+def NotACyLoggerError(BaseException):
+    """
+    Custom Exception
     """
     def __init__(self, *args, **kwargs):
         Exception.__init__(self, *args, **kwargs)

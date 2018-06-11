@@ -20,7 +20,8 @@ from .manage_user_template import ManageUserTemplate
 from .manage_user_template import BadUserInfoError
 from lib.run_commands import RunWith
 from lib.loggers import LogPriority as lp
-
+from lib.loggers import CyLogger
+from lib.libHelperExceptions import NotACyLoggerError
 
 class MacOSUser(ManageUserTemplate):
     """
@@ -57,14 +58,17 @@ class MacOSUser(ManageUserTemplate):
 
     @author: Roy Nielsen
     """
-    def __init__(self, logger=False, userName="", userShell="/bin/bash",
+    def __init__(self, logger, userName="", userShell="/bin/bash",
                  userComment="", userUid=1000, userPriGid=20,
                  userHomeDir="/tmp"):
         super(MacOSUser, self).__init__(logger, userName, userShell,
                                          userComment, userUid, userPriGid,
                                          userHomeDir)
         self.module_version = '20160225.125554.540679'
-        self.logger = logger
+        if isinstance(logger, CyLogger):
+            self.logger = logger
+        else:
+            raise NotACyLoggerError("Passed in value for logger is invalid, try again.")
         self.dscl = "/usr/bin/dscl"
         self.userData = []
         self.runWith = RunWith(self.logger)

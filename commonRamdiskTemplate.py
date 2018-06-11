@@ -136,6 +136,21 @@ class RamDiskTemplate(object):
         success = False
         return success
 
+    ###########################################################################
+
+    def unmount(self) :
+        """
+        Unmount the disk - same functionality as __eject on the mac
+
+        Must be over-ridden to provide OS/Method specific functionality
+
+        @author: Roy Nielsen
+        """
+        success = False
+        return success
+
+    ###########################################################################
+
     def __isMemoryAvailable(self) :
         """
         Check to make sure there is plenty of memory of the size passed in
@@ -143,7 +158,21 @@ class RamDiskTemplate(object):
 
         @author: Roy Nielsen
         """
-        pass
+        success = False
+        return success
+
+    ###########################################################################
+
+    def _format(self) :
+        """
+        Format the ramdisk
+
+        Must be over-ridden to provide OS/Method specific functionality
+
+        @author: Roy Nielsen
+        """
+        success = False
+        return success
 
     ###########################################################################
 

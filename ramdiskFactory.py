@@ -11,7 +11,7 @@ from tempfile import mkdtemp
 from subprocess import Popen, PIPE, STDOUT
 
 #--- non-native python libraries in this source tree
-from lib.loggers import Logger
+from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 from lib.run_commands import RunWith
 from lib.libHelperFunctions import getOsFamily
@@ -63,7 +63,7 @@ class RamDiskFactory(object):
         self.mountpoint = None
         self.ramdiskType = None
         if not logger:
-            self.logger = Logger()
+            self.logger = CyLogger()
         else:
             self.logger = logger
         self.activeRamdisk = None

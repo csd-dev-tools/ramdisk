@@ -2,11 +2,14 @@
  
 import traceback
 import getpass
+import sys
 
-from lib.manage_user.manage_user import ManageUser
-from lib.manage_keychain.manage_keychain import ManageKeychain
-from lib.loggers import CyLogger
-from lib.loggers import LogPriority as lp
+sys.path.append("../..")
+
+from ramdisk.lib.manage_user.manage_user import ManageUser
+from ramdisk.lib.manage_keychain.manage_keychain import ManageKeychain
+from ramdisk.lib.loggers import CyLogger
+from ramdisk.lib.loggers import LogPriority as lp
 
 logger = CyLogger(debug_mode=True)
 logger.initializeLogs()

@@ -12,15 +12,12 @@ import sys
 import argparse
 from datetime import datetime
 
-from ramdisk.lib.loggers import Logger
-from ramdisk.lib.loggers import LogPriority as lp
+from . loggers import CyLogger
+from . loggers import LogPriority as lp
 
 class SedFile4VersionStamp(object):
     def __init__(self, files=[], logger=None):
-        if not logger:
-            self.logger = Logger()
-        else:
-            self.logger = logger
+        self.logger = logger
         self.acquireStamp()
         self.module_version = '20160224.032043.009191'
         if files:
@@ -101,7 +98,7 @@ if __name__ == "__main__":
         message_level = "verbose"
 
     files = args.files
-    logger = Logger()
+    logger = CyLogger()
     logger.log(lp.INFO, "Files: " + str(files))
 
     SedFile4VersionStamp(files, logger=logger)

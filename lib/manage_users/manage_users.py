@@ -9,7 +9,7 @@ import sys
 from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 from lib.CheckApplicable import CheckApplicable
-
+from lib.libHelperExceptions import UnsupportedOSError, NotACyLoggerError
 
 class ManageUsers(object):
     """
@@ -17,25 +17,25 @@ class ManageUsers(object):
     
     @author: Roy Nielsen
     """
-    def __init__(self, logger=False):
+    def __init__(self, logger):
         """
         @author: Roy Nielsen
         """
         #####
         # Set up logging
-        if self.logger:
+        if isinstance(logger, CyLogger):
             self.logger = logger
         else:
-            self.logger = CyLogger()
+            raise NotACyLoggerError("Passed in value for logger is invalid, try again.")
         self.logger.log(lp.INFO, "Logger: " + str(self.logger))
-        
+        '''
         if sys.platform.lower() == "darwin":
-            from lib.manage_users import macos_users 
+            from lib.manage_users import manage_macos_users 
             # import lib.manage_user.macos_user
-            self.userMgr = macos_users.MacOSUsers(logDispatcher=self.logger)
+            self.userMgr = manage_macos_users.MacOSUsers(logDispatcher=self.logger)
         else:
             raise UnsupportedOSError("This operating system is not supported...")
-
+        '''
         users = {}
         
     def getAllUsers(self):

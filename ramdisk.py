@@ -11,6 +11,7 @@ from lib.loggers import LogPriority as lp
 from lib.loggers import CyLogger
 from lib.environment import Environment
 from lib.CheckApplicable import CheckApplicable
+from commonRamdiskTemplate import RamDiskTemplate, BadRamdiskArguments, NotValidForThisOS
 
 ###############################################################################
 
@@ -30,7 +31,7 @@ class RamDisk(object):
         else:
             self.logger = logger
         if not environ:
-            self.environ = Environmet()
+            self.environ = Environment()
         else:
             self.environ = environ
         self.chkApp = CheckApplicable(self.environ, self.logger)
@@ -45,22 +46,18 @@ class RamDisk(object):
         macApplicable = {'type': 'white',
                          'family': ['darwin'],
                          'os': {'Mac OS X': ['10.8', '+']}}
-        macApplicableHere = self.chkApp.isapplicable(macApplicable)
+        macApplicableHere = self.chkApp.isApplicable(macApplicable)
 
         linuxApplicable = {'type': 'white',
                            'family': ['linux']}
-        linuxApplicableHere = self.chkApp.isapplicable(linuxApplicable)        
+        linuxApplicableHere = self.chkApp.isApplicable(linuxApplicable)        
 
         if linuxApplicableHere:
-            from linuxTmpfsRamdisk import TmpfsRamDisk, \
-                                          NotValidForThisOS, \
-                                          BadRamdiskArguments
-            self.ramdisk = TmpfsRamDisk(*args, **kwargs)
+            from linuxTmpfsRamdisk import RamDisk
+            self.ramdisk = RamDisk(*args, **kwargs)
         elif macApplicableHere:
-            from macRamdisk import MacRamDisk, \
-                                   NotValidForThisOS, \
-                                   BadRamdiskArguments
-            self.ramdisk = MacRamdisk(*args, **kwargs)
+            from macRamdisk import RamDisk
+            self.ramdisk = RamDisk(*args, **kwargs)
         else:
             raise NotValidForThisOS("Ramdisk not available here...")
 
@@ -82,7 +79,7 @@ class RamDisk(object):
 
     ###########################################################################
 
-    def umount(self):
+    def umount(self, *args, **kwargs):
         """
         """
         success = False

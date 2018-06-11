@@ -26,12 +26,12 @@ from lib.libHelperExceptions import NotValidForThisOS
 if sys.platform.startswith("darwin"):
     #####
     # For Mac
-    from macRamdisk import MacRamDisk as RamDisk
+    from macRamdisk import RamDisk
     from macRamdisk import detach
 elif sys.platform.startswith("linux"):
     #####
     # For Linux
-    from linuxTmpfsRamdisk import TmpfsRamDisk as RamDisk
+    from linuxTmpfsRamdisk import RamDisk
     from linuxTmpfsRamdisk import umount
 
 class test_linuxTmpfsRamdisk(GenericRamdiskTest):

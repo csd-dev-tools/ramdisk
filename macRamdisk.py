@@ -40,7 +40,7 @@ from lib.libHelperExceptions import NotValidForThisOS
 
 ###############################################################################
 
-class MacRamDisk(RamDiskTemplate) :
+class RamDisk(RamDiskTemplate) :
     """
     Class to manage a ramdisk
 
@@ -60,7 +60,7 @@ class MacRamDisk(RamDiskTemplate) :
         """
         Constructor
         """
-        super(MacRamDisk, self).__init__(size, mountpoint, logger)
+        super(RamDisk, self).__init__(size, mountpoint, logger)
 
         if not getOsFamily() == "darwin":
             raise NotValidForThisOS("This ramdisk is only viable for a MacOS.")
@@ -69,7 +69,7 @@ class MacRamDisk(RamDiskTemplate) :
 
         #####
         # Initialize the RunWith helper for executing shelled out commands.
-        self.runWith = RunWith()
+        self.runWith = RunWith(self.logger)
 
         #####
         # Calculating the size of ramdisk in 1Mb chunks
@@ -191,6 +191,44 @@ class MacRamDisk(RamDiskTemplate) :
 
     ###########################################################################
 
+    def getData(self):
+        """
+        Getter for mount data, and if the mounting of a ramdisk was successful
+
+        Does not print or log the data.
+
+        @author: Roy Nielsen
+        """
+        return (self.success, str(self.mntPoint), str(self.myRamdiskDev))
+
+    ###########################################################################
+
+    def getNlogData(self):
+        """
+        Getter for mount data, and if the mounting of a ramdisk was successful
+
+        Also logs the data.
+
+        @author: Roy Nielsen
+        """
+        self.logger.log(lp.INFO, "Success: " + str(self.success))
+        self.logger.log(lp.INFO, "Mount point: " + str(self.mntPoint))
+        self.logger.log(lp.INFO, "Device: " + str(self.myRamdiskDev))
+        return (self.success, str(self.mntPoint), str(self.myRamdiskDev))
+
+    ###########################################################################
+
+    def getNprintData(self):
+        """
+        Getter for mount data, and if the mounting of a ramdisk was successful
+        """
+        print "Success: " + str(self.success)
+        print "Mount point: " + str(self.mntPoint)
+        print "Device: " + str(self.myRamdiskDev)
+        return (self.success, str(self.mntPoint), str(self.myRamdiskDev))
+
+    ###########################################################################
+
     def __mount(self) :
         """
         Mount the disk - for the Mac, just run self.__attach
@@ -283,6 +321,8 @@ class MacRamDisk(RamDiskTemplate) :
         @parameter: nosuid - from the mount manpage: "Do not allow
                              set-user-identifier bits to take effect.
 
+        @parameter: fstype - What supported filesystem to use.
+
         @parameter: noowners - From the mount manpage: "Ignore the ownership
                                field for the entire volume.  This causes all
                                objects to appear as owned by user ID 99 and
@@ -349,7 +389,7 @@ class MacRamDisk(RamDiskTemplate) :
 
     ###########################################################################
 
-    def umount(self) :
+    def unmount(self) :
         """
         Unmount the disk - same functionality as __eject on the mac
 
@@ -571,6 +611,50 @@ class MacRamDisk(RamDiskTemplate) :
         print str(success)
         return success
 
+    ###########################################################################
+
+    def getDevice(self):
+        """
+        Getter for the device name the ramdisk is using
+
+        @author: Roy Nielsen
+        """
+        return self.myRamdiskDev
+
+    ###########################################################################
+
+    def setDevice(self, device=None):
+        """
+        Setter for the device so it can be ejected.
+
+        @author: Roy Nielsen
+        """
+        if device:
+            self.myRamdiskDev = device
+        else:
+            raise Exception("Problem trying to set the device..")
+
+    ###########################################################################
+
+    def getVersion(self):
+        """
+        Getter for the version of the ramdisk
+
+        @author: Roy Nielsen
+        """
+        return self.module_version
+
+
+###############################################################################
+
+def unmount(device=" ", logger=False):
+    """
+    On the Mac, call detach.
+
+    @author: Roy Nielsen
+    """
+    detach(device, logger)
+
 ###############################################################################
 
 def umount(device=" ", logger=False):
@@ -579,11 +663,11 @@ def umount(device=" ", logger=False):
 
     @author: Roy Nielsen
     """
-    detach(device)
+    detach(device, logger)
 
 ###############################################################################
 
-def detach(device=" "):
+def detach(device=" ", logger=False):
     """
     Eject the ramdisk
     Detach (on the mac) is a better solution than unmount and eject
@@ -593,8 +677,11 @@ def detach(device=" "):
     @author: Roy Nielsen
     """
     success = False
-    logger = CyLogger()
-    myRunWith = RunWith()
+    if not logger:
+        logger = CyLogger()
+    else:
+        logger = logger
+    myRunWith = RunWith(logger)
     if not re.match("^\s*$", device):
         cmd = ["/usr/bin/hdiutil", "detach", device]
         myRunWith.setCommand(cmd)

@@ -11,12 +11,13 @@ import sys
 import time
 import ctypes
 import termios
+import traceback
 from subprocess import Popen, STDOUT, PIPE
 
 #--- non-native python libraries in this source tree
-from lib.loggers import CyLogger
-from lib.loggers import LogPriority as lp
-from lib.run_commands import RunWith
+from .loggers import CyLogger
+from .loggers import LogPriority as lp
+from .run_commands import RunWith
 
 logger = CyLogger()
 run = RunWith(logger)
@@ -66,6 +67,8 @@ def get_console_user():
     except Exception, err:
         logger.log(lp.VERBOSE, "Exception trying to get the console user...")
         logger.log(lp.VERBOSE, "Associated exception: " + str(err))
+        logger.log(lp.WARNING, traceback.format_exc())
+        logger.log(lp.WARNING, str(err))
         raise err
     else:
         """
@@ -237,24 +240,6 @@ def removeFdeUser(myusername=""):
         success = True
     return success
 
-############################################################################
-
-def touch(filename=""):
-    """
-    Python implementation of the touch command..
-    
-    """
-    if re.match("^\s*$", filename) :
-        logger.log(lp.INFO, "Cannot touch a file without a filename....")
-    else :
-        try:
-            os.utime(filename, None)
-        except:
-            try :
-                open(filename, 'a').close()
-            except Exception, err :
-                logger.log(lp.INFO, "Cannot open to touch: " + str(filename))
-
 ###########################################################################
 
 def getecho (fileDescriptor):
@@ -297,4 +282,20 @@ def waitnoecho (fileDescriptor, timeout=3):
         if timeout is not None:
             timeout = end_time - time.time()
         time.sleep(0.1)
+
+###########################################################################
+
+def isSaneFilePath(filepath):
+    """
+    Check for a good file path in the passed in string.
+    
+    @author: Roy Nielsen
+    """
+    sane = False
+    if filepath and isinstance(filepath, basestring):
+        if re.match("^[A-Za-z0-9_\-/\.]*", filepath):
+            sane = True
+    return sane
+
+###########################################################################
 

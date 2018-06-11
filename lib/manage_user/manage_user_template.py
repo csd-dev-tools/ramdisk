@@ -11,11 +11,11 @@ import os
 import re
 import inspect
 
-from lib.run_commands import RunWith
-from lib.loggers import CyLogger
-from lib.loggers import LogPriority as lp
-from lib.CheckApplicable import CheckApplicable
-from lib.environment import Environment
+from ..run_commands import RunWith
+from ..loggers import CyLogger
+from ..loggers import LogPriority as lp
+from ..CheckApplicable import CheckApplicable
+from ..environment import Environment
 
 
 class BadUserInfoError(Exception):
@@ -138,7 +138,7 @@ class ManageUserTemplate(object):
         """
         sane = False
         if isinstance(filepath, basestring):
-            if re.match("^[A-Za-z/][A-Za-z0-9/]*", filepath):
+            if re.match("^[A-Za-z/\.][A-Za-z0-9/\.]*", filepath):
                 sane = True
         return sane
 
@@ -471,12 +471,12 @@ class ManageUserTemplate(object):
                                'family': ['linux']}
             #####
             # perform the isapplicable check
-            if checkApplicable.isapplicable(macApplicable):
+            if checkApplicable.isApplicable(macApplicable):
                 #####
                 # If in the correct group, success = True
                 if self.isUserInGroup(userName="", groupName="admin"):
                     success = True
-            elif checkApplicable.isapplicable(linuxApplicable):
+            elif checkApplicable.isApplicable(linuxApplicable):
                 #####
                 # If in the correct group, success = True
                 if self.isUserInGroup(userName="", groupName="wheel"):

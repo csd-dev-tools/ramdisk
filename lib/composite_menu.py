@@ -12,9 +12,9 @@ import tty
 import termios
 
 sys.path.append("..")
-from lib.loggers import CyLogger
-from lib.loggers import LogPriority as lp
-from lib.run_commands import RunWith, runMyThreadCommand
+from ..lib.loggers import CyLogger
+from ..lib.loggers import LogPriority as lp
+from ..lib.run_commands import RunWith, runMyThreadCommand
 
 class NotASaneNameError(Exception):
     """
@@ -61,7 +61,7 @@ class MenuComponent(object):
         if self.isSaneAction(action):
             self.action = action
 
-        self.runner = RunWith()
+        self.runner = RunWith(logger)
         self.logger = CyLogger(debug_mode=True)
         self.logger.initializeLogs()
         
@@ -70,15 +70,12 @@ class MenuComponent(object):
         self.g_dict = {}
         self.action = False
         self.anchor = False
+        
+        self.previous = None
 
         self.run = runMyThreadCommand
 
     def menuAction(self, *args, **kwargs):
-        """
-        """
-        pass
-
-    def menuAction(self):
         """
         """
         pass
@@ -499,4 +496,5 @@ if __name__ == "__main__" :
     print "### Ready To Work...                ###"
     print "======================================="
     print "---------------------------------------"
+
 
