@@ -240,7 +240,7 @@ class Environment(object):
         @author: D. Kennel
         """
         try:
-            if isinstance(bool, debugmode):
+            if isinstance(debugmode, bool):
                 self.debugmode = debugmode
         except NameError:
             # debugmode was undefined
