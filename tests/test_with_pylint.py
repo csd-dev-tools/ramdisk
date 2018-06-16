@@ -7,6 +7,7 @@ import re
 import sys
 import json
 import unittest
+
 from subprocess import Popen, PIPE
 from optparse import OptionParser
 from optparse import Option, OptionValueError
@@ -18,6 +19,8 @@ sys.path.append(parentdir)
 
 from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
+from lib.spinners import Spinner
+
 from tests.PylintIface import PylintIface, processFile
 
 from pylint import epylint
@@ -297,4 +300,3 @@ else:
         #print test_name
         error_case = pylint_test_template(*specificError)
         setattr(test_with_pylint, test_name, error_case)
-
