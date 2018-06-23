@@ -23,6 +23,8 @@ import datetime
 import traceback
 import logging
 import logging.handlers
+
+from . singleton import Singleton
 #from logging.handlers import RotatingFileHandler
 #sys.path.append("..")
 ###############################################################################
@@ -80,8 +82,8 @@ class SingletonCyLogger(type):
 ###############################################################################
 # Main class
 
-class CyLogger(object):
-    __metaclass__ = SingletonCyLogger
+class CyLogger(Singleton):
+    # __metaclass__ = Singleton
     """
     Class to set up logging, with easy string referencing loggers and their
     handlers.
