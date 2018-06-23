@@ -19,7 +19,6 @@ sys.path.append(parentdir)
 
 from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
-from lib.spinners import Spinner
 
 from tests.PylintIface import PylintIface, processFile
 
