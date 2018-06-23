@@ -215,9 +215,13 @@ if __name__ == "__main__":
 
     #####
     # ... processing logging options...
-    verbose = options.verbose
-    debug = options.debug
-    logger = CyLogger(debug_mode=options.debug, verbose_mode=options.verbose)
+    if options.verbose:
+        level = 20
+    elif options.debug:
+        level = 10
+    else:
+        level = 30
+    logger = CyLogger(level=level)
     logger.initializeLogs(filename="ramdiskTestLog")
 
     logger.log(lp.DEBUG, "Modules: " + str(modules))
