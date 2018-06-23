@@ -17,6 +17,15 @@ from datetime import datetime
 from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 
+
+class LibcNotAvailableError(BaseException):
+    """
+    Custom Exception
+    """
+    def __init__(self, *args, **kwargs):
+        BaseException.__init__(self, *args, **kwargs)
+
+
 class GenericTestUtilities(object):
     """
     Generic class based Yutilities for ramdisk testing...
@@ -36,40 +45,30 @@ class GenericTestUtilities(object):
     def getLibc(self):
         """
         """
-        self.osFamily = sys.platform.lower()
-
-        if self.osFamily and  self.osFamily.startswith("darwin"):
-            #####
-            # For Mac
-            try:
-                self.libc = ctypes.CDLL("/usr/lib/libc.dylib")
-            except:
-                raise Exception("DAMN IT JIM!!!")
-            else:
-                print "Loading Mac dylib......................................"
-        elif self.osFamily and  self.osFamily.startswith("linux"):
+        #####
+        # For Mac
+        try:
+            libc = ctypes.CDLL("/usr/lib/libc.dylib")
+            # libc = ctypes.CDLL("libc.dylib")
+        except OSError:
             #####
             # For Linux
             possible_paths = ["/lib/x86_64-linux-gnu/libc.so.6",
                               "/lib/i386-linux-gnu/libc.so.6",
                               "/usr/lib64/libc.so.6"]
             for path in possible_paths:
-
+    
                 if os.path.exists(path):
-                    self.libcPath = path
-                    self.libc = ctypes.CDLL(self.libcPath)
-                    print "     Found libc!!!"
+                    libc = ctypes.CDLL(path)
                     break
-        else:
-            self.libc = self._pass()
-
+    
         try:
-            self.libc.sync()
-            print":::::Syncing..............."
-        except:
-            raise Exception("..............................Cannot Sync.")
-
-        print "OS Family: " + str(self.osFamily)
+            if libc:
+                libc.sync()
+        except AttributeError:
+            raise LibcNotAvailableError("............................Cannot Sync.")
+    
+        return libc
 
     ################################################
 
