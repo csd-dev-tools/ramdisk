@@ -22,17 +22,6 @@ from .run_commands import RunWith
 logger = CyLogger()
 run = RunWith(logger)
 
-def getOsFamily():
-    """
-    Get the os name from the "uname -s" command
-
-    @author: Roy Nielsen
-    """
-
-    operatingsystemfamily = sys.platform
-
-    return operatingsystemfamily
-
 ###########################################################################
 
 class FoundException(Exception) :
