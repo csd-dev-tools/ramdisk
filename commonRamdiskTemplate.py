@@ -47,7 +47,7 @@ class RamDiskTemplate(object):
         # <YYYY><MM><DD>.<HH><MM><SS>.<microseconds>
         # in UTC time
         self.module_version = '20160224.032043.009191'
-        if not logger:
+        if not isinstance(logger, CyLogger):
             self.logger = CyLogger()
         else:
             self.logger = logger
@@ -103,7 +103,7 @@ class RamDiskTemplate(object):
 
     ###########################################################################
 
-    def getRandomizedMountpoint(self) :
+    def getRandomizedMountpoint(self):
         """
         Create a randomized (secure) mount point - per python's implementation
         of mkdtemp - a way to make an unguessable directory on the system
@@ -119,13 +119,16 @@ class RamDiskTemplate(object):
             raise err
         else :
             success = True
-            self.logger.log(lp.WARNING, "Success: " + str(success) + " in get_randomizedMountpoint: " + str(self.mntPoint))
+            self.logger.log(lp.WARNING,
+                            "Success: " + str(success) +
+                            " in get_randomizedMountpoint: " +
+                            str(self.mntPoint))
         self.logger.log(lp.WARNING, "Randomized mount point: \"" + str(self.mntPoint) + "\"")
         return success
 
     ###########################################################################
 
-    def umount(self) :
+    def umount(self):
         """
         Unmount the disk - same functionality as __eject on the mac
 
@@ -138,7 +141,7 @@ class RamDiskTemplate(object):
 
     ###########################################################################
 
-    def unmount(self) :
+    def unmount(self):
         """
         Unmount the disk - same functionality as __eject on the mac
 
@@ -151,7 +154,7 @@ class RamDiskTemplate(object):
 
     ###########################################################################
 
-    def __isMemoryAvailable(self) :
+    def __isMemoryAvailable(self):
         """
         Check to make sure there is plenty of memory of the size passed in
         before creating the ramdisk
@@ -163,7 +166,7 @@ class RamDiskTemplate(object):
 
     ###########################################################################
 
-    def _format(self) :
+    def _format(self):
         """
         Format the ramdisk
 

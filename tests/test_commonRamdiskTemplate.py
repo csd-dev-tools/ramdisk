@@ -11,68 +11,132 @@ import os
 import sys
 import time
 import unittest
-import tempfile
-import ctypes as C
+import tempfile 
 from datetime import datetime
+
+sys.path.append("..")
 
 #--- non-native python libraries in this source tree
 from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
+from commonRamdiskTemplate import RamDiskTemplate, \
+                                  BadRamdiskArguments, \
+                                  NotValidForThisOS
 
-from lib.libHelperExceptions import NotValidForThisOS
-
-#####
-# Load OS specific Ramdisks
-if sys.platform.startswith("darwin"):
-    #####
-    # For Mac
-    from macRamdisk import RamDisk
-    from macRamdisk import detach
-elif sys.platform.startswith("linux"):
-    #####
-    # For Linux
-    from linuxTmpfsRamdisk import RamDisk
-    from linuxTmpfsRamdisk import umount
+LOGGER = CyLogger()
 
 
 class test_commonRamdiskTemplate(unittest.TestCase):
     """
     """
-
-    @classmethod
-    def setUpClass(self):
-        """
-        Runs once before any tests start
-        """
-        # Start timer in miliseconds
-        self.test_start_time = datetime.now()
-
-    ##################################
+    metaVars = {'setupDone': None, 'testStartTime': 0, 'setupCount': 0}
 
     def setUp(self):
         """
-        This method runs before each test run.
-
-        @author: Roy Nielsen
+        Runs once before any tests start
         """
-        pass
+        self.metaVars['setupCount'] = self.metaVars['setupCount'] + 1
 
-###############################################################################
-##### Method Tests
+        if self.metaVars['setupDone']:
+            return
+        #####
+        # setUpClass functionality here.
+        # self.libc = getLibc()
+        #####
+        # Start timer in miliseconds
+        self.metaVars['testStartTime'] = datetime.now()
+        self.metaVars['setupDone'] = True
+
+    ###########################################################################
+    # Method Tests
 
     ##################################
 
-    def test_init(self):
+    def testInit(self):
         """
+        Test class init functionality
         """
-        pass
+        rdt = RamDiskTemplate(100, "/tmp/tmptest")
+        self.assertTrue(rdt.diskSize == 100, "Sizes don't match...")
+        self.assertTrue(rdt.mntPoint == "/tmp/tmptest", "Mountpoints don't match...")
+        self.assertTrue(isinstance(rdt.logger, CyLogger), "Logger shouldn't be initialized...")
 
     ##################################
 
-    def test_get_data(self):
+    def testGetData(self):
         """
+        Test class getData method.  This method also tests the other
+        getNxxxxxData methods that provide getting functionality.
         """
-        pass
+        rdt = RamDiskTemplate(100, "/tmp/tmptest")
+        success, mntpnt, device = rdt.getData()
+        self.assertFalse(success, "No success for getData...")
+        self.assertTrue(mntpnt == "/tmp/tmptest",
+                        "Mountpoints don't match...")
+        self.assertTrue(device == str(None),
+                        "Device initialized??? : " + str(device))
+
+    ##################################
+
+    def testGetRandomizedMountPoint(self):
+        """
+        Test class method getRandomizedMountPoint - make sure the
+        specified directory has been created.
+        """
+        rdt = RamDiskTemplate(100)
+        randomizedMntPnt = rdt.getRandomizedMountpoint()
+        self.assertTrue(randomizedMntPnt, "Didn't succeed in getting randomized mount point...")
+        self.assertTrue(os.path.isdir(rdt.mntPoint))
+
+    ##################################
+
+    def testUmount(self):
+        """
+        Test class method umount
+        """
+        rdt = RamDiskTemplate()
+        self.assertFalse(rdt.umount(),
+                    "Umount template method didn't fail...")
+
+    ##################################
+
+    def testUnmount(self):
+        """
+        Test class method unmount
+        """
+        rdt = RamDiskTemplate()
+        self.assertFalse(rdt.unmount(),
+                    "Unmount template method didn't fail...")
+
+    ##################################
+
+    def test_format(self):
+        """
+        Test class method _format
+        """
+        rdt = RamDiskTemplate()
+        self.assertFalse(rdt._format(),
+                        "_format template method should have failed...")
+
+    ####################################
+
+    def testGetDevice(self):
+        """
+        Test class method getDevice
+        """
+        rdt = RamDiskTemplate()
+        self.assertTrue(rdt.getDevice() == rdt.myRamdiskDev,
+                        "getDevice template method should have failed")
+
+    ####################################
+
+    def testGetMountPoint(self):
+        """
+        Test class method getMountPoint
+        """
+        rdt = RamDiskTemplate(100, "/tmp/testmnt")
+        self.assertTrue(rdt.getMountPoint() == "/tmp/testmnt",
+                        "getMountPoint template method should have failed...")
 
 
 ###############################################################################
@@ -88,15 +152,29 @@ class test_commonRamdiskTemplate(unittest.TestCase):
         """
         Final cleanup actions...
         """
-        self.logger = CyLogger()
+        self.metaVars['setupCount'] = self.metaVars['setupCount'] - 1
+
         #####
         # capture end time
-        test_end_time = datetime.now()
+        testEndTime = datetime.now()
 
         #####
         # Calculate and log how long it took...
-        test_time = (test_end_time - self.test_start_time)
+        test_time = (testEndTime - self.metaVars['testStartTime'])
+        # print str(test_time)
+        # global LOGGER
+        LOGGER.log(lp.INFO, self.__module__ + " took " + str(test_time) + " time so far...")
 
-        self.logger.log(lp.INFO, self.__module__ + " took " + str(test_time) + " time to complete...")
+        if self.metaVars['setupCount'] == 0:
+            #####
+            # TearDownClass functionality here.
+            # time.sleep(5)
+            pass
 
 ###############################################################################
+
+
+if __name__ == "__main__":
+    LOGGER.setInitialLoggingLevel(10)
+    LOGGER.initializeLogs()
+    unittest.main()
