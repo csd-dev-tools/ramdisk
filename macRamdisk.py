@@ -35,7 +35,7 @@ from commonRamdiskTemplate import RamDiskTemplate
 from lib.run_commands import RunWith
 from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
-from lib.libHelperFunctions import getOsFamily
+from lib.environment import Environment
 from lib.libHelperExceptions import NotValidForThisOS
 
 ###############################################################################
@@ -62,7 +62,9 @@ class RamDisk(RamDiskTemplate) :
         """
         super(RamDisk, self).__init__(size, mountpoint, logger)
 
-        if not getOsFamily() == "darwin":
+        self.environ = Environment()
+
+        if not self.environ.getosfamily() == "darwin":
             raise NotValidForThisOS("This ramdisk is only viable for a MacOS.")
 
         self.module_version = '20160225.125554.540679'
