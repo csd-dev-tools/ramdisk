@@ -14,7 +14,7 @@ from subprocess import Popen, PIPE, STDOUT
 from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 from lib.run_commands import RunWith
-from lib.libHelperFunctions import getOsFamily
+
 
 def BadRamdiskTypeException(Exception):
     """
@@ -53,13 +53,14 @@ class RamDiskFactory(object):
 
     @author: Roy Nielsen
     """
-    def __init__(self, logger=None):
+    def __init__(self, environ, logger=None):
         """
         Identify OS and instantiate an instance of a ramdisk
         """
         self.module_version = '20160224.203258.288119'
 
         self.size = 0
+        self.environ = environ
         self.mountpoint = None
         self.ramdiskType = None
         if not logger:
@@ -71,7 +72,7 @@ class RamDiskFactory(object):
         self.validRamdiskTypes = ["loop", "tmpfs"]
         self.validOSFamilies = ["macos", "linux"]
 
-        self.myosfamily = getOsFamily()
+        self.myosfamily = self.environ.getosfamily()
 
         if not self.myosfamily in self.validOSFamilies:
             raise OSNotValidForRamdiskHelper("Needs to be MacOS or Linux...")
