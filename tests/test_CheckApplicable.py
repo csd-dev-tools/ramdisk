@@ -8,6 +8,7 @@ from __future__ import absolute_import
 # --- Native python libraries
 
 import sys
+import unittest
 from datetime import datetime
 
 sys.path.append("..")
@@ -121,7 +122,6 @@ class test_CheckApplicable(unittest.TestCase):
         # print str(test_time)
         # global LOGGER
         LOGGER.log(lp.INFO, self.__module__ + " took " + str(test_time) + " time so far...")
-        self.libc.sync()
 
         if self.metaVars['setupCount'] == 0:
             #####
