@@ -48,7 +48,7 @@ class GenericRamdiskTest(unittest.TestCase, GenericTestUtilities):
     def setUpClass(self):
         """
         """
-        self.getLibc()
+        self.libc = getLibc()
         self.subdirs = ["two", "three" "one/four"]
         self.logger = CyLogger()
         self.logger.log(lp.CRITICAL, "Logger initialized............................")
