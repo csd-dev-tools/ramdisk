@@ -8,7 +8,9 @@ import os
 import re
 import pwd
 import sys
+import traceback
 from tempfile import mkdtemp
+from time import time
 
 #--- non-native python libraries in this source tree
 from lib.run_commands import RunWith
@@ -240,14 +242,22 @@ class RamDisk(RamDiskTemplate):
         @author: Roy Nielsen
         """
         success = False
+        
+        if not os.path.exists(self.mntPoint):
+            os.makedirs(self.mntPoint)
+            self.logger.log(lp.DEBUG, "Created mount point")
+        elif os.path.exists(self.mntPoint) and not os.path.isdir(self.mntPoint):
+            # Cannot use mkdtmp here because it will make the directory on
+            # the root filesystem instead of the ramdisk, then it will try
+            # to link across filesystems which won't work
+            tmpdir = self.mntPoint + "." + str(time())
+            os.rename(self.mntPoint, tmpdir)
+            os.mkdir(self.mntPoint)
+
         command = self.buildCommand()
         self.logger.log(lp.WARNING, "Command: " + str(command))
-        if self.runWith.setCommand(command):
-            self.logger.log(lp.DEBUG, "All is Stars, Rainbows and Unicorns...")
-            output, error, returncode = self.runWith.communicate()
-            self.logger.log(lp.DEBUG, "All is Stars, Rainbows and Unicorns...")
-        else:
-            raise Exception("Cannot Grok Command.................................")
+        self.runWith.setCommand(command)
+        output, error, returncode = self.runWith.communicate()
         self.logger.log(lp.DEBUG, "output    : " + str(output))
         self.logger.log(lp.DEBUG, "error     : " + str(error))
         self.logger.log(lp.DEBUG, "returncode: " + str(returncode))
