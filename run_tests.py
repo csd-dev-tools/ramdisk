@@ -233,6 +233,9 @@ if __name__ == "__main__":
     else:
         prefix = ["test_", "Test_"]
 
+    if os.geteuid != 0:
+        print("\n\nNote - Some tests will fail if not run with superuser privilege.")
+        raw_input("Press any key to continue...\n\n")
 
     bars = BuildAndRunSuite(logger)
     bars.setPrefix(prefix)

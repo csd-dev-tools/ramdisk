@@ -7,7 +7,6 @@ import re
 import sys
 import json
 import unittest
-
 from subprocess import Popen, PIPE
 from optparse import OptionParser
 from optparse import Option, OptionValueError
@@ -19,7 +18,6 @@ sys.path.append(parentdir)
 
 from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
-
 from tests.PylintIface import PylintIface, processFile
 
 from pylint import epylint
@@ -28,11 +26,19 @@ dirPkgRoot = '..'
 logger = CyLogger()
 logger.initializeLogs()
 
+excludeUnlessUid0 = ["environment.py"]
+
 def getRecursiveTree(targetRootDir="."):
     filesList = []
     for root, dirs, files in os.walk(targetRootDir):
         for myfile in files:
             if re.search(".+\.py$", myfile):
+                
+                if not os.geteuid() == 0:
+                    if myfile in excludeUnlessUid0:
+                        continue
+                        print ("........... Testing " + str(myfile) + " requires uid 0 ..............")
+                        #print myfile
                 filesList.append(os.path.abspath(os.path.join(root, myfile)))
     return filesList
 
@@ -40,6 +46,11 @@ def getDirList(targetDir="."):
     filesList = []
     for myfile in os.listdir(targetDir):
         if re.search(".+\.py$", myfile):
+            if not os.geteuid() == 0:
+                if myfile in excludeUnlessUid0:
+                    continue
+                    print ("........... Testing " + str(myfile) + " requires uid 0 ..............")
+                    #print myfile
             filesList.append(os.path.abspath(os.path.join(targetDir, myfile)))
     return filesList
 
@@ -56,7 +67,7 @@ def genTestData(fileList=[], excludeFiles=[], excludeFromLines=[]):
 
     pIface = PylintIface(logger)
     for myfile in fileList:
-        #print myfile
+        
         #####
         # Don't process files that are in the exclude list
         if myfile in excludeFiles:
