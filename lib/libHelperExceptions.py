@@ -7,6 +7,7 @@ Should be OS agnostic
 """
 from __future__ import absolute_import
 
+
 class UnsupportedOSError(Exception):
     """
     Meant for being thrown when an action/class being run/instanciated is not
@@ -16,6 +17,7 @@ class UnsupportedOSError(Exception):
     """
     def __init__(self, *args, **kwargs):
         Exception.__init__(self, *args, **kwargs)
+
 
 class NotValidForThisOS(Exception):
     """
@@ -27,6 +29,7 @@ class NotValidForThisOS(Exception):
     def __init__(self, *args, **kwargs):
         Exception.__init__(self, *args, **kwargs)
 
+
 class SystemToolNotAvailable(Exception):
     """
     Meant for being thrown when a system command is not available for
@@ -37,6 +40,7 @@ class SystemToolNotAvailable(Exception):
     def __init__(self, *args, **kwargs):
         Exception.__init__(self, *args, **kwargs)
 
+
 class NotEnoughMemoryError(Exception):
     """
     Thrown when there is not enough memory for this operation.
@@ -46,10 +50,18 @@ class NotEnoughMemoryError(Exception):
     def __init__(self, *args, **kwargs):
         Exception.__init__(self, *args, **kwargs)
 
-def NotACyLoggerError(BaseException):
+
+class NotACyLoggerError(Exception):
     """
     Custom Exception
     """
     def __init__(self, *args, **kwargs):
         Exception.__init__(self, *args, **kwargs)
 
+
+class UserMustBeRootError(Exception):
+    """
+    Custom Exception
+    """
+    def __init__(self, *args, **kwargs):
+        Exception.__init__(self, *args, **kwargs)

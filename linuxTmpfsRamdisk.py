@@ -17,7 +17,7 @@ from lib.run_commands import RunWith
 from lib.loggers import CyLogger
 from lib.loggers import LogPriority as lp
 from commonRamdiskTemplate import RamDiskTemplate, NotValidForThisOS, BadRamdiskArguments
-from lib.libHelperExceptions import SystemToolNotAvailable
+from lib.libHelperExceptions import SystemToolNotAvailable, UserMustBeRootError
 
 ###############################################################################
 
@@ -100,6 +100,9 @@ class RamDisk(RamDiskTemplate):
         else:
             raise BadRamdiskArguments("Not a valid argument for " + \
                                            "'fstype'...")
+
+        if not os.geteuid() == 0:
+            raise UserMustBeRootError("You must be root, or have elevated with sudo to use this software...")
 
         if isinstance(mode, int):
             self.mode = mode

@@ -93,6 +93,14 @@ class test_linuxTmpfsRamdisk(GenericRamdiskTest):
         """
         pass
 
+    def test_isUserRoot(self):
+        '''
+        User must be uid 0 to make a ramdisk on Linux
+        '''
+        if os.geteuid() != 0:
+            self.assertRaises(UserMustBeRootError, "If UID is not 0, a UserMustBeRootError must be raised...")
+
+        self.assertTrue(os.geteuid() == 0, "User is not root, cannot cannot create a ramdisk if user is not root.")
 
 ###############################################################################
 ##### unittest Tear down
