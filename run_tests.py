@@ -183,18 +183,20 @@ if __name__ == "__main__":
 
     parser.add_option('-p', '--prefix', action="extend", type="string",
                       dest='prefix', default=[],
-                      help="Collect tests with these prefixes.")
+                      help="Collect tests with these prefixes")
 
     parser.add_option('-m', '--modules', action="extend", type="string",
-                      dest='modules', default=[], help="Use to run a single or " + \
-                      "multiple unit tests at once.  Use the test name.")
+                      dest='modules', default=[], help="Name of the test" +
+                      " to run.  May indicate multiple tests to run," +
+                      " if this switch is used multiple times, each with" +
+                      " different test name")
 
     parser.add_option("-s", "--skip", action="store_true", 
                       dest="skip_syslog", default=False,
                       help="Skip syslog logging so we don't fill up the logs." + \
                            "This will leave an incremental log by default in " + \
                            "/tmp/<uid>.stonixtest.<log number>, where log number" +\
-                           " is the order of the last ten stonixtest runs.")
+                           " is the order of the last ten stonixtest runs")
 
     if len(sys.argv) == 1:
         parser.parse_args(['--help'])
