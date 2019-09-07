@@ -3,6 +3,7 @@
 @author: Roy Nielsen
 
 """
+from __future__ import absolute_import
 #--- Native python libraries
 import sys
 from optparse import OptionParser, SUPPRESS_HELP
@@ -23,6 +24,8 @@ elif sys.platform.startswith("linux"):
     # For Linux
     from ramdisk.linuxTmpfsRamdisk import RamDisk
     from ramdisk.linuxTmpfsRamdisk import umount
+else:
+    print "'" + str(sys.platform) + "' platform not supported..."
 
 parser = OptionParser(usage="\n\n%prog [options]\n\n", version="0.8.6")
 
@@ -56,8 +59,8 @@ logger = CyLogger()
 logger.initializeLogs()
 
 ramdisk = RamDisk(str(size), mntpnt, logger)
-ramdisk.getNlogData()
-ramdisk.getNprintData()
+ramdisk.logData()
+ramdisk.printData()
 
 if not ramdisk.success:
     raise Exception("Ramdisk setup failed..")

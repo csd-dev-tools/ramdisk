@@ -93,7 +93,7 @@ class CyLogger(Singleton):
     
     instanciatedLoggers = {}
 
-    def __init__(self, environ=False, debug_mode=False, verbose_mode=False, level=30):
+    def __init__(self, environ=False, debug_mode=False, verbose_mode=False, level=30, *args, **kwargs):
         """
         """
         # print ".............Level: " + str(level)
@@ -124,6 +124,7 @@ class CyLogger(Singleton):
             self.validateLevel(self.lvl)
         else:
             self.lvl = 30
+        self.lvl = 5
 
         self.filename = ""
         self.syslog = False
@@ -402,21 +403,17 @@ class CyLogger(Singleton):
                                                  str(function_name), 
                                                  str(line_number))
         msg_list = []
-        if not msg:
-            return
-        if isinstance(msg, basestring) and "\n" not in msg:
-            msg_list = [msg]
-        elif isinstance(msg, basestring) and "\n" in msg:
+        if isinstance(msg, list):
+            msg_list = msg
+        elif isinstance(msg, basestring):
             first_msg_list = msg.split("\n")
             for mymsg in first_msg_list:
                 msg_list.append(mymsg + "\n")
-        elif msg and isinstance(msg, list):
-            msg_list = msg
         elif isinstance(msg, dict):
             for key, value in msg.iteritems():
                 msg_list.append(str(key) + " : " + str(value))
         else:
-            msg_list = [str(msg)]
+            msg_list = msg
 
         for line in msg_list:
             #####

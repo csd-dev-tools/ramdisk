@@ -25,6 +25,8 @@ elif sys.platform.startswith("linux"):
     # For Linux
     from ramdisk.linuxTmpfsRamdisk import RamDisk
     from ramdisk.linuxTmpfsRamdisk import umount
+else:
+    print "'" + str(sys.platform) + "' platform not supported..."
 
 parser = OptionParser(usage="\n\n%prog [options]\n\n", version="0.7.2")
 
@@ -67,13 +69,13 @@ if not os.path.exists(mntpnt):
 logger = CyLogger(level=level)
 logger.initializeLogs()
 
-ramdisk = RamDisk(size=size)
-ramdisk.getNlogData()
-ramdisk.getNprintData()
+ramdisk = RamDisk(size=size, logger=logger)
+ramdisk.logData()
+ramdisk.printData()
 
 ramdisk.unionOver(mntpnt)
 
-ramdisk.getNprintData()
+ramdisk.printData()
 
 if not ramdisk.success:
     raise Exception("Ramdisk setup failed..")
